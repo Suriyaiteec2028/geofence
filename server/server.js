@@ -19,7 +19,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Serve static uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Routes
+// API Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/doctors', require('./routes/doctorRoutes'));
 app.use('/api/phcs', require('./routes/phcRoutes'));
@@ -36,14 +36,34 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Serve frontend static build if client/dist exists or in production
-const distPath = path.join(__dirname, '../client/dist');
-if (fs.existsSync(distPath)) {
+// Robust Frontend Dist Path Resolution for Local & Cloud Environments (Render, Railway, VPS)
+const possibleDistPaths = [
+  path.resolve(__dirname, '../client/dist'),
+  path.resolve(process.cwd(), 'client/dist'),
+  path.resolve(process.cwd(), '../client/dist')
+];
+
+const distPath = possibleDistPaths.find(p => fs.existsSync(path.join(p, 'index.html')));
+
+if (distPath) {
+  console.log(`✅ FOUND FRONTEND CLIENT BUILD AT: ${distPath}`);
   app.use(express.static(distPath));
-  app.get('*', (req, res) => {
-    if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
-      res.sendFile(path.join(distPath, 'index.html'));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+      return next();
     }
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+} else {
+  console.warn(`⚠️ WARNING: Client build index.html not found. Checked:`, possibleDistPaths);
+  app.get('/', (req, res) => {
+    res.send(`
+      <div style="font-family: Arial, sans-serif; padding: 40px; text-align: center; background-color: #0F172A; color: #F8FAFC;">
+        <h2 style="color: #38BDF8;">Hospital Geofence Attendance System API Online 🚀</h2>
+        <p>API Endpoint: <a href="/api/health" style="color: #10B981;">/api/health</a></p>
+        <p style="color: #94A3B8;">Frontend build path warning: ${possibleDistPaths.join(', ')}</p>
+      </div>
+    `);
   });
 }
 
