@@ -57,9 +57,9 @@
       "code": "PHC-643",
       "address": "Ariyalur(DT),T.Palur",
       "district": "Central Metro",
-      "latitude": 13.0827,
-      "longitude": 80.2707,
-      "radius": 150,
+      "latitude": 13.030917026821836,
+      "longitude": 80.17810001122798,
+      "radius": 200,
       "assignedAdmin": "admin_1785948464540",
       "status": "ACTIVE",
       "createdAt": "2026-08-05T16:47:44.540Z"

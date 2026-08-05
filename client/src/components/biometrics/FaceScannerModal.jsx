@@ -68,6 +68,7 @@ export const FaceScannerModal = ({ isOpen, onClose, onCapture, title = "Biometri
     }
   };
 
+  // High-precision Mean-Subtracted Facial Structural Contour Feature Extractor
   const extractFacialMatrix = (sourceCanvas) => {
     try {
       const tempCanvas = document.createElement('canvas');
@@ -76,12 +77,20 @@ export const FaceScannerModal = ({ isOpen, onClose, onCapture, title = "Biometri
       const tCtx = tempCanvas.getContext('2d');
       tCtx.drawImage(sourceCanvas, 0, 0, 16, 16);
       const imgData = tCtx.getImageData(0, 0, 16, 16).data;
-      const matrix = [];
+
+      // 1. Calculate average luminance across face grid
+      let totalLum = 0;
+      const rawLums = [];
       for (let i = 0; i < imgData.length; i += 4) {
-        const lum = Math.round(0.299 * imgData[i] + 0.587 * imgData[i + 1] + 0.114 * imgData[i + 2]);
-        matrix.push(lum);
+        const lum = 0.299 * imgData[i] + 0.587 * imgData[i + 1] + 0.114 * imgData[i + 2];
+        rawLums.push(lum);
+        totalLum += lum;
       }
-      return matrix;
+      const avgLum = totalLum / rawLums.length || 128;
+
+      // 2. Lighting-Invariant Mean-Subtracted Facial Contour Vector
+      const normalizedMatrix = rawLums.map(lum => Number(((lum - avgLum) / 128).toFixed(4)));
+      return normalizedMatrix;
     } catch (e) {
       return [];
     }

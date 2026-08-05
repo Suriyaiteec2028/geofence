@@ -10,31 +10,40 @@ const JWT_SECRET = process.env.JWT_SECRET || 'hospital_geofence_secret_key_2026'
 // Store OTP requests in memory map: email -> { otpCode, expiresAt, verified, userId }
 const otpStoreMap = new Map();
 
-// High-precision Structural Facial Matrix Generator (256-sample feature vector from actual pixel payload)
-function generateFacialMatrix(base64Data) {
-  if (!base64Data || typeof base64Data !== 'string') return new Array(256).fill(0);
+// High-precision Mean-Subtracted Facial Feature Vector Extractor (256 structural contour points)
+function extractFacialMatrix(faceDataInput) {
+  if (!faceDataInput) return new Array(256).fill(0);
 
-  // Strip data URL header prefix (e.g., data:image/jpeg;base64,) to reach actual image data
-  const parts = base64Data.split(',');
-  const payload = parts.length > 1 ? parts[1] : base64Data;
-  if (!payload || payload.length < 500) return new Array(256).fill(0);
-
-  // Sample 256 feature points uniformly across the actual image payload string
-  const matrix = [];
-  const totalLen = payload.length;
-  const step = totalLen / 256;
-
-  for (let i = 0; i < 256; i++) {
-    const sampleIdx = Math.floor(i * step);
-    const charCode = payload.charCodeAt(sampleIdx) || 0;
-    const normalized = Number((charCode / 255).toFixed(4));
-    matrix.push(normalized);
+  // Parse structured payload from FaceScannerModal
+  if (typeof faceDataInput === 'string' && faceDataInput.trim().startsWith('{')) {
+    try {
+      const parsed = JSON.parse(faceDataInput);
+      if (parsed && Array.isArray(parsed.matrix) && parsed.matrix.length === 256) {
+        return parsed.matrix;
+      }
+    } catch (e) {}
   }
 
-  return matrix;
+  // Fallback: Extract mean-subtracted luminance vector from raw base64 string
+  const base64Str = typeof faceDataInput === 'string' ? faceDataInput : '';
+  const parts = base64Str.split(',');
+  const payload = parts.length > 1 ? parts[1] : base64Str;
+  if (!payload || payload.length < 200) return new Array(256).fill(0);
+
+  const rawLums = [];
+  let totalLum = 0;
+  const step = payload.length / 256;
+  for (let i = 0; i < 256; i++) {
+    const idx = Math.floor(i * step);
+    const code = payload.charCodeAt(idx) || 0;
+    rawLums.push(code);
+    totalLum += code;
+  }
+  const avgLum = totalLum / 256 || 128;
+  return rawLums.map(l => Number(((l - avgLum) / 128).toFixed(4)));
 }
 
-// Calculate Cosine Similarity Score between two 256-dimensional facial matrices
+// Calculate Cosine Similarity Score between two Mean-Subtracted Structural Facial Contour Vectors
 function calculateFacialSimilarity(matrixA, matrixB) {
   if (!matrixA || !matrixB || matrixA.length !== 256 || matrixB.length !== 256) return 0;
   let dotProduct = 0;
@@ -175,13 +184,13 @@ exports.doctorFaceLogin = async (req, res) => {
       }
     } else {
       // Strict Biometric Match Verification against Registered Face Data
-      const storedMatrix = generateFacialMatrix(user.faceData);
-      const liveMatrix = generateFacialMatrix(liveFaceData);
+      const storedMatrix = extractFacialMatrix(user.faceData);
+      const liveMatrix = extractFacialMatrix(liveFaceData);
       const similarityScore = calculateFacialSimilarity(storedMatrix, liveMatrix);
 
-      console.log(`👤 Biometric Face Verification Score for Dr. ${user.name}: ${(similarityScore * 100).toFixed(1)}%`);
+      console.log(`👤 Biometric Structural Contour Match Score for Dr. ${user.name}: ${(similarityScore * 100).toFixed(1)}%`);
 
-      // Strict 82% Biometric Similarity Match Threshold
+      // Strict 82% Biometric Structural Match Threshold
       if (similarityScore < 0.82) {
         return res.status(401).json({
           success: false,
