@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
-const { memoryStore } = require('../config/db');
+const { memoryStore, saveMemoryStoreToDisk } = require('../config/db');
 const User = require('../models/User');
 const { 
   sendDoctorRegistrationEmail, 
@@ -145,6 +145,7 @@ exports.createDoctor = async (req, res) => {
     };
 
     memoryStore.users.push(newDoctor);
+    saveMemoryStoreToDisk();
 
     if (!memoryStore.isInMemoryMode && mongoose.connection.readyState === 1) {
       try {
@@ -274,6 +275,7 @@ exports.updateDoctor = async (req, res) => {
     };
 
     memoryStore.users[docIndex] = updated;
+    saveMemoryStoreToDisk();
 
     if (!memoryStore.isInMemoryMode && mongoose.connection.readyState === 1) {
       try {
@@ -394,6 +396,7 @@ exports.deleteDoctor = async (req, res) => {
 
   const targetDoc = memoryStore.users[docIndex];
   memoryStore.users.splice(docIndex, 1);
+  saveMemoryStoreToDisk();
 
   if (!memoryStore.isInMemoryMode && mongoose.connection.readyState === 1) {
     try {
@@ -445,6 +448,7 @@ exports.createAdmin = async (req, res) => {
     };
 
     memoryStore.users.push(newAdmin);
+    saveMemoryStoreToDisk();
 
     if (!memoryStore.isInMemoryMode && mongoose.connection.readyState === 1) {
       try {
@@ -557,6 +561,7 @@ exports.updateAdmin = async (req, res) => {
     };
 
     memoryStore.users[adminIndex] = updated;
+    saveMemoryStoreToDisk();
 
     if (!memoryStore.isInMemoryMode && mongoose.connection.readyState === 1) {
       try {
@@ -585,6 +590,7 @@ exports.deleteAdmin = async (req, res) => {
 
     const targetAdmin = memoryStore.users[adminIndex];
     memoryStore.users.splice(adminIndex, 1);
+    saveMemoryStoreToDisk();
 
     if (!memoryStore.isInMemoryMode && mongoose.connection.readyState === 1) {
       try {

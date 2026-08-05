@@ -1,4 +1,4 @@
-const { memoryStore } = require('../config/db');
+const { memoryStore, saveMemoryStoreToDisk } = require('../config/db');
 const { calculateHaversineDistance } = require('../utils/haversine');
 const { evaluateCurrentShiftState } = require('../utils/shiftEngine');
 
@@ -39,29 +39,40 @@ exports.getDoctorShiftStatus = (req, res) => {
     res.json({
       success: true,
       doctor: {
-        id: doctor._id,
+        _id: doctor._id,
         name: doctor.name,
+        email: doctor.email,
         shiftStart: doctor.shiftStart,
-        shiftEnd: doctor.shiftEnd
+        shiftEnd: doctor.shiftEnd,
+        faceEnrolled: !!doctor.faceData
       },
-      phc: phc || { name: 'Unassigned Hospital PHC', latitude: 13.0827, longitude: 80.2707, radius: 150 },
+      phc: phc ? {
+        _id: phc._id,
+        name: phc.name,
+        address: phc.address,
+        district: phc.district,
+        latitude: phc.latitude,
+        longitude: phc.longitude,
+        radius: phc.radius
+      } : null,
       shiftState,
       todayAttendances
     });
+
   } catch (err) {
-    console.error('Shift status error:', err);
-    res.status(500).json({ success: false, message: 'Error retrieving shift status' });
+    console.error('Error fetching shift status:', err);
+    res.status(500).json({ success: false, message: 'Server error calculating shift status' });
   }
 };
 
 exports.markAttendance = (req, res) => {
   try {
+    const { latitude, longitude } = req.body;
     const doctorId = req.user.id;
     const userEmail = req.user.email;
-    const { latitude, longitude } = req.body;
 
     if (latitude === undefined || longitude === undefined) {
-      return res.status(400).json({ success: false, message: 'GPS coordinates (latitude and longitude) are required.' });
+      return res.status(400).json({ success: false, message: 'GPS Location coordinates (Latitude & Longitude) are required.' });
     }
 
     const doctor = memoryStore.users.find(u => 
@@ -136,50 +147,65 @@ exports.markAttendance = (req, res) => {
     };
 
     memoryStore.attendances.push(newAttendance);
+    saveMemoryStoreToDisk();
 
     res.status(200).json({
       success: true,
-      message: `Attendance marked successfully! Status: PRESENT. Distance from hospital: ${distanceMeters}m.`,
+      message: `🎉 Attendance Checkpoint Verified & Marked Successfully at ${phc.name}!`,
       attendance: newAttendance
     });
 
   } catch (err) {
-    console.error('Mark attendance error:', err);
-    res.status(500).json({ success: false, message: 'Server error marking attendance' });
+    console.error('Error marking attendance:', err);
+    res.status(500).json({ success: false, message: 'Server error verifying attendance' });
   }
 };
 
-exports.getAttendanceHistory = (req, res) => {
+exports.getDoctorAttendanceLogs = (req, res) => {
   try {
-    const { doctorId, phcId, status, date } = req.query;
-    let list = [...memoryStore.attendances];
+    const doctorId = req.user.id;
+    const userEmail = req.user.email;
 
-    // Role level filtering
-    if (req.user.role === 'DOCTOR') {
-      list = list.filter(a => String(a.doctor) === String(req.user.id));
-    } else if (doctorId) {
-      list = list.filter(a => String(a.doctor) === String(doctorId));
-    }
+    const doctor = memoryStore.users.find(u => 
+      String(u._id) === String(doctorId) || 
+      (userEmail && u.email.toLowerCase() === userEmail.toLowerCase())
+    );
 
-    if (phcId) list = list.filter(a => String(a.phc) === String(phcId));
-    if (status) list = list.filter(a => a.status === status);
-    if (date) list = list.filter(a => a.date === date);
+    if (!doctor) return res.status(404).json({ success: false, message: 'Doctor not found' });
 
-    const enriched = list.map(a => {
-      const doc = memoryStore.users.find(u => String(u._id) === String(a.doctor));
-      const phc = memoryStore.phcs.find(p => String(p._id) === String(a.phc));
-      const exp = a.explanation ? memoryStore.explanations.find(e => String(e._id) === String(a.explanation)) : null;
+    const logs = memoryStore.attendances
+      .filter(a => String(a.doctor) === String(doctor._id))
+      .sort((a, b) => new Date(b.markedAt || b.createdAt) - new Date(a.markedAt || a.createdAt));
+
+    res.json({ success: true, count: logs.length, logs });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Error loading logs' });
+  }
+};
+
+exports.getAllAttendanceRecords = (req, res) => {
+  try {
+    const { doctorId, phcId, date, status } = req.query;
+    let records = [...memoryStore.attendances];
+
+    if (doctorId) records = records.filter(r => String(r.doctor) === String(doctorId));
+    if (phcId) records = records.filter(r => String(r.phc) === String(phcId));
+    if (date) records = records.filter(r => r.date === date);
+    if (status) records = records.filter(r => r.status === status);
+
+    const enriched = records.map(r => {
+      const doc = memoryStore.users.find(u => String(u._id) === String(r.doctor));
+      const phc = memoryStore.phcs.find(p => String(p._id) === String(r.phc));
       return {
-        ...a,
+        ...r,
         doctorName: doc ? doc.name : 'Unknown Doctor',
-        doctorSpecialization: doc ? doc.specialization : '',
-        phcName: phc ? phc.name : 'Unknown PHC',
-        explanationDetails: exp
+        doctorEmail: doc ? doc.email : '',
+        phcName: phc ? phc.name : 'Unknown PHC'
       };
     });
 
-    res.json({ success: true, count: enriched.length, attendances: enriched });
+    res.json({ success: true, count: enriched.length, records: enriched });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Error fetching attendance history' });
+    res.status(500).json({ success: false, message: 'Error loading attendance records' });
   }
 };

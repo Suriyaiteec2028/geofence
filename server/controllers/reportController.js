@@ -12,26 +12,26 @@ exports.getReportSummary = (req, res) => {
     const absentCount = attendances.filter(a => a.status === 'ABSENT' || a.status === 'EXPLANATION_REJECTED').length;
     const pendingExplanations = memoryStore.explanations.filter(e => e.status === 'PENDING').length;
 
-    const totalRecords = attendances.length || 1;
-    const attendancePercentage = Math.round((presentCount / totalRecords) * 100);
+    const totalRecords = attendances.length || 0;
+    const attendancePercentage = totalRecords > 0 ? Math.round((presentCount / totalRecords) * 100) : 0;
 
     // Monthly attendance breakdown for chart
     const monthlyTrends = [
-      { month: 'Jan', percentage: 92 },
-      { month: 'Feb', percentage: 88 },
-      { month: 'Mar', percentage: 95 },
-      { month: 'Apr', percentage: 91 },
-      { month: 'May', percentage: 94 },
-      { month: 'Jun', percentage: 96 },
-      { month: 'Jul', percentage: attendancePercentage || 93 }
+      { month: 'Jan', percentage: 0 },
+      { month: 'Feb', percentage: 0 },
+      { month: 'Mar', percentage: 0 },
+      { month: 'Apr', percentage: 0 },
+      { month: 'May', percentage: 0 },
+      { month: 'Jun', percentage: 0 },
+      { month: 'Jul', percentage: attendancePercentage }
     ];
 
     // PHC performance breakdown
     const phcPerformance = memoryStore.phcs.map(p => {
-      const pDocs = memoryStore.users.filter(u => u.role === 'DOCTOR' && u.assignedPHC === p._id);
-      const pAtts = memoryStore.attendances.filter(a => a.phc === p._id);
+      const pDocs = memoryStore.users.filter(u => u.role === 'DOCTOR' && String(u.assignedPHC) === String(p._id));
+      const pAtts = memoryStore.attendances.filter(a => String(a.phc) === String(p._id));
       const pPresent = pAtts.filter(a => a.status === 'PRESENT' || a.status === 'EXPLANATION_APPROVED').length;
-      const rate = pAtts.length ? Math.round((pPresent / pAtts.length) * 100) : 90;
+      const rate = pAtts.length > 0 ? Math.round((pPresent / pAtts.length) * 100) : 0;
       return {
         id: p._id,
         name: p.name,
@@ -92,8 +92,8 @@ exports.exportAttendancePDF = (req, res) => {
     // Table Rows
     const attendances = memoryStore.attendances.slice(0, 25);
     attendances.forEach((a, idx) => {
-      const docUser = memoryStore.users.find(u => u._id === a.doctor);
-      const phc = memoryStore.phcs.find(p => p._id === a.phc);
+      const docUser = memoryStore.users.find(u => String(u._id) === String(a.doctor));
+      const phc = memoryStore.phcs.find(p => String(p._id) === String(a.phc));
 
       const y = doc.y;
       if (idx % 2 === 0) {

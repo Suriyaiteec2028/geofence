@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { memoryStore } = require('../config/db');
+const { memoryStore, saveMemoryStoreToDisk } = require('../config/db');
 
 exports.getAllPHCs = (req, res) => {
   try {
@@ -52,7 +52,6 @@ exports.createPHC = async (req, res) => {
     if (!name || !address || !district) {
       return res.status(400).json({ success: false, message: 'Please provide required PHC details (Name, Address, District).' });
     }
-
 
     let finalAdminId = assignedAdmin || null;
 
@@ -111,13 +110,14 @@ exports.createPHC = async (req, res) => {
       if (admin) admin.assignedPHC = newPhc._id;
     }
 
+    saveMemoryStoreToDisk();
+
     res.status(201).json({ success: true, message: 'Primary Health Center created successfully', phc: newPhc });
   } catch (err) {
     console.error('Error creating PHC:', err);
     res.status(500).json({ success: false, message: 'Error creating PHC' });
   }
 };
-
 
 exports.updatePHC = (req, res) => {
   try {
@@ -134,6 +134,7 @@ exports.updatePHC = (req, res) => {
     };
 
     memoryStore.phcs[phcIndex] = updated;
+    saveMemoryStoreToDisk();
 
     res.json({ success: true, message: 'PHC updated successfully', phc: updated });
   } catch (err) {
@@ -146,6 +147,7 @@ exports.togglePHCStatus = (req, res) => {
   if (!phc) return res.status(404).json({ success: false, message: 'PHC not found' });
 
   phc.status = phc.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+  saveMemoryStoreToDisk();
   res.json({ success: true, message: `PHC status changed to ${phc.status}`, phc });
 };
 
@@ -154,5 +156,6 @@ exports.deletePHC = (req, res) => {
   if (phcIndex === -1) return res.status(404).json({ success: false, message: 'PHC not found' });
 
   memoryStore.phcs.splice(phcIndex, 1);
+  saveMemoryStoreToDisk();
   res.json({ success: true, message: 'PHC deleted successfully' });
 };

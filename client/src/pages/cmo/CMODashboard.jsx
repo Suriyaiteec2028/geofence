@@ -61,9 +61,9 @@ export const CMODashboard = () => {
               <Building2 className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-extrabold text-white">{summary?.totalPHCs || 3}</div>
+          <div className="text-2xl font-extrabold text-white">{summary?.totalPHCs ?? 0}</div>
           <div className="text-[11px] text-emerald-400 flex items-center gap-1">
-            <TrendingUp className="w-3 h-3" /> 100% Operational Hospitals
+            <TrendingUp className="w-3 h-3" /> Operational Hospitals
           </div>
         </motion.div>
 
@@ -74,7 +74,7 @@ export const CMODashboard = () => {
               <UserCheck className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-extrabold text-white">{summary?.totalDoctors || 12}</div>
+          <div className="text-2xl font-extrabold text-white">{summary?.totalDoctors ?? 0}</div>
           <div className="text-[11px] text-slate-400">Assigned across scheduled duty shifts</div>
         </motion.div>
 
@@ -85,9 +85,9 @@ export const CMODashboard = () => {
               <Activity className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-extrabold text-purple-300">{summary?.attendancePercentage || 94}%</div>
+          <div className="text-2xl font-extrabold text-purple-300">{summary?.attendancePercentage ?? 0}%</div>
           <div className="text-[11px] text-emerald-400 flex items-center gap-1">
-            <ArrowUpRight className="w-3 h-3" /> +2.4% vs last week
+            <ArrowUpRight className="w-3 h-3" /> Real-time Duty Shift Compliance Rate
           </div>
         </motion.div>
 
@@ -98,7 +98,7 @@ export const CMODashboard = () => {
               <Clock className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-extrabold text-amber-300">{summary?.pendingExplanations || 1}</div>
+          <div className="text-2xl font-extrabold text-amber-300">{summary?.pendingExplanations ?? 0}</div>
           <div className="text-[11px] text-slate-400">Absence explanations awaiting admin approval</div>
         </motion.div>
       </div>
