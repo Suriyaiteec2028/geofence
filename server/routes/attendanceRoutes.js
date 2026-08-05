@@ -7,6 +7,7 @@ router.use(authenticateToken);
 
 router.get('/shift-status', requireRole(['DOCTOR']), attendanceController.getDoctorShiftStatus);
 router.post('/mark', requireRole(['DOCTOR']), attendanceController.markAttendance);
-router.get('/history', attendanceController.getAttendanceHistory);
+router.get('/history', attendanceController.getDoctorAttendanceLogs);
+router.get('/all', requireRole(['CMO', 'ADMIN']), attendanceController.getAllAttendanceRecords);
 
 module.exports = router;

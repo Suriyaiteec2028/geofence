@@ -1,0 +1,31 @@
+{
+  "users": [
+    {
+      "_id": "cmo_001",
+      "name": "Chief Medical Officer (CMO)",
+      "email": "suriyachandru2006@gmail.com",
+      "username": "suriyachandru2006@gmail.com",
+      "password": "$2a$10$dT9oPHC10PKvkqMzUvm1peJdQZROQKgHQo219EsQVcDZHGDfpu6Kq",
+      "role": "CMO",
+      "mobile": "+91 98765 43210",
+      "qualification": "MBBS, MD (Healthcare Administration)",
+      "specialization": "Chief Medical Officer & Healthcare Director",
+      "assignedPHC": null,
+      "shiftStart": "09:00",
+      "shiftEnd": "17:00",
+      "profilePhoto": "",
+      "status": "ACTIVE",
+      "createdAt": "2026-08-05T10:06:55.624Z"
+    }
+  ],
+  "phcs": [],
+  "attendances": [],
+  "explanations": [],
+  "settings": {
+    "checkpointIntervalMinutes": 60,
+    "windowDurationMinutes": 5,
+    "requireProofForExplanation": true,
+    "systemName": "Hospital Geofence Attendance System"
+  },
+  "notifications": []
+}
