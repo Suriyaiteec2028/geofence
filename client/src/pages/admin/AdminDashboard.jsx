@@ -52,7 +52,7 @@ export const AdminDashboard = () => {
             onClick={() => navigate('/admin/explanations')}
             className="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-lg transition-all"
           >
-            <ClipboardCheck className="w-3.5 h-3.5" /> Review Explanations ({summary?.pendingExplanations || 0})
+            <ClipboardCheck className="w-3.5 h-3.5" /> Review Explanations ({summary?.pendingExplanations ?? 0})
           </button>
         </div>
       </div>
@@ -66,7 +66,7 @@ export const AdminDashboard = () => {
               <Users className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-extrabold text-white">{summary?.totalDoctors || 6}</div>
+          <div className="text-2xl font-extrabold text-white">{summary?.totalDoctors ?? 0}</div>
           <div className="text-[11px] text-slate-400">Active medical staff</div>
         </motion.div>
 
@@ -77,7 +77,7 @@ export const AdminDashboard = () => {
               <UserCheck className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-extrabold text-emerald-400">{summary?.presentCount || 4}</div>
+          <div className="text-2xl font-extrabold text-emerald-400">{summary?.presentCount ?? 0}</div>
           <div className="text-[11px] text-emerald-400 flex items-center gap-1">
             <ArrowUpRight className="w-3 h-3" /> Punctual Check-in
           </div>
@@ -90,7 +90,7 @@ export const AdminDashboard = () => {
               <Clock className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-extrabold text-rose-400">{summary?.absentCount || 1}</div>
+          <div className="text-2xl font-extrabold text-rose-400">{summary?.absentCount ?? 0}</div>
           <div className="text-[11px] text-slate-400">Missed checkpoint window</div>
         </motion.div>
 
@@ -101,7 +101,7 @@ export const AdminDashboard = () => {
               <AlertTriangle className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-extrabold text-amber-300">{summary?.pendingExplanations || 1}</div>
+          <div className="text-2xl font-extrabold text-amber-300">{summary?.pendingExplanations ?? 0}</div>
           <div className="text-[11px] text-amber-400 cursor-pointer hover:underline" onClick={() => navigate('/admin/explanations')}>
             Review explanations &rarr;
           </div>
@@ -113,9 +113,9 @@ export const AdminDashboard = () => {
         <div className="lg:col-span-1 p-6 rounded-3xl bg-[#1E293B] border border-slate-700/80 shadow-xl space-y-4">
           <h3 className="font-bold text-sm text-white">Today's Attendance Breakdown</h3>
           <DoctorStatusDoughnut
-            present={summary?.presentCount}
-            absent={summary?.absentCount}
-            pending={summary?.pendingExplanations}
+            present={summary?.presentCount ?? 0}
+            absent={summary?.absentCount ?? 0}
+            pending={summary?.pendingExplanations ?? 0}
           />
         </div>
 

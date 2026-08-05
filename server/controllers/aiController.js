@@ -6,23 +6,27 @@ exports.getAIAnalytics = (req, res) => {
     const phcs = memoryStore.phcs;
     const attendances = memoryStore.attendances;
 
-    // AI Insight 1: Low compliance doctors
+    // AI Insight 1: Doctor compliance
     const doctorStats = doctors.map(d => {
-      const docAtts = attendances.filter(a => a.doctor === d._id);
+      const docAtts = attendances.filter(a => String(a.doctor) === String(d._id));
       const presentCount = docAtts.filter(a => a.status === 'PRESENT' || a.status === 'EXPLANATION_APPROVED').length;
-      const rate = docAtts.length ? Math.round((presentCount / docAtts.length) * 100) : 100;
+      const rate = docAtts.length > 0 ? Math.round((presentCount / docAtts.length) * 100) : 0;
       return { id: d._id, name: d.name, specialization: d.specialization, rate, total: docAtts.length };
     });
 
-    const lowComplianceDocs = doctorStats.filter(d => d.rate < 85);
+    const lowComplianceDocs = doctorStats.filter(d => d.total > 0 && d.rate < 85);
 
     // AI Insight 2: PHC Compliance ranking
     const phcStats = phcs.map(p => {
-      const pAtts = attendances.filter(a => a.phc === p._id);
+      const pAtts = attendances.filter(a => String(a.phc) === String(p._id));
       const pPresent = pAtts.filter(a => a.status === 'PRESENT' || a.status === 'EXPLANATION_APPROVED').length;
-      const compliance = pAtts.length ? Math.round((pPresent / pAtts.length) * 100) : 92;
+      const compliance = pAtts.length > 0 ? Math.round((pPresent / pAtts.length) * 100) : 0;
       return { id: p._id, name: p.name, district: p.district, compliance };
     });
+
+    const totalRecords = attendances.length;
+    const presentCountTotal = attendances.filter(a => a.status === 'PRESENT' || a.status === 'EXPLANATION_APPROVED').length;
+    const overallScore = totalRecords > 0 ? Math.round((presentCountTotal / totalRecords) * 100) : 100;
 
     const recommendations = [];
 
@@ -39,8 +43,8 @@ exports.getAIAnalytics = (req, res) => {
         id: 'rec_1',
         severity: 'LOW',
         category: 'Doctor Compliance',
-        title: 'High Doctor Duty Compliance Achieved',
-        description: 'All registered physicians maintain above 85% attendance compliance across scheduled shift windows.'
+        title: 'Duty Compliance Status Normal',
+        description: 'No physician accounts currently flagged for low attendance compliance.'
       });
     }
 
@@ -48,23 +52,22 @@ exports.getAIAnalytics = (req, res) => {
       id: 'rec_2',
       severity: 'MEDIUM',
       category: 'Geofence Radius Optimization',
-      title: 'Geofence Calibration Suggestion',
-      titleDetail: 'GPS accuracy variations detected around central OPD building.',
-      description: 'Consider expanding Central District Hospital radius by 25 meters (from 150m to 175m) to reduce false-positive out-of-boundary rejections during indoor ward rounds.'
+      title: 'Geofence Calibration Audit',
+      description: 'GPS geofence radius settings are active across all registered Primary Health Centers.'
     });
 
     recommendations.push({
       id: 'rec_3',
       severity: 'INFO',
-      category: 'Shift Timing Optimization',
-      title: 'Peak Checkpoint Traffic Analysis',
-      description: '11:15 AM and 02:15 PM record the highest compliance rate (98%). 04:15 PM shows a slight 8% decline due to evening emergency handover times.'
+      category: 'Shift Timing Analysis',
+      title: 'Automated Checkpoint Duty Engine',
+      description: 'Hourly duty checkpoint reminders are operating with 1-minute ticker schedule.'
     });
 
     res.json({
       success: true,
       aiSummary: {
-        overallScore: 92,
+        overallScore,
         riskLevel: lowComplianceDocs.length > 0 ? 'MODERATE' : 'LOW',
         recommendations,
         doctorStats,
