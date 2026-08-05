@@ -68,17 +68,27 @@ export const FaceScannerModal = ({ isOpen, onClose, onCapture, title = "Biometri
     }
   };
 
-  // High-precision Mean-Subtracted Facial Structural Contour Feature Extractor
+  // High-precision Facial Feature Extractor (Crops CENTER FACE ONLY to exclude room background)
   const extractFacialMatrix = (sourceCanvas) => {
     try {
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = 16;
       tempCanvas.height = 16;
       const tCtx = tempCanvas.getContext('2d');
-      tCtx.drawImage(sourceCanvas, 0, 0, 16, 16);
+
+      // Crop center 50% width and 70% height (exact oval face region)
+      const srcW = sourceCanvas.width || 320;
+      const srcH = sourceCanvas.height || 240;
+      const cropX = Math.floor(srcW * 0.25);
+      const cropY = Math.floor(srcH * 0.15);
+      const cropW = Math.floor(srcW * 0.50);
+      const cropH = Math.floor(srcH * 0.70);
+
+      // Draw ONLY the face region onto 16x16 grid
+      tCtx.drawImage(sourceCanvas, cropX, cropY, cropW, cropH, 0, 0, 16, 16);
       const imgData = tCtx.getImageData(0, 0, 16, 16).data;
 
-      // 1. Calculate average luminance across face grid
+      // 1. Calculate average luminance across face region
       let totalLum = 0;
       const rawLums = [];
       for (let i = 0; i < imgData.length; i += 4) {
