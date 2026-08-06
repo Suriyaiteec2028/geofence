@@ -129,9 +129,14 @@ export const ManageDoctors = () => {
     e.preventDefault();
 
     if (!editingDoc) {
-      // 1st Time Creation by Admin (No OTP required)
+      // 1st Time Creation by Admin
       if (!formData.password) {
         addToast('Please enter a password for the doctor account', 'warning');
+        return;
+      }
+      if (!formData.faceData) {
+        addToast('📸 Doctor biometric face capture required! Opening webcam camera scanner frame...', 'info');
+        setShowFaceModal(true);
         return;
       }
       try {
@@ -368,13 +373,13 @@ export const ManageDoctors = () => {
         <Table columns={columns} data={doctors} searchPlaceholder="Search by name, email, or specialization..." />
       )}
 
-      {/* Biometric Face Scanner Modal */}
+      {/* Biometric Face Scanner Modal (Rendered on top with z-[70]) */}
       <FaceScannerModal
         isOpen={showFaceModal}
         onClose={() => setShowFaceModal(false)}
         onCapture={(capturedData) => {
-          setFormData({ ...formData, faceData: capturedData });
-          addToast('Biometric Face Profile captured! Save changes to update profile.', 'info');
+          setFormData(prev => ({ ...prev, faceData: capturedData }));
+          addToast('Biometric Face Profile captured! Save changes to update profile.', 'success', 'Face Enrolled');
         }}
         title="Register Doctor Biometric Face"
         subtitle="Align doctor's face in frame to enroll webcam biometric profile"
