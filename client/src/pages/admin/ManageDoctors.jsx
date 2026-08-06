@@ -7,7 +7,11 @@ import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
 import { FaceScannerModal } from '../../components/biometrics/FaceScannerModal';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../context/AuthContext';
-import { UserCheck, Plus, Edit, Trash2, Mail, Phone, Clock, Eye, EyeOff, Camera, CheckCircle2, Send, FileText, AlertTriangle, KeyRound, ShieldAlert } from 'lucide-react';
+import { 
+  UserPlus, Search, Edit3, Trash2, Mail, ShieldAlert, CheckCircle2, Clock, 
+  Building2, Camera, Eye, EyeOff, Lock, Send, FileSpreadsheet, KeyRound, AlertTriangle 
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const formatTime12h = (timeStr) => {
   if (!timeStr) return '';
@@ -29,23 +33,22 @@ export const ManageDoctors = () => {
   const [doctors, setDoctors] = useState([]);
   const [phcs, setPhcs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sendingReportId, setSendingReportId] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [showFaceModal, setShowFaceModal] = useState(false);
   const [editingDoc, setEditingDoc] = useState(null);
+  const [showFaceModal, setShowFaceModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Doctor Edit OTP Verification State
+  // OTP Verification Modal State
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [otpInput, setOtpInput] = useState('');
   const [sendingOtp, setSendingOtp] = useState(false);
   const [savingWithOtp, setSavingWithOtp] = useState(false);
 
-  // Send Notice / Warning Email Modal State
-  const [showMessageModal, setShowMessageModal] = useState(false);
-  const [targetRecipient, setTargetRecipient] = useState(null);
-  const [messageSubject, setMessageSubject] = useState('');
-  const [messageText, setMessageText] = useState('');
+  // Notice Modal State
+  const [showNoticeModal, setShowNoticeModal] = useState(false);
+  const [noticeTarget, setNoticeTarget] = useState(null);
+  const [noticeSubject, setNoticeSubject] = useState('');
+  const [noticeMessage, setNoticeMessage] = useState('');
   const [sendingNotice, setSendingNotice] = useState(false);
 
   const { addToast } = useNotification();
@@ -109,7 +112,7 @@ export const ManageDoctors = () => {
       name: doc.name || '',
       email: doc.email || '',
       username: doc.username || '',
-      password: '',
+      password: '', // Keep sensitive password blank (never expose existing password)
       mobile: doc.mobile || '',
       qualification: doc.qualification || 'MBBS',
       specialization: doc.specialization || 'General Physician',
@@ -144,18 +147,19 @@ export const ManageDoctors = () => {
       return;
     }
 
-    // Subsequent Edit: Check if Email or Password is changed
+    // Subsequent Edit: Check if Email, Password, OR Face Recognition is changed
     const isEmailChanged = formData.email.trim().toLowerCase() !== editingDoc.email.toLowerCase();
     const isPasswordChanged = formData.password && formData.password.trim() !== '';
+    const isFaceChanged = formData.faceData && formData.faceData !== editingDoc.faceData;
 
-    if (isEmailChanged || isPasswordChanged) {
-      // Trigger OTP to Doctor's existing registered email
+    if (isEmailChanged || isPasswordChanged || isFaceChanged) {
+      // Trigger OTP to Doctor's existing registered email inbox
       setSendingOtp(true);
       addToast(`Sending 6-digit security OTP to Dr. ${editingDoc.name}'s existing email (${editingDoc.email})...`, 'info');
       try {
         const res = await axios.post(`/api/doctors/${editingDoc._id}/request-otp`);
         if (res.data.success) {
-          addToast(`OTP Code sent live to ${editingDoc.email}. Please enter OTP to authorize email/password changes.`, 'success', 'OTP Sent');
+          addToast(`OTP Code sent live to ${editingDoc.email}. Please enter OTP to authorize credential changes.`, 'success', 'OTP Sent');
           setOtpInput('');
           setShowOtpModal(true);
         }
@@ -193,117 +197,122 @@ export const ManageDoctors = () => {
   const handleVerifyOtpAndSaveDoctor = (e) => {
     e.preventDefault();
     if (!otpInput || otpInput.trim().length !== 6) {
-      addToast('Please enter the 6-digit OTP code sent to existing email.', 'warning');
+      addToast('Please enter the 6-digit OTP code sent to existing doctor email.', 'warning');
       return;
     }
     saveDoctorUpdates({ otp: otpInput.trim() });
   };
 
-  const handleSendAttendanceReport = async (doc) => {
-    setSendingReportId(doc._id);
-    addToast(`Generating and sending attendance report to ${doc.email}...`, 'info');
+  const handleDelete = async (id, name) => {
+    if (!window.confirm(`Are you sure you want to remove Dr. ${name}? This action will revoke doctor shift access.`)) return;
     try {
-      const res = await axios.post(`/api/doctors/${doc._id}/send-report`);
+      const res = await axios.delete(`/api/doctors/${id}`);
       if (res.data.success) {
-        addToast(`Attendance Report email delivered live to ${doc.email}!`, 'success', 'Report Sent');
+        addToast(res.data.message || 'Doctor removed', 'success');
+        fetchData();
       }
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed to send attendance report email', 'danger');
-    } finally {
-      setSendingReportId(null);
+      addToast('Error removing doctor', 'danger');
     }
   };
 
   const handleOpenNoticeModal = (doc) => {
-    setTargetRecipient(doc);
-    setMessageSubject(`Duty Warning / Notice for Dr. ${doc.name}`);
-    setMessageText(`Dear Dr. ${doc.name},\n\nThis is an official communication regarding your assigned duty shift (${formatTime12h(doc.shiftStart)} - ${formatTime12h(doc.shiftEnd)}). Please ensure strict compliance with 60-minute geofenced attendance checkpoints.\n\nRegards,\nHospital Administration`);
-    setShowMessageModal(true);
+    setNoticeTarget(doc);
+    setNoticeSubject(`Official Duty Notice: Dr. ${doc.name}`);
+    setNoticeMessage(`Dear Dr. ${doc.name},\n\nPlease ensure strict compliance during your scheduled shift (${formatTime12h(doc.shiftStart)} - ${formatTime12h(doc.shiftEnd)}) at ${doc.phcDetails?.name || 'Assigned PHC'}.`);
+    setShowNoticeModal(true);
   };
 
-  const handleSendNoticeEmail = async (e) => {
+  const handleSendCustomNotice = async (e) => {
     e.preventDefault();
-    if (!targetRecipient || !messageText) return;
+    if (!noticeTarget || !noticeMessage) return;
 
     setSendingNotice(true);
     try {
       const res = await axios.post('/api/doctors/send-notice', {
-        recipientEmail: targetRecipient.email,
-        recipientName: targetRecipient.name,
-        subject: messageSubject,
-        messageText
+        recipientEmail: noticeTarget.email,
+        recipientName: noticeTarget.name,
+        subject: noticeSubject,
+        messageText: noticeMessage
       });
       if (res.data.success) {
-        addToast(res.data.message || `Notice email sent to ${targetRecipient.email}`, 'success', 'Notice Sent');
-        setShowMessageModal(false);
+        addToast(res.data.message || 'Notice delivered to doctor inbox', 'success');
+        setShowNoticeModal(false);
       }
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed to send notice email', 'danger');
+      addToast(err.response?.data?.message || 'Failed to dispatch notice email', 'danger');
     } finally {
       setSendingNotice(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this doctor account?')) return;
-    try {
-      const res = await axios.delete(`/api/doctors/${id}`);
-      if (res.data.success) {
-        addToast('Doctor account deleted', 'success');
-        fetchData();
-      }
-    } catch (err) {
-      addToast('Delete failed', 'danger');
-    }
-  };
-
   const columns = [
     {
-      header: 'Doctor Name & Username',
+      header: 'Doctor Name & Profile',
       key: 'name',
       sortable: true,
       render: (row) => (
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold">
-            <UserCheck className="w-4 h-4" />
+          <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold text-sm">
+            {row.name.charAt(0)}
           </div>
           <div>
-            <div className="font-bold text-white text-xs flex items-center gap-1.5">
-              {row.name}
-              {row.faceData && (
-                <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[9px] font-bold">
-                  Face Enrolled
-                </span>
-              )}
-            </div>
-            <div className="text-[10px] text-slate-400">{row.specialization} (@{row.username})</div>
+            <div className="font-bold text-white text-xs">{row.name}</div>
+            <div className="text-[10px] text-slate-400">{row.specialization} • {row.qualification}</div>
           </div>
         </div>
       )
     },
     {
-      header: 'Duty Shift Window',
-      key: 'shiftStart',
-      render: (row) => (
-        <div className="text-xs font-mono text-sky-300 bg-sky-500/10 px-2.5 py-1 rounded-full border border-sky-500/20 flex items-center gap-1 w-fit">
-          <Clock className="w-3 h-3 text-sky-400" /> {formatTime12h(row.shiftStart)} – {formatTime12h(row.shiftEnd)}
-        </div>
-      )
-    },
-    {
-      header: 'Contact Details',
-      key: 'email',
+      header: 'Login Credentials',
+      key: 'username',
       render: (row) => (
         <div className="text-xs space-y-0.5">
-          <div className="text-slate-200 flex items-center gap-1"><Mail className="w-3 h-3 text-blue-400" /> {row.email}</div>
-          <div className="text-slate-400 flex items-center gap-1"><Phone className="w-3 h-3 text-slate-500" /> {row.mobile || 'N/A'}</div>
+          <div className="text-slate-200 font-semibold flex items-center gap-1">
+            <Mail className="w-3 h-3 text-blue-400" /> {row.email}
+          </div>
+          <div className="text-[10px] text-slate-400 font-mono">
+            Username: <strong className="text-blue-300">{row.username}</strong>
+          </div>
         </div>
       )
     },
     {
-      header: 'Assigned PHC',
-      key: 'phcName',
-      render: (row) => <span className="text-xs text-slate-300 font-semibold">{row.phcName}</span>
+      header: 'Assigned PHC Hospital',
+      key: 'assignedPHC',
+      render: (row) => (
+        <div className="text-xs">
+          <div className="text-slate-200 font-semibold flex items-center gap-1">
+            <Building2 className="w-3.5 h-3.5 text-emerald-400" />
+            {row.phcDetails ? row.phcDetails.name : 'Central Health Center'}
+          </div>
+          <div className="text-[10px] text-slate-400">{row.phcDetails?.district || 'District Center'}</div>
+        </div>
+      )
+    },
+    {
+      header: 'Duty Shift Schedule',
+      key: 'shiftStart',
+      sortable: true,
+      render: (row) => (
+        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20 flex items-center gap-1 w-fit">
+          <Clock className="w-3 h-3" /> {formatTime12h(row.shiftStart)} – {formatTime12h(row.shiftEnd)}
+        </span>
+      )
+    },
+    {
+      header: 'Biometric Status',
+      key: 'faceData',
+      render: (row) => (
+        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 w-fit ${
+          row.faceData 
+            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
+            : 'bg-slate-800 text-slate-400 border border-slate-700'
+        }`}>
+          <Camera className="w-3 h-3" />
+          {row.faceData ? 'Face Enrolled' : 'Pending Scan'}
+        </span>
+      )
     },
     {
       header: 'Actions',
@@ -311,26 +320,25 @@ export const ManageDoctors = () => {
       render: (row) => (
         <div className="flex items-center gap-2">
           <button
-            onClick={() => handleSendAttendanceReport(row)}
-            disabled={sendingReportId === row._id}
-            title="Send Attendance Audit Summary Report to Doctor Inbox"
-            className="px-2.5 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1 transition-all disabled:opacity-50"
+            onClick={() => handleOpenEdit(row)}
+            className="p-1.5 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border border-blue-500/30 transition-all text-xs font-semibold flex items-center gap-1"
+            title="Edit Doctor Email, Password, Shift, or Face Enrolment"
           >
-            <FileText className="w-3.5 h-3.5 text-emerald-400" />
-            {sendingReportId === row._id ? 'Sending...' : 'Send Report'}
+            <Edit3 className="w-3.5 h-3.5" /> Edit
           </button>
           <button
             onClick={() => handleOpenNoticeModal(row)}
-            title="Send Warning / Notice Email"
-            className="p-1.5 rounded-lg bg-slate-800 text-amber-400 hover:bg-slate-700"
+            className="p-1.5 rounded-lg bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/30 transition-all text-xs font-semibold flex items-center gap-1"
+            title="Send Official Notice Email"
           >
-            <Send className="w-4 h-4" />
+            <Mail className="w-3.5 h-3.5" /> Send Notice
           </button>
-          <button onClick={() => handleOpenEdit(row)} title="Edit Doctor Details (Email/Password edit requires OTP)" className="p-1.5 rounded-lg bg-slate-800 text-blue-400 hover:bg-slate-700">
-            <Edit className="w-4 h-4" />
-          </button>
-          <button onClick={() => handleDelete(row._id)} className="p-1.5 rounded-lg bg-slate-800 text-rose-400 hover:bg-slate-700">
-            <Trash2 className="w-4 h-4" />
+          <button
+            onClick={() => handleDelete(row._id, row.name)}
+            className="p-1.5 rounded-lg bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 border border-rose-500/30 transition-all"
+            title="Remove Doctor"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
       )
@@ -341,161 +349,190 @@ export const ManageDoctors = () => {
     <div className="space-y-6">
       <Breadcrumb />
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white tracking-tight">Doctor Account Management</h2>
-          <p className="text-xs text-slate-400">Register doctors. Email/Password edits require OTP authorization to existing registered email.</p>
+          <h2 className="text-xl font-bold text-white tracking-tight">Manage Hospital Medical Officers</h2>
+          <p className="text-xs text-slate-400">Register doctors, configure shift timing windows, and manage biometric profiles.</p>
         </div>
         <button
           onClick={handleOpenCreate}
-          className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-2 shadow-glow-blue transition-all"
+          className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-2 shadow-glow-blue transition-all"
         >
-          <Plus className="w-4 h-4" /> Register New Doctor
+          <UserPlus className="w-4 h-4" /> Register New Doctor
         </button>
       </div>
 
       {loading ? (
         <LoadingSkeleton type="table" count={5} />
       ) : (
-        <Table columns={columns} data={doctors} searchPlaceholder="Search doctor name, email, or specialization..." />
+        <Table columns={columns} data={doctors} searchPlaceholder="Search by name, email, or specialization..." />
       )}
 
-      {/* Doctor Edit OTP Verification Modal */}
-      <Modal
-        isOpen={showOtpModal}
-        onClose={() => setShowOtpModal(false)}
-        title="Doctor Email / Password OTP Authorization"
-        maxWidth="max-w-md"
-      >
-        <form onSubmit={handleVerifyOtpAndSaveDoctor} className="space-y-4">
-          <div className="p-3 rounded-xl bg-blue-950/40 border border-blue-500/40 text-xs text-blue-200 space-y-1">
-            <span className="font-bold flex items-center gap-1.5 text-blue-300">
-              <ShieldAlert className="w-4 h-4 text-blue-400" /> Existing Doctor Email OTP Required
-            </span>
-            <p>
-              A 6-digit security code has been sent live to Dr. {editingDoc?.name}'s registered email: <strong className="text-white">{editingDoc?.email}</strong>.
-            </p>
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1.5">Enter 6-Digit Security OTP</label>
-            <div className="relative">
-              <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                maxLength={6}
-                required
-                value={otpInput}
-                onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))}
-                placeholder="e.g. 582914"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm font-mono tracking-widest text-center text-blue-400 placeholder-slate-600 focus:border-blue-500 outline-none font-bold"
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => setShowOtpModal(false)}
-              className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={savingWithOtp}
-              className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 disabled:opacity-50"
-            >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              {savingWithOtp ? 'Verifying & Saving...' : 'Verify OTP & Apply Changes'}
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Face Scanner Modal */}
+      {/* Biometric Face Scanner Modal */}
       <FaceScannerModal
         isOpen={showFaceModal}
         onClose={() => setShowFaceModal(false)}
-        title="Doctor Biometric Face Enrollment"
-        subtitle={`Enrolling facial profile for ${formData.name || 'Doctor'}`}
-        onCapture={(faceImageBase64) => {
-          setFormData((prev) => ({ ...prev, faceData: faceImageBase64 }));
-          addToast('Doctor biometric face captured and ready for saving!', 'success');
+        onCapture={(capturedData) => {
+          setFormData({ ...formData, faceData: capturedData });
+          addToast('Biometric Face Profile captured! Save changes to update profile.', 'info');
         }}
+        title="Register Doctor Biometric Face"
+        subtitle="Align doctor's face in frame to enroll webcam biometric profile"
       />
 
-      {/* Send Notice / Warning Email Modal */}
-      <Modal
-        isOpen={showMessageModal}
-        onClose={() => setShowMessageModal(false)}
-        title={`Send Notice Email to Dr. ${targetRecipient?.name || 'Doctor'}`}
-        maxWidth="max-w-md"
-      >
-        <form onSubmit={handleSendNoticeEmail} className="space-y-4">
-          <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-500/30 text-xs text-amber-300 flex items-start gap-2">
-            <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <span className="font-bold text-amber-200 block">Direct Email Warning Dispatch</span>
-              Notice will be delivered live to <strong className="text-white">{targetRecipient?.email}</strong>.
-            </div>
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1">Subject / Warning Title</label>
-            <input
-              type="text"
-              required
-              value={messageSubject}
-              onChange={(e) => setMessageSubject(e.target.value)}
-              placeholder="e.g. Official Warning: Shift Checkpoint Compliance"
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1">Warning Message Text</label>
-            <textarea
-              required
-              rows={5}
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-              placeholder="Type your official warning or message..."
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white resize-none"
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => setShowMessageModal(false)}
-              className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold"
+      {/* 6-Digit OTP Security Modal for Editing Credentials */}
+      <AnimatePresence>
+        {showOtpModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md bg-[#1E293B] border border-blue-500/30 rounded-3xl p-6 shadow-2xl space-y-5"
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={sendingNotice}
-              className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold flex items-center gap-1.5 disabled:opacity-50"
-            >
-              <Send className="w-3.5 h-3.5" />
-              {sendingNotice ? 'Dispatching...' : 'Send Notice Email'}
-            </button>
-          </div>
-        </form>
-      </Modal>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white tracking-tight">Security OTP Verification Required</h3>
+                  <p className="text-[11px] text-slate-400">Sent live to Dr. {editingDoc?.name}'s email ({editingDoc?.email})</p>
+                </div>
+              </div>
 
-      {/* Doctor Registration / Edit Modal */}
+              <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
+                <div className="flex items-center gap-2 text-xs font-semibold text-amber-400">
+                  <ShieldAlert className="w-4 h-4" /> Sensitive Credential Modification
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Modifying a Doctor's <strong>Email Address</strong>, <strong>Password</strong>, or <strong>Biometric Face Profile</strong> requires OTP security code verification. Please enter the 6-digit OTP code sent live to <strong>{editingDoc?.email}</strong>.
+                </p>
+              </div>
+
+              <form onSubmit={handleVerifyOtpAndSaveDoctor} className="space-y-4">
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">Enter 6-Digit Verification OTP</label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={6}
+                    value={otpInput}
+                    onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))}
+                    placeholder="123456"
+                    className="w-full px-4 py-3 bg-slate-900 border border-blue-500/40 rounded-xl text-lg font-mono font-bold tracking-widest text-center text-emerald-400 placeholder-slate-600 focus:outline-none focus:border-blue-400"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowOtpModal(false)}
+                    className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingWithOtp || otpInput.length !== 6}
+                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-glow-emerald disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    {savingWithOtp ? 'Verifying OTP...' : 'Verify OTP & Apply Changes'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Official Notice Email Modal */}
+      <AnimatePresence>
+        {showNoticeModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-lg bg-[#1E293B] border border-amber-500/30 rounded-3xl p-6 shadow-2xl space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-slate-700 pb-3">
+                <div className="flex items-center gap-2">
+                  <Mail className="w-5 h-5 text-amber-400" />
+                  <h3 className="text-sm font-bold text-white">Send Official Notice Email</h3>
+                </div>
+                <button onClick={() => setShowNoticeModal(false)} className="text-slate-400 hover:text-white">✕</button>
+              </div>
+
+              <form onSubmit={handleSendCustomNotice} className="space-y-3">
+                <div>
+                  <label className="text-xs font-semibold text-slate-400 block mb-1">Recipient Doctor</label>
+                  <input
+                    type="text"
+                    disabled
+                    value={`${noticeTarget?.name} (${noticeTarget?.email})`}
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">Email Subject Line</label>
+                  <input
+                    type="text"
+                    required
+                    value={noticeSubject}
+                    onChange={(e) => setNoticeSubject(e.target.value)}
+                    placeholder="Notice Subject"
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">Notice Message Text</label>
+                  <textarea
+                    required
+                    rows={5}
+                    value={noticeMessage}
+                    onChange={(e) => setNoticeMessage(e.target.value)}
+                    placeholder="Enter official warning notice text..."
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white resize-none"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button type="button" onClick={() => setShowNoticeModal(false)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={sendingNotice}
+                    className="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg"
+                  >
+                    <Send className="w-3.5 h-3.5" /> {sendingNotice ? 'Dispatching Email...' : 'Send Notice Email'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Registration / Edit Doctor Modal */}
       <Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        title={editingDoc ? `Edit Doctor Profile: ${editingDoc.name}` : 'Register New Medical Doctor'}
-        maxWidth="max-w-2xl"
+        title={editingDoc ? `Edit Doctor: Dr. ${editingDoc.name}` : "Register New Medical Doctor"}
       >
         <form onSubmit={handleSubmitForm} className="space-y-4">
+          {editingDoc && (
+            <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/30 text-xs text-blue-300 flex items-center gap-2">
+              <Lock className="w-4 h-4 text-blue-400 flex-shrink-0" />
+              <span>Modifying <strong>Email Address</strong>, <strong>Password</strong>, or <strong>Biometric Face Profile</strong> triggers a 6-digit OTP sent live to <strong>{editingDoc.email}</strong>. Existing password values are never shown for security.</span>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">Full Doctor Name</label>
+              <label className="text-xs font-semibold text-slate-300 block mb-1">Doctor Full Name</label>
               <input
                 type="text"
                 required
@@ -539,7 +576,7 @@ export const ManageDoctors = () => {
                   required={!editingDoc}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder={editingDoc ? 'Leave blank to keep current' : 'Set doctor account password'}
+                  placeholder={editingDoc ? 'Leave blank to keep existing password' : 'Set doctor account password'}
                   className="w-full px-3 py-2 pr-9 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
                 />
                 <button
@@ -613,15 +650,15 @@ export const ManageDoctors = () => {
           <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-700/80 flex items-center justify-between">
             <div className="space-y-0.5">
               <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                <Camera className="w-4 h-4 text-sky-400" /> Biometric Face Enrolment
+                <Camera className="w-4 h-4 text-sky-400" /> Biometric Face Enrolment {editingDoc && '(Requires OTP to re-enroll)'}
               </span>
               <span className="text-[11px] text-slate-400 block">
                 {formData.faceData ? (
                   <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Doctor Biometric Face Enrolled
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Doctor Biometric Face Profile Enrolled
                   </span>
                 ) : (
-                  'Enroll face using webcam to prevent proxy attendance.'
+                  'Enroll doctor face using webcam to prevent proxy attendance.'
                 )}
               </span>
             </div>

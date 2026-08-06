@@ -5,7 +5,10 @@ import { Table } from '../../components/common/Table';
 import { Modal } from '../../components/common/Modal';
 import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
 import { useNotification } from '../../context/NotificationContext';
-import { Users, Plus, Shield, Mail, Phone, Building2, Eye, EyeOff, Edit, Trash2, KeyRound, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { 
+  UserCheck, Shield, Edit3, Trash2, Mail, Building2, KeyRound, Lock, Eye, EyeOff, ShieldAlert, Phone 
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const ManageAdmins = () => {
   const [admins, setAdmins] = useState([]);
@@ -15,7 +18,7 @@ export const ManageAdmins = () => {
   const [editingAdmin, setEditingAdmin] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
 
-  // OTP Verification Modal State for Email / Password Edits
+  // OTP Verification Modal State
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [otpInput, setOtpInput] = useState('');
   const [sendingOtp, setSendingOtp] = useState(false);
@@ -29,7 +32,6 @@ export const ManageAdmins = () => {
     username: '',
     password: '',
     mobile: '',
-    qualification: 'MBBS, MHA',
     assignedPHC: ''
   });
 
@@ -46,7 +48,7 @@ export const ManageAdmins = () => {
       if (adminRes.data.success) setAdmins(adminRes.data.admins);
       if (phcRes.data.success) setPhcs(phcRes.data.phcs);
     } catch (err) {
-      addToast('Error loading admins', 'danger');
+      addToast('Failed to load admins list', 'danger');
     } finally {
       setLoading(false);
     }
@@ -60,7 +62,6 @@ export const ManageAdmins = () => {
       username: '',
       password: '',
       mobile: '',
-      qualification: 'MBBS, MHA',
       assignedPHC: phcs.length > 0 ? phcs[0]._id : ''
     });
     setShowPassword(false);
@@ -73,9 +74,8 @@ export const ManageAdmins = () => {
       name: admin.name || '',
       email: admin.email || '',
       username: admin.username || '',
-      password: '',
+      password: '', // Keep password blank (never show sensitive existing password)
       mobile: admin.mobile || '',
-      qualification: admin.qualification || 'MBBS, MHA',
       assignedPHC: admin.assignedPHC || ''
     });
     setShowPassword(false);
@@ -110,7 +110,7 @@ export const ManageAdmins = () => {
     const isPasswordChanged = formData.password && formData.password.trim() !== '';
 
     if (isEmailChanged || isPasswordChanged) {
-      // Trigger OTP to Admin's existing registered email
+      // Trigger OTP to Admin's existing registered email inbox
       setSendingOtp(true);
       addToast(`Sending 6-digit security OTP to existing email (${editingAdmin.email})...`, 'info');
       try {
@@ -126,7 +126,7 @@ export const ManageAdmins = () => {
         setSendingOtp(false);
       }
     } else {
-      // Non-sensitive details edit (Name, Mobile, Qualification, PHC) - No OTP required
+      // Non-sensitive details edit (Name, Mobile, PHC) - No OTP required
       saveAdminUpdates({});
     }
   };
@@ -180,53 +180,71 @@ export const ManageAdmins = () => {
       sortable: true,
       render: (row) => (
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center font-bold">
-            <Shield className="w-4 h-4" />
+          <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center font-bold text-sm">
+            <Shield className="w-5 h-5" />
           </div>
           <div>
             <div className="font-bold text-white text-xs">{row.name}</div>
-            <div className="text-[10px] text-slate-400">@{row.username}</div>
+            <div className="text-[10px] text-purple-400 font-semibold">PHC Administrator</div>
           </div>
         </div>
       )
     },
     {
-      header: 'Contact Info',
+      header: 'Credentials & Email',
       key: 'email',
       render: (row) => (
         <div className="text-xs space-y-0.5">
-          <div className="text-slate-200 flex items-center gap-1"><Mail className="w-3 h-3 text-blue-400" /> {row.email}</div>
-          <div className="text-slate-400 flex items-center gap-1"><Phone className="w-3 h-3 text-slate-500" /> {row.mobile || 'N/A'}</div>
+          <div className="text-slate-200 font-semibold flex items-center gap-1">
+            <Mail className="w-3.5 h-3.5 text-blue-400" /> {row.email}
+          </div>
+          <div className="text-[10px] text-slate-400 font-mono">
+            Username: <strong className="text-purple-300">{row.username}</strong>
+          </div>
         </div>
       )
     },
     {
-      header: 'Assigned PHC Hospital',
-      key: 'phcName',
+      header: 'Assigned Hospital Center',
+      key: 'assignedPHC',
       render: (row) => (
-        <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-blue-500/20 text-blue-300 border border-blue-500/30 flex items-center gap-1 w-fit">
-          <Building2 className="w-3 h-3" /> {row.phcName}
-        </span>
+        <div className="text-xs">
+          <div className="text-slate-200 font-semibold flex items-center gap-1">
+            <Building2 className="w-3.5 h-3.5 text-emerald-400" />
+            {row.phcDetails ? row.phcDetails.name : 'All Regional PHCs'}
+          </div>
+          <div className="text-[10px] text-slate-400">{row.phcDetails?.district || 'District Center'}</div>
+        </div>
       )
     },
     {
-      header: 'Actions',
+      header: 'Contact Number',
+      key: 'mobile',
+      render: (row) => (
+        <div className="text-xs text-slate-300 flex items-center gap-1">
+          <Phone className="w-3.5 h-3.5 text-slate-400" />
+          {row.mobile || '+91 Unspecified'}
+        </div>
+      )
+    },
+    {
+      header: 'Governance Action',
       key: 'actions',
       render: (row) => (
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleOpenEdit(row)}
-            title="Edit Admin Account (Email/Password change requires OTP)"
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-blue-400 hover:text-blue-300 border border-blue-500/20 transition-all"
+            className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border border-blue-500/30 transition-all text-xs font-semibold flex items-center gap-1.5"
+            title="Edit Admin Email ID & Password"
           >
-            <Edit className="w-4 h-4" />
+            <Edit3 className="w-3.5 h-3.5" /> Edit Admin
           </button>
           <button
             onClick={() => handleDeleteAdmin(row._id, row.name)}
+            className="p-1.5 rounded-lg bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 border border-rose-500/30 transition-all"
             title="Delete Admin Account"
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950 text-rose-400 hover:text-rose-300 border border-rose-500/20 transition-all"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
       )
@@ -237,97 +255,116 @@ export const ManageAdmins = () => {
     <div className="space-y-6">
       <Breadcrumb />
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white tracking-tight">PHC Administrators</h2>
-          <p className="text-xs text-slate-400">Manage administrator accounts. Email/Password edits require OTP authorization to existing registered email.</p>
+          <h2 className="text-xl font-bold text-white tracking-tight">Manage PHC Administrators</h2>
+          <p className="text-xs text-slate-400">Appoint hospital admins, assign health centers, and manage admin credentials.</p>
         </div>
         <button
           onClick={handleOpenCreate}
-          className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center gap-2 shadow-lg transition-all"
+          className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg transition-all"
         >
-          <Plus className="w-4 h-4" /> Create New Admin
+          <UserCheck className="w-4 h-4" /> Appoint New Admin
         </button>
       </div>
 
       {loading ? (
         <LoadingSkeleton type="table" count={4} />
       ) : (
-        <Table columns={columns} data={admins} searchPlaceholder="Search admin name or email..." />
+        <Table columns={columns} data={admins} searchPlaceholder="Search admin name, email, or PHC..." />
       )}
 
-      {/* OTP Verification Modal for Email/Password Edits */}
+      {/* 6-Digit Security OTP Modal */}
+      <AnimatePresence>
+        {showOtpModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md bg-[#1E293B] border border-purple-500/30 rounded-3xl p-6 shadow-2xl space-y-5"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center font-bold">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white tracking-tight">Security OTP Verification Required</h3>
+                  <p className="text-[11px] text-slate-400">Sent live to {editingAdmin?.name}'s email ({editingAdmin?.email})</p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
+                <div className="flex items-center gap-2 text-xs font-semibold text-amber-400">
+                  <ShieldAlert className="w-4 h-4" /> Sensitive Credential Modification
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Modifying an Admin's <strong>Email Address</strong> or <strong>Password</strong> requires OTP security verification. Please enter the 6-digit OTP code sent live to <strong>{editingAdmin?.email}</strong>.
+                </p>
+              </div>
+
+              <form onSubmit={handleVerifyOtpAndSave} className="space-y-4">
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">Enter 6-Digit Verification OTP</label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={6}
+                    value={otpInput}
+                    onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))}
+                    placeholder="123456"
+                    className="w-full px-4 py-3 bg-slate-900 border border-purple-500/40 rounded-xl text-lg font-mono font-bold tracking-widest text-center text-emerald-400 placeholder-slate-600 focus:outline-none focus:border-purple-400"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowOtpModal(false)}
+                    className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingWithOtp || otpInput.length !== 6}
+                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-glow-emerald disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    {savingWithOtp ? 'Verifying OTP...' : 'Verify OTP & Save Updates'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Appoint / Edit Admin Modal */}
       <Modal
-        isOpen={showOtpModal}
-        onClose={() => setShowOtpModal(false)}
-        title="Admin Email / Password OTP Authorization"
-        maxWidth="max-w-md"
-      >
-        <form onSubmit={handleVerifyOtpAndSave} className="space-y-4">
-          <div className="p-3 rounded-xl bg-purple-950/40 border border-purple-500/40 text-xs text-purple-200 space-y-1">
-            <span className="font-bold flex items-center gap-1.5 text-purple-300">
-              <ShieldAlert className="w-4 h-4 text-purple-400" /> Existing Admin Email OTP Required
-            </span>
-            <p>
-              A 6-digit security code has been sent live to Admin's registered email: <strong className="text-white">{editingAdmin?.email}</strong>.
-            </p>
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1.5">Enter 6-Digit Security OTP</label>
-            <div className="relative">
-              <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                maxLength={6}
-                required
-                value={otpInput}
-                onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))}
-                placeholder="e.g. 582914"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm font-mono tracking-widest text-center text-purple-400 placeholder-slate-600 focus:border-purple-500 outline-none font-bold"
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => setShowOtpModal(false)}
-              className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={savingWithOtp}
-              className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center gap-1.5 disabled:opacity-50"
-            >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              {savingWithOtp ? 'Verifying & Saving...' : 'Verify OTP & Apply Changes'}
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Create / Edit Admin Modal */}
-      <Modal 
-        isOpen={showModal} 
-        onClose={() => setShowModal(false)} 
-        title={editingAdmin ? `Edit Admin Account: ${editingAdmin.name}` : 'Create New PHC Admin Account'}
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={editingAdmin ? `Edit Admin: ${editingAdmin.name}` : "Appoint New PHC Administrator"}
       >
         <form onSubmit={handleSubmitForm} className="space-y-4">
-          <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1">Full Name</label>
-            <input
-              type="text"
-              required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Dr. Full Name"
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
+          {editingAdmin && (
+            <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/30 text-xs text-purple-300 flex items-center gap-2">
+              <Lock className="w-4 h-4 text-purple-400 flex-shrink-0" />
+              <span>Modifying <strong>Email Address</strong> or <strong>Password</strong> sends a 6-digit OTP code live to <strong>{editingAdmin.email}</strong>. Existing passwords are never shown for security.</span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-1">Administrator Full Name</label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Full Name"
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
+              />
+            </div>
             <div>
               <label className="text-xs font-semibold text-slate-300 block mb-1">
                 Email Address {editingAdmin && '(Requires OTP to change)'}
@@ -337,7 +374,7 @@ export const ManageAdmins = () => {
                 required
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="admin@hospital.gov.in"
+                placeholder="admin@gmail.com"
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
               />
             </div>
@@ -352,9 +389,6 @@ export const ManageAdmins = () => {
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
               />
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-semibold text-slate-300 block mb-1">
                 Password {editingAdmin ? '(Requires OTP to change)' : '(Set Initial Password)'}
@@ -365,7 +399,7 @@ export const ManageAdmins = () => {
                   required={!editingAdmin}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder={editingAdmin ? 'Leave blank to keep current' : 'Set Admin Password'}
+                  placeholder={editingAdmin ? 'Leave blank to keep existing password' : 'Set admin account password'}
                   className="w-full px-3 py-2 pr-9 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
                 />
                 <button
@@ -378,7 +412,7 @@ export const ManageAdmins = () => {
               </div>
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">Mobile Number</label>
+              <label className="text-xs font-semibold text-slate-300 block mb-1">Mobile Phone Number</label>
               <input
                 type="text"
                 value={formData.mobile}
@@ -387,37 +421,33 @@ export const ManageAdmins = () => {
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
               />
             </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-1">Assigned Health Center (PHC)</label>
+              <select
+                value={formData.assignedPHC}
+                onChange={(e) => setFormData({ ...formData, assignedPHC: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
+              >
+                <option value="">Select Primary Health Center (PHC)</option>
+                {phcs.map((p) => (
+                  <option key={p._id} value={p._id}>
+                    {p.name} ({p.district})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1">Assign PHC Center</label>
-            <select
-              value={formData.assignedPHC}
-              onChange={(e) => setFormData({ ...formData, assignedPHC: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
-            >
-              <option value="">Select Hospital PHC</option>
-              {phcs.map((p) => (
-                <option key={p._id} value={p._id}>
-                  {p.name} ({p.district})
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => setShowModal(false)}
-              className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold"
-            >
+          <div className="flex justify-end gap-3 pt-3">
+            <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">
               Cancel
             </button>
             <button
               type="submit"
               disabled={sendingOtp}
-              className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold disabled:opacity-50"
+              className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-lg disabled:opacity-50"
             >
-              {sendingOtp ? 'Sending Security OTP...' : editingAdmin ? 'Save Changes' : 'Create Account'}
+              {sendingOtp ? 'Sending Security OTP...' : editingAdmin ? 'Save Admin Changes' : 'Appoint Admin'}
             </button>
           </div>
         </form>
