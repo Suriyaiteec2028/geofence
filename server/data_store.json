@@ -94,6 +94,26 @@
   },
   "notifications": [
     {
+      "_id": "notif_1786010743247_3zndk",
+      "recipientEmail": "akashrajkfgh2000@gmail.com",
+      "title": "Password Reset OTP Code",
+      "message": "Security OTP verification code: 928993 (Valid for 10 mins).",
+      "type": "EMAIL",
+      "read": false,
+      "isRead": false,
+      "createdAt": "2026-08-06T10:05:43.247Z"
+    },
+    {
+      "_id": "notif_1786010546322_mjv34",
+      "recipientEmail": "akashrajkfgh2000@gmail.com",
+      "title": "Password Reset OTP Code",
+      "message": "Security OTP verification code: 307032 (Valid for 10 mins).",
+      "type": "EMAIL",
+      "read": false,
+      "isRead": false,
+      "createdAt": "2026-08-06T10:02:26.322Z"
+    },
+    {
       "_id": "notif_1786007968287_z7nga",
       "recipientEmail": "310624205278@eecsrmrmp.edu.in",
       "title": "Account Registration Notice",

@@ -7,25 +7,29 @@ try {
 
 const { memoryStore, saveMemoryStoreToDisk } = require('../config/db');
 
-// Configure Transporter (supports environment variables or automatic default SMTP connection)
+// Configure Transporter (supports Gmail service, custom SMTP host, or fallback transport)
 function getTransporter() {
-  const host = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
-  const port = Number(process.env.SMTP_PORT) || 465;
-  const secure = process.env.SMTP_SECURE !== 'false';
   const user = (process.env.SMTP_USER || 'sn4194529@gmail.com').trim();
   const rawPass = process.env.SMTP_PASS || 'eyfs blmz oxrw hvyx';
   const pass = rawPass.replace(/\s+/g, '');
 
   if (nodemailer) {
     try {
+      if (process.env.SMTP_HOST && process.env.SMTP_HOST.trim() !== 'smtp.gmail.com') {
+        return nodemailer.createTransport({
+          host: process.env.SMTP_HOST.trim(),
+          port: Number(process.env.SMTP_PORT) || 587,
+          secure: process.env.SMTP_SECURE === 'true',
+          auth: { user, pass },
+          tls: { rejectUnauthorized: false }
+        });
+      }
+
+      // Gmail Transport with automatic TLS fallback
       return nodemailer.createTransport({
-        host,
-        port,
-        secure,
+        service: 'gmail',
         auth: { user, pass },
-        tls: {
-          rejectUnauthorized: false
-        }
+        tls: { rejectUnauthorized: false }
       });
     } catch (e) {
       console.warn('Nodemailer initialization warning:', e.message);
@@ -202,13 +206,13 @@ async function sendPasswordResetOTPEmail({ name, email, otpCode }) {
   try {
     const transporter = getTransporter();
 
-    const subject = `🔐 Password Reset OTP Code: ${otpCode} - GeoAttendance Portal`;
+    const subject = `🔐 Security OTP Code: ${otpCode} - GeoAttendance Portal`;
     const html = `
       <div style="font-family: Arial, sans-serif; background-color: #0F172A; padding: 24px; color: #F8FAFC;">
         <div style="max-width: 600px; margin: 0 auto; background-color: #1E293B; border: 1px solid #3B82F6; border-radius: 16px; padding: 24px;">
-          <h2 style="color: #3B82F6; margin-top: 0;">🔐 Password Reset Request</h2>
+          <h2 style="color: #3B82F6; margin-top: 0;">🔐 Security Verification Request</h2>
           <p style="font-size: 14px; color: #94A3B8;">Hello <strong>${name || 'User'}</strong>,</p>
-          <p style="font-size: 14px; color: #CBD5E1;">A password reset request was initiated for your account registered with email: <strong>${email}</strong>.</p>
+          <p style="font-size: 14px; color: #CBD5E1;">A credential authorization / password reset request was initiated for your account registered with email: <strong>${email}</strong>.</p>
           
           <div style="background-color: #0F172A; border-left: 4px solid #3B82F6; padding: 20px; margin: 20px 0; border-radius: 8px; text-align: center;">
             <p style="font-size: 12px; color: #94A3B8; margin: 0 0 8px 0; font-weight: bold; text-transform: uppercase;">Your 6-Digit OTP Verification Code:</p>
@@ -216,7 +220,7 @@ async function sendPasswordResetOTPEmail({ name, email, otpCode }) {
             <p style="font-size: 11px; color: #64748B; margin: 8px 0 0 0;">Valid for 10 minutes. Do not share this OTP with anyone.</p>
           </div>
 
-          <p style="font-size: 12px; color: #94A3B8;">If you did not request this password reset, please ignore this email.</p>
+          <p style="font-size: 12px; color: #94A3B8;">If you did not request this authorization, please contact administration.</p>
           <hr style="border: 0; border-top: 1px solid #334155; margin: 20px 0;" />
           <p style="font-size: 11px; color: #64748B; text-align: center;">Govt. Public Health GeoAttendance Security System</p>
         </div>
@@ -235,7 +239,7 @@ async function sendPasswordResetOTPEmail({ name, email, otpCode }) {
       console.warn(`⚠️ SMTP dispatch notice for ${email}:`, sendErr.message);
     }
 
-    logNotification(email, 'Password Reset OTP Code', `Security OTP verification code: ${otpCode} (Valid for 10 mins).`);
+    logNotification(email, 'Security OTP Verification Code', `Your 6-digit security OTP code is: ${otpCode} (Valid for 10 mins).`);
   } catch (err) {
     console.error('Error sending OTP email:', err);
   }
