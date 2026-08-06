@@ -19,12 +19,16 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Serve static uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// API Routes
+// API Routes (All Roles)
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/doctors', require('./routes/doctorRoutes'));
 app.use('/api/phcs', require('./routes/phcRoutes'));
 app.use('/api/attendance', require('./routes/attendanceRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
+app.use('/api/explanations', require('./routes/explanationRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/settings', require('./routes/settingsRoutes'));
+app.use('/api/ai', require('./routes/aiRoutes'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -69,21 +73,23 @@ if (distPath) {
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ success: false, message: err.message || 'Internal Server Error' });
+  console.error('Unhandled Server Error:', err);
+  res.status(500).json({
+    success: false,
+    message: 'Internal Server Error',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
 });
 
-// Initialize database / memory store, launch hourly email cron scheduler, and launch server
-initDb().then(() => {
-  initCronScheduler();
-  app.listen(PORT, () => {
-    console.log(`=======================================================`);
-    console.log(`🚀 HOSPITAL GEOFENCE ATTENDANCE SERVER ONLINE`);
-    console.log(`📡 URL: http://localhost:${PORT}`);
-    console.log(`📧 SENDER EMAIL: ${process.env.SMTP_USER || 'sn4194529@gmail.com'}`);
-    console.log(`⏱️ HOURLY DUTY CHECKPOINT SCHEDULER: RUNNING (1-min ticker)`);
-    console.log(`=======================================================`);
-  });
-}).catch(err => {
-  console.error('Failed to initialize database:', err);
+// Initialize Persistent Data Store & Duty Checkpoint Scheduler
+initDb();
+initCronScheduler();
+
+app.listen(PORT, () => {
+  console.log(`=======================================================`);
+  console.log(`🚀 HOSPITAL GEOFENCE ATTENDANCE SERVER ONLINE`);
+  console.log(`📡 URL: http://localhost:${PORT}`);
+  console.log(`📧 SENDER EMAIL: ${process.env.SMTP_USER || 'sn4194529@gmail.com'}`);
+  console.log(`⏱️ HOURLY DUTY CHECKPOINT SCHEDULER: RUNNING (1-min ticker)`);
+  console.log(`=======================================================`);
 });
