@@ -65,6 +65,70 @@ exports.getDoctorShiftStatus = (req, res) => {
   }
 };
 
+// Get Doctor Shift Windows and Attendance Statuses for Selected Date with 3-Day Deadline Check
+exports.getDoctorDateWindows = (req, res) => {
+  try {
+    const doctorId = req.user.id;
+    const { date } = req.query; // YYYY-MM-DD
+    const targetDate = date || new Date().toISOString().split('T')[0];
+
+    const doctor = memoryStore.users.find(u => String(u._id) === String(doctorId));
+    if (!doctor || doctor.role !== 'DOCTOR') {
+      return res.status(404).json({ success: false, message: 'Doctor account not found' });
+    }
+
+    const intervalMins = memoryStore.settings.checkpointIntervalMinutes || 60;
+    const windowMins = memoryStore.settings.windowDurationMinutes || 5;
+
+    const shiftState = evaluateCurrentShiftState(
+      doctor.shiftStart || '09:00',
+      doctor.shiftEnd || '17:00',
+      intervalMins,
+      windowMins,
+      new Date(targetDate + 'T12:00:00')
+    );
+
+    const dateAttendances = memoryStore.attendances.filter(a => 
+      String(a.doctor) === String(doctorId) && a.date === targetDate
+    );
+
+    // Calculate 3-Day Submission Deadline Rule (e.g. 5th Aug ➔ Deadline 8th Aug 11:59 PM)
+    const dutyDateObj = new Date(targetDate + 'T23:59:59');
+    const nowObj = new Date();
+    const deadlineObj = new Date(dutyDateObj.getTime() + (3 * 24 * 60 * 60 * 1000));
+    const isExpired = nowObj > deadlineObj;
+
+    const windowsWithStatus = shiftState.windows.map(w => {
+      const att = dateAttendances.find(a => 
+        a.checkpointTime === w.windowStartFormatted || a.windowLabel === w.windowLabel
+      );
+      let status = 'ABSENT'; // Default for past un-marked windows
+      if (att) {
+        status = att.status;
+      }
+
+      return {
+        ...w,
+        status,
+        attendanceId: att ? att._id : null,
+        isSelectable: !isExpired && (status === 'ABSENT' || status === 'PENDING_EXPLANATION')
+      };
+    });
+
+    res.json({
+      success: true,
+      date: targetDate,
+      deadlineDate: deadlineObj.toISOString(),
+      isExpired,
+      windows: windowsWithStatus
+    });
+
+  } catch (err) {
+    console.error('Error getting date shift windows:', err);
+    res.status(500).json({ success: false, message: 'Error generating date shift windows' });
+  }
+};
+
 exports.markAttendance = (req, res) => {
   try {
     const { latitude, longitude } = req.body;
@@ -149,63 +213,14 @@ exports.markAttendance = (req, res) => {
     memoryStore.attendances.push(newAttendance);
     saveMemoryStoreToDisk();
 
-    res.status(200).json({
+    res.json({
       success: true,
-      message: `🎉 Attendance Checkpoint Verified & Marked Successfully at ${phc.name}!`,
+      message: `Attendance verified & marked PRESENT for ${activeWin.windowLabel}!`,
       attendance: newAttendance
     });
 
   } catch (err) {
     console.error('Error marking attendance:', err);
-    res.status(500).json({ success: false, message: 'Server error verifying attendance' });
-  }
-};
-
-exports.getDoctorAttendanceLogs = (req, res) => {
-  try {
-    const doctorId = req.user.id;
-    const userEmail = req.user.email;
-
-    const doctor = memoryStore.users.find(u => 
-      String(u._id) === String(doctorId) || 
-      (userEmail && u.email.toLowerCase() === userEmail.toLowerCase())
-    );
-
-    if (!doctor) return res.status(404).json({ success: false, message: 'Doctor not found' });
-
-    const logs = memoryStore.attendances
-      .filter(a => String(a.doctor) === String(doctor._id))
-      .sort((a, b) => new Date(b.markedAt || b.createdAt) - new Date(a.markedAt || a.createdAt));
-
-    res.json({ success: true, count: logs.length, logs });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Error loading logs' });
-  }
-};
-
-exports.getAllAttendanceRecords = (req, res) => {
-  try {
-    const { doctorId, phcId, date, status } = req.query;
-    let records = [...memoryStore.attendances];
-
-    if (doctorId) records = records.filter(r => String(r.doctor) === String(doctorId));
-    if (phcId) records = records.filter(r => String(r.phc) === String(phcId));
-    if (date) records = records.filter(r => r.date === date);
-    if (status) records = records.filter(r => r.status === status);
-
-    const enriched = records.map(r => {
-      const doc = memoryStore.users.find(u => String(u._id) === String(r.doctor));
-      const phc = memoryStore.phcs.find(p => String(p._id) === String(r.phc));
-      return {
-        ...r,
-        doctorName: doc ? doc.name : 'Unknown Doctor',
-        doctorEmail: doc ? doc.email : '',
-        phcName: phc ? phc.name : 'Unknown PHC'
-      };
-    });
-
-    res.json({ success: true, count: enriched.length, records: enriched });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Error loading attendance records' });
+    res.status(500).json({ success: false, message: 'Server error processing attendance' });
   }
 };
