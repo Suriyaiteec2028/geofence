@@ -224,3 +224,59 @@ exports.markAttendance = (req, res) => {
     res.status(500).json({ success: false, message: 'Server error processing attendance' });
   }
 };
+
+// Get Doctor Attendance Logs History
+exports.getDoctorAttendanceLogs = (req, res) => {
+  try {
+    const userRole = req.user.role;
+    const userId = req.user.id;
+    let list = [...memoryStore.attendances];
+
+    if (userRole === 'DOCTOR') {
+      list = list.filter(a => String(a.doctor) === String(userId));
+    } else if (userRole === 'ADMIN' && req.userDetails && req.userDetails.assignedPHC) {
+      list = list.filter(a => String(a.phc) === String(req.userDetails.assignedPHC));
+    }
+
+    const enriched = list.map(a => {
+      const doc = memoryStore.users.find(u => String(u._id) === String(a.doctor));
+      const phc = memoryStore.phcs.find(p => String(p._id) === String(a.phc));
+      return {
+        ...a,
+        doctorName: doc ? doc.name : 'Unknown Doctor',
+        doctorSpecialization: doc ? doc.specialization : '',
+        phcName: phc ? phc.name : 'Unknown PHC'
+      };
+    });
+
+    res.json({ success: true, count: enriched.length, attendances: enriched });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Error fetching attendance logs' });
+  }
+};
+
+// Get All Attendance Records (CMO & Admin)
+exports.getAllAttendanceRecords = (req, res) => {
+  try {
+    let list = [...memoryStore.attendances];
+
+    if (req.user.role === 'ADMIN' && req.userDetails && req.userDetails.assignedPHC) {
+      list = list.filter(a => String(a.phc) === String(req.userDetails.assignedPHC));
+    }
+
+    const enriched = list.map(a => {
+      const doc = memoryStore.users.find(u => String(u._id) === String(a.doctor));
+      const phc = memoryStore.phcs.find(p => String(p._id) === String(a.phc));
+      return {
+        ...a,
+        doctorName: doc ? doc.name : 'Unknown Doctor',
+        doctorSpecialization: doc ? doc.specialization : '',
+        phcName: phc ? phc.name : 'Unknown PHC'
+      };
+    });
+
+    res.json({ success: true, count: enriched.length, attendances: enriched });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Error fetching all attendance records' });
+  }
+};
