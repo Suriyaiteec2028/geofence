@@ -4,6 +4,7 @@ import { Breadcrumb } from '../../components/layout/Breadcrumb';
 import { Table } from '../../components/common/Table';
 import { Modal } from '../../components/common/Modal';
 import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
+import { UserAvatar } from '../../components/common/UserAvatar';
 import { useNotification } from '../../context/NotificationContext';
 import { 
   UserCheck, Shield, Edit3, Trash2, Mail, Building2, KeyRound, Lock, Eye, EyeOff, ShieldAlert, Phone 
@@ -31,6 +32,7 @@ export const ManageAdmins = () => {
     email: '',
     username: '',
     password: '',
+    gender: 'Male',
     mobile: '',
     assignedPHC: ''
   });
@@ -61,6 +63,7 @@ export const ManageAdmins = () => {
       email: '',
       username: '',
       password: '',
+      gender: 'Male',
       mobile: '',
       assignedPHC: phcs.length > 0 ? phcs[0]._id : ''
     });
@@ -74,7 +77,8 @@ export const ManageAdmins = () => {
       name: admin.name || '',
       email: admin.email || '',
       username: admin.username || '',
-      password: '', // Keep password blank (never show sensitive existing password)
+      password: '', // Keep password blank
+      gender: admin.gender || 'Male',
       mobile: admin.mobile || '',
       assignedPHC: admin.assignedPHC || ''
     });
@@ -82,12 +86,11 @@ export const ManageAdmins = () => {
     setShowModal(true);
   };
 
-  // Pre-check if OTP is required for email or password change
   const handleSubmitForm = async (e) => {
     e.preventDefault();
 
     if (!editingAdmin) {
-      // 1st Time Creation by CMO (No OTP required)
+      // 1st Time Creation by CMO
       if (!formData.password) {
         addToast('Please enter a password for the new admin account', 'warning');
         return;
@@ -126,7 +129,7 @@ export const ManageAdmins = () => {
         setSendingOtp(false);
       }
     } else {
-      // Non-sensitive details edit (Name, Mobile, PHC) - No OTP required
+      // Non-sensitive details edit - No OTP required
       saveAdminUpdates({});
     }
   };
@@ -180,11 +183,17 @@ export const ManageAdmins = () => {
       sortable: true,
       render: (row) => (
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center font-bold text-sm">
-            <Shield className="w-5 h-5" />
-          </div>
+          {/* Gender-Based Admin Avatar */}
+          <UserAvatar gender={row.gender} role="ADMIN" name={row.name} size="md" />
           <div>
-            <div className="font-bold text-white text-xs">{row.name}</div>
+            <div className="font-bold text-white text-xs flex items-center gap-1.5">
+              {row.name}
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-semibold ${
+                row.gender === 'Female' ? 'bg-pink-500/20 text-pink-300 border border-pink-500/30' : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+              }`}>
+                {row.gender === 'Female' ? '♀ Female Admin' : '♂ Male Admin'}
+              </span>
+            </div>
             <div className="text-[10px] text-purple-400 font-semibold">PHC Administrator</div>
           </div>
         </div>
@@ -235,7 +244,7 @@ export const ManageAdmins = () => {
           <button
             onClick={() => handleOpenEdit(row)}
             className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border border-blue-500/30 transition-all text-xs font-semibold flex items-center gap-1.5"
-            title="Edit Admin Email ID & Password"
+            title="Edit Admin Details"
           >
             <Edit3 className="w-3.5 h-3.5" /> Edit Admin
           </button>
@@ -365,6 +374,36 @@ export const ManageAdmins = () => {
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
               />
             </div>
+
+            {/* Gender Selector Field */}
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-1">Gender Select</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, gender: 'Male' })}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
+                    formData.gender === 'Male'
+                      ? 'bg-purple-600/30 border-purple-500 text-purple-300 shadow-lg'
+                      : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  ♂️ Male Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, gender: 'Female' })}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
+                    formData.gender === 'Female'
+                      ? 'bg-pink-600/30 border-pink-500 text-pink-300 shadow-glow-pink'
+                      : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  ♀️ Female Admin
+                </button>
+              </div>
+            </div>
+
             <div>
               <label className="text-xs font-semibold text-slate-300 block mb-1">
                 Email Address {editingAdmin && '(Requires OTP to change)'}
@@ -378,6 +417,7 @@ export const ManageAdmins = () => {
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
               />
             </div>
+
             <div>
               <label className="text-xs font-semibold text-slate-300 block mb-1">Username</label>
               <input
@@ -389,6 +429,7 @@ export const ManageAdmins = () => {
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
               />
             </div>
+
             <div>
               <label className="text-xs font-semibold text-slate-300 block mb-1">
                 Password {editingAdmin ? '(Requires OTP to change)' : '(Set Initial Password)'}
@@ -411,6 +452,7 @@ export const ManageAdmins = () => {
                 </button>
               </div>
             </div>
+
             <div>
               <label className="text-xs font-semibold text-slate-300 block mb-1">Mobile Phone Number</label>
               <input
@@ -421,7 +463,8 @@ export const ManageAdmins = () => {
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
               />
             </div>
-            <div>
+
+            <div className="md:col-span-2">
               <label className="text-xs font-semibold text-slate-300 block mb-1">Assigned Health Center (PHC)</label>
               <select
                 value={formData.assignedPHC}

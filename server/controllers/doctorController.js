@@ -39,6 +39,7 @@ exports.getAllDoctors = async (req, res) => {
       const phc = memoryStore.phcs.find(p => String(p._id) === String(d.assignedPHC));
       return {
         ...d,
+        gender: d.gender || 'Male',
         password: undefined,
         plainPassword: undefined,
         phcDetails: phc ? {
@@ -59,7 +60,7 @@ exports.getAllDoctors = async (req, res) => {
 // Create New Doctor (By CMO or Admin)
 exports.createDoctor = async (req, res) => {
   try {
-    const { name, email, username, password, mobile, qualification, specialization, assignedPHC, shiftStart, shiftEnd, faceData } = req.body;
+    const { name, email, username, password, gender, mobile, qualification, specialization, assignedPHC, shiftStart, shiftEnd, faceData } = req.body;
 
     if (!name || !email || !username || !password) {
       return res.status(400).json({ success: false, message: 'Name, Email, Username, and Password are all required.' });
@@ -115,6 +116,7 @@ exports.createDoctor = async (req, res) => {
       password: hashedPassword,
       plainPassword: cleanPassword,
       role: 'DOCTOR',
+      gender: gender || 'Male',
       mobile: mobile || '',
       qualification: qualification || 'MBBS, MD',
       specialization: specialization || 'General Physician',
@@ -413,6 +415,7 @@ exports.getAllAdmins = async (req, res) => {
       const phc = memoryStore.phcs.find(p => String(p._id) === String(a.assignedPHC));
       return {
         ...a,
+        gender: a.gender || 'Male',
         password: undefined,
         plainPassword: undefined,
         phcDetails: phc ? {
@@ -433,7 +436,7 @@ exports.getAllAdmins = async (req, res) => {
 // Create Admin (CMO only)
 exports.createAdmin = async (req, res) => {
   try {
-    const { name, email, username, password, assignedPHC, mobile } = req.body;
+    const { name, email, username, password, gender, assignedPHC, mobile } = req.body;
 
     if (!name || !email || !username || !password) {
       return res.status(400).json({ success: false, message: 'Name, Email, Username, and Password are required.' });
@@ -465,6 +468,7 @@ exports.createAdmin = async (req, res) => {
       password: hashedPassword,
       plainPassword: cleanPassword,
       role: 'ADMIN',
+      gender: gender || 'Male',
       mobile: mobile || '',
       assignedPHC: assignedPHC || null,
       status: 'ACTIVE',

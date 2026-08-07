@@ -5,6 +5,7 @@ import { Table } from '../../components/common/Table';
 import { Modal } from '../../components/common/Modal';
 import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
 import { FaceScannerModal } from '../../components/biometrics/FaceScannerModal';
+import { UserAvatar } from '../../components/common/UserAvatar';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../context/AuthContext';
 import { 
@@ -58,6 +59,7 @@ export const ManageDoctors = () => {
     email: '',
     username: '',
     password: '',
+    gender: 'Male',
     mobile: '',
     qualification: 'MBBS, MD',
     specialization: 'General Physician',
@@ -94,6 +96,7 @@ export const ManageDoctors = () => {
       email: '',
       username: '',
       password: '',
+      gender: 'Male',
       mobile: '',
       qualification: 'MBBS, MD',
       specialization: 'General Physician',
@@ -112,7 +115,8 @@ export const ManageDoctors = () => {
       name: doc.name || '',
       email: doc.email || '',
       username: doc.username || '',
-      password: '', // Keep sensitive password blank (never expose existing password)
+      password: '', // Keep sensitive password blank
+      gender: doc.gender || 'Male',
       mobile: doc.mobile || '',
       qualification: doc.qualification || 'MBBS',
       specialization: doc.specialization || 'General Physician',
@@ -258,11 +262,17 @@ export const ManageDoctors = () => {
       sortable: true,
       render: (row) => (
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold text-sm">
-            {row.name.charAt(0)}
-          </div>
+          {/* Gender-Based Doctor Avatar Illustration */}
+          <UserAvatar gender={row.gender} role="DOCTOR" name={row.name} size="md" />
           <div>
-            <div className="font-bold text-white text-xs">{row.name}</div>
+            <div className="font-bold text-white text-xs flex items-center gap-1.5">
+              {row.name}
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-semibold ${
+                row.gender === 'Female' ? 'bg-pink-500/20 text-pink-300 border border-pink-500/30' : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+              }`}>
+                {row.gender === 'Female' ? '♀ Lady Doctor' : '♂ Male Doctor'}
+              </span>
+            </div>
             <div className="text-[10px] text-slate-400">{row.specialization} • {row.qualification}</div>
           </div>
         </div>
@@ -327,7 +337,7 @@ export const ManageDoctors = () => {
           <button
             onClick={() => handleOpenEdit(row)}
             className="p-1.5 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border border-blue-500/30 transition-all text-xs font-semibold flex items-center gap-1"
-            title="Edit Doctor Email, Password, Shift, or Face Enrolment"
+            title="Edit Doctor Details"
           >
             <Edit3 className="w-3.5 h-3.5" /> Edit
           </button>
@@ -373,7 +383,7 @@ export const ManageDoctors = () => {
         <Table columns={columns} data={doctors} searchPlaceholder="Search by name, email, or specialization..." />
       )}
 
-      {/* Biometric Face Scanner Modal (Rendered on top with z-[70]) */}
+      {/* Biometric Face Scanner Modal */}
       <FaceScannerModal
         isOpen={showFaceModal}
         onClose={() => setShowFaceModal(false)}
@@ -385,7 +395,7 @@ export const ManageDoctors = () => {
         subtitle="Align doctor's face in frame to enroll webcam biometric profile"
       />
 
-      {/* 6-Digit OTP Security Modal for Editing Credentials */}
+      {/* 6-Digit OTP Security Modal */}
       <AnimatePresence>
         {showOtpModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
@@ -547,6 +557,36 @@ export const ManageDoctors = () => {
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
               />
             </div>
+
+            {/* Gender Selector Field */}
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-1">Gender Select</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, gender: 'Male' })}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
+                    formData.gender === 'Male'
+                      ? 'bg-blue-600/30 border-blue-500 text-blue-300 shadow-glow-blue'
+                      : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  ♂️ Male Doctor
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, gender: 'Female' })}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
+                    formData.gender === 'Female'
+                      ? 'bg-pink-600/30 border-pink-500 text-pink-300 shadow-glow-pink'
+                      : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  ♀️ Lady Doctor
+                </button>
+              </div>
+            </div>
+
             <div>
               <label className="text-xs font-semibold text-slate-300 block mb-1">
                 Email Address {editingDoc && '(Requires OTP to change)'}
@@ -560,6 +600,7 @@ export const ManageDoctors = () => {
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
               />
             </div>
+
             <div>
               <label className="text-xs font-semibold text-slate-300 block mb-1">Username</label>
               <input
@@ -571,6 +612,7 @@ export const ManageDoctors = () => {
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
               />
             </div>
+
             <div>
               <label className="text-xs font-semibold text-slate-300 block mb-1">
                 Password {editingDoc ? '(Requires OTP to change)' : '(Set Initial Password)'}
@@ -593,6 +635,7 @@ export const ManageDoctors = () => {
                 </button>
               </div>
             </div>
+
             <div>
               <label className="text-xs font-semibold text-slate-300 block mb-1">Specialization</label>
               <input
@@ -603,6 +646,7 @@ export const ManageDoctors = () => {
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
               />
             </div>
+
             <div>
               <label className="text-xs font-semibold text-slate-300 block mb-1">Mobile Phone Number</label>
               <input
@@ -613,6 +657,7 @@ export const ManageDoctors = () => {
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
               />
             </div>
+
             <div className="md:col-span-2">
               <label className="text-xs font-semibold text-slate-300 block mb-1">Assigned PHC Hospital</label>
               <select
@@ -639,6 +684,7 @@ export const ManageDoctors = () => {
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
               />
             </div>
+
             <div>
               <label className="text-xs font-semibold text-slate-300 block mb-1">Shift End Time</label>
               <input
