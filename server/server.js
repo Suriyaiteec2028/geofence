@@ -85,11 +85,25 @@ app.use((err, req, res, next) => {
 initDb();
 initCronScheduler();
 
-app.listen(PORT, () => {
-  console.log(`=======================================================`);
-  console.log(`🚀 HOSPITAL GEOFENCE ATTENDANCE SERVER ONLINE`);
-  console.log(`📡 URL: http://localhost:${PORT}`);
-  console.log(`📧 SENDER EMAIL: ${process.env.SMTP_USER || 'sn4194529@gmail.com'}`);
-  console.log(`⏱️ HOURLY DUTY CHECKPOINT SCHEDULER: RUNNING (1-min ticker)`);
-  console.log(`=======================================================`);
-});
+// Resilient Server Listen Engine with Automatic EADDRINUSE Port Switching
+function startServer(portToTry) {
+  const server = app.listen(portToTry, () => {
+    console.log(`=======================================================`);
+    console.log(`🚀 HOSPITAL GEOFENCE ATTENDANCE SERVER ONLINE`);
+    console.log(`📡 URL: http://localhost:${portToTry}`);
+    console.log(`📧 SENDER EMAIL: ${process.env.SMTP_USER || 'sn4194529@gmail.com'}`);
+    console.log(`⏱️ HOURLY DUTY CHECKPOINT SCHEDULER: RUNNING (1-min ticker)`);
+    console.log(`=======================================================`);
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.warn(`⚠️ Port ${portToTry} is already in use by another process. Retrying on port ${Number(portToTry) + 1}...`);
+      startServer(Number(portToTry) + 1);
+    } else {
+      console.error('Server startup error:', err);
+    }
+  });
+}
+
+startServer(PORT);
