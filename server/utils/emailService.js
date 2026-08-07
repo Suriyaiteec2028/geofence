@@ -48,7 +48,7 @@ function getTransporter() {
   };
 }
 
-// Log notification into System Notifications Audit Store for UI visibility & Disk Persistence
+// Log notification into System Notifications Audit Store (SECURITY RULE: NEVER INCLUDE OTPs, USERNAMES, OR PASSWORDS)
 function logNotification(recipientEmail, title, message, type = 'EMAIL') {
   const notif = {
     _id: 'notif_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
@@ -64,7 +64,7 @@ function logNotification(recipientEmail, title, message, type = 'EMAIL') {
   saveMemoryStoreToDisk();
 }
 
-// 1. Send Doctor Registration Welcome Email with Credentials
+// 1. Send Doctor Registration Welcome Email with Credentials (Email only; In-app notification masks credentials)
 async function sendDoctorRegistrationEmail({ name, email, username, password, shiftStart, shiftEnd, phcName }) {
   try {
     const transporter = getTransporter();
@@ -88,7 +88,7 @@ async function sendDoctorRegistrationEmail({ name, email, username, password, sh
             </ul>
           </div>
 
-          <p style="font-size: 12px; color: #94A3B8;">Instructions: Please select the <strong>DOCTOR</strong> tab on the login screen, enter your username and password above, and pass mandatory 2-step biometric face verification on arrival at the hospital.</p>
+          <p style="font-size: 12px; color: #94A3B8;">Instructions: Please select the <strong>DOCTOR</strong> tab on the login screen, enter your credentials above, and pass mandatory biometric face verification on arrival at the hospital.</p>
           <hr style="border: 0; border-top: 1px solid #334155; margin: 20px 0;" />
           <p style="font-size: 11px; color: #64748B; text-align: center;">Automated System Notification • Department of Public Health Services</p>
         </div>
@@ -107,7 +107,8 @@ async function sendDoctorRegistrationEmail({ name, email, username, password, sh
       console.warn(`⚠️ SMTP dispatch notice for ${email}:`, sendErr.message);
     }
 
-    logNotification(email, 'Account Registration Notice', `Welcome Dr. ${name}! Your login credentials (Username: ${username}, Password: ${password}) & duty shift (${shiftStart} - ${shiftEnd}) at ${phcName} have been issued.`);
+    // In-App Notification (DOES NOT INCLUDE USERNAME OR PASSWORD)
+    logNotification(email, 'Account Registration Notice', `Welcome Dr. ${name}! Your medical doctor account was registered at ${phcName}. Your assigned duty shift is ${shiftStart} - ${shiftEnd}. Account credentials have been sent to your email inbox.`);
   } catch (err) {
     console.error('Error sending registration email:', err);
   }
@@ -201,12 +202,12 @@ async function sendHourlyCheckpointReminderEmail({ name, email, checkpointIndex,
   }
 }
 
-// 4. Send Password Reset OTP Email
+// 4. Send Password Reset OTP Email (Live email only; OTP is NEVER logged to in-app notification panel)
 async function sendPasswordResetOTPEmail({ name, email, otpCode }) {
   try {
     const transporter = getTransporter();
 
-    const subject = `🔐 Security OTP Code: ${otpCode} - GeoAttendance Portal`;
+    const subject = `🔐 Security Verification Request - GeoAttendance Portal`;
     const html = `
       <div style="font-family: Arial, sans-serif; background-color: #0F172A; padding: 24px; color: #F8FAFC;">
         <div style="max-width: 600px; margin: 0 auto; background-color: #1E293B; border: 1px solid #3B82F6; border-radius: 16px; padding: 24px;">
@@ -239,7 +240,8 @@ async function sendPasswordResetOTPEmail({ name, email, otpCode }) {
       console.warn(`⚠️ SMTP dispatch notice for ${email}:`, sendErr.message);
     }
 
-    logNotification(email, 'Security OTP Verification Code', `Your 6-digit security OTP code is: ${otpCode} (Valid for 10 mins).`);
+    // SECURITY RULE: DO NOT LOG OTP CODE TO IN-APP NOTIFICATIONS PANEL
+    logNotification(email, 'Security Verification Notice', `A 6-digit security OTP code was dispatched to your email address (${email}). Please check your email inbox.`);
   } catch (err) {
     console.error('Error sending OTP email:', err);
   }
