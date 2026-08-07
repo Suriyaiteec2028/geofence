@@ -112,9 +112,37 @@
       "distanceMeters": 4.9,
       "withinGeofence": true,
       "createdAt": "2026-08-07T13:10:07.490Z"
+    },
+    {
+      "_id": "att_1786110018322",
+      "doctor": "doc_1786093583469",
+      "phc": "phc_1785948464540",
+      "date": "2026-08-07",
+      "checkpointTime": "Scheduled Checkpoint",
+      "windowLabel": "Missed Window",
+      "markedAt": null,
+      "status": "EXPLANATION_APPROVED",
+      "withinGeofence": true,
+      "createdAt": "2026-08-07T13:40:18.322Z",
+      "explanation": "exp_1786110018322"
     }
   ],
-  "explanations": [],
+  "explanations": [
+    {
+      "_id": "exp_1786110018322",
+      "attendance": "att_1786110018322",
+      "doctor": "doc_1786093583469",
+      "phc": "phc_1785948464540",
+      "reason": "hhnbihi",
+      "remarks": "",
+      "proofUrl": "/uploads/proofFile-1786110018290-670908100.jpg",
+      "status": "APPROVED",
+      "reviewedBy": "admin_1786093248022",
+      "adminRemarks": "Good Job keep it up!",
+      "reviewedAt": "2026-08-07T13:42:14.007Z",
+      "createdAt": "2026-08-07T13:40:18.322Z"
+    }
+  ],
   "settings": {
     "checkpointIntervalMinutes": 60,
     "windowDurationMinutes": 5,
@@ -122,6 +150,39 @@
     "systemName": "Hospital Geofence Attendance System"
   },
   "notifications": [
+    {
+      "_id": "notif_1786110396876_i8wuh",
+      "recipientEmail": "sms621280@gmail.com",
+      "title": "Security Verification Notice",
+      "message": "A 6-digit security OTP code was dispatched to your email address (sms621280@gmail.com). Please check your email inbox.",
+      "type": "EMAIL",
+      "read": false,
+      "isRead": false,
+      "createdAt": "2026-08-07T13:46:36.876Z"
+    },
+    {
+      "_id": "notif_1786110134010_0nmeb",
+      "user": "doc_1786093583469",
+      "recipientEmail": "sms621280@gmail.com",
+      "targetRole": "DOCTOR",
+      "title": "Absence Explanation Approved ✅",
+      "message": "Your absence explanation for hhnbihi was APPROVED by Admin. Your attendance for that hour has been immediately updated to PRESENT. Remarks: Good Job keep it up!",
+      "type": "SUCCESS",
+      "read": false,
+      "isRead": false,
+      "createdAt": "2026-08-07T13:42:14.010Z"
+    },
+    {
+      "_id": "notif_1786110018324_9iucx",
+      "user": null,
+      "targetRole": "ADMIN",
+      "title": "New Absence Explanation Submitted",
+      "message": "Dr. Dr.Saranya submitted an absence explanation for review (Reason: hhnbihi).",
+      "type": "WARNING",
+      "read": false,
+      "isRead": false,
+      "createdAt": "2026-08-07T13:40:18.324Z"
+    },
     {
       "_id": "notif_1786108222969_c8g7c",
       "recipientEmail": "sms621280@gmail.com",

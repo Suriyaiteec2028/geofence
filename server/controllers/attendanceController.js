@@ -65,12 +65,13 @@ exports.getDoctorShiftStatus = (req, res) => {
   }
 };
 
-// Get Doctor Shift Windows and Attendance Statuses for Selected Date with 3-Day Deadline Check
+// Get Doctor Shift Windows & Statuses for Selected Date (STRICT RULE: ONLY PAST CLOSED MISSED WINDOWS ARE SELECTABLE)
 exports.getDoctorDateWindows = (req, res) => {
   try {
     const doctorId = req.user.id;
     const { date } = req.query; // YYYY-MM-DD
-    const targetDate = date || new Date().toISOString().split('T')[0];
+    const todayStr = new Date().toISOString().split('T')[0];
+    const targetDate = date || todayStr;
 
     const doctor = memoryStore.users.find(u => String(u._id) === String(doctorId));
     if (!doctor || doctor.role !== 'DOCTOR') {
@@ -98,20 +99,61 @@ exports.getDoctorDateWindows = (req, res) => {
     const deadlineObj = new Date(dutyDateObj.getTime() + (3 * 24 * 60 * 60 * 1000));
     const isExpired = nowObj > deadlineObj;
 
+    const isPastDate = targetDate < todayStr;
+    const isTodayDate = targetDate === todayStr;
+    const isFutureDate = targetDate > todayStr;
+
     const windowsWithStatus = shiftState.windows.map(w => {
+      // Build precise Window End Date Object for day/night shifts
+      const windowEndObj = new Date(w.windowEndISO);
+      const windowStartObj = new Date(w.windowStartISO);
+
+      let isPastWindow = false;
+      let isOpenWindow = false;
+      let isFutureWindow = false;
+
+      if (isPastDate) {
+        isPastWindow = true;
+      } else if (isFutureDate) {
+        isFutureWindow = true;
+      } else {
+        // Today's date comparison
+        if (nowObj > windowEndObj) {
+          isPastWindow = true;
+        } else if (nowObj >= windowStartObj && nowObj <= windowEndObj) {
+          isOpenWindow = true;
+        } else {
+          isFutureWindow = true;
+        }
+      }
+
       const att = dateAttendances.find(a => 
         a.checkpointTime === w.windowStartFormatted || a.windowLabel === w.windowLabel
       );
-      let status = 'ABSENT'; // Default for past un-marked windows
+
+      let status = 'FUTURE';
       if (att) {
         status = att.status;
+      } else if (isPastWindow) {
+        status = 'ABSENT';
+      } else if (isOpenWindow) {
+        status = 'ACTIVE_OPEN';
+      } else {
+        status = 'FUTURE';
       }
+
+      // STRICT RULE: ONLY PAST MISSED/ABSENT WINDOWS ARE SELECTABLE!
+      // Future windows and active open windows are NEVER selectable.
+      const isSelectable = !isExpired && isPastWindow && (status === 'ABSENT' || status === 'PENDING_EXPLANATION');
 
       return {
         ...w,
         status,
+        isPastWindow,
+        isOpenWindow,
+        isFutureWindow,
         attendanceId: att ? att._id : null,
-        isSelectable: !isExpired && (status === 'ABSENT' || status === 'PENDING_EXPLANATION')
+        isSelectable
       };
     });
 

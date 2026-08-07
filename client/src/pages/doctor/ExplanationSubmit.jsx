@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Breadcrumb } from '../../components/layout/Breadcrumb';
 import { useNotification } from '../../context/NotificationContext';
-import { ClipboardCheck, Upload, Send, Calendar, Clock, AlertTriangle, CheckCircle2, XCircle, ShieldAlert } from 'lucide-react';
+import { ClipboardCheck, Upload, Send, Calendar, Clock, AlertTriangle, CheckCircle2, XCircle, ShieldAlert, Lock, Radio } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -32,7 +32,7 @@ export const ExplanationSubmit = () => {
       const res = await axios.get(`/api/attendance/doctor-date-windows?date=${dateStr}`);
       if (res.data.success) {
         setDateData(res.data);
-        // Pre-select absent windows by default if available and not expired
+        // Pre-select ONLY past missed windows that are selectable!
         if (!res.data.isExpired && res.data.windows) {
           const selectable = res.data.windows
             .filter(w => w.isSelectable)
@@ -47,12 +47,20 @@ export const ExplanationSubmit = () => {
     }
   };
 
-  const toggleWindowSelection = (windowLabel) => {
-    if (dateData?.isExpired) return;
-    if (selectedWindows.includes(windowLabel)) {
-      setSelectedWindows(selectedWindows.filter(w => w !== windowLabel));
+  const toggleWindowSelection = (w) => {
+    if (!w.isSelectable || dateData?.isExpired) {
+      if (w.isOpenWindow) {
+        addToast('Active open window cannot be selected here. Please mark present on the main Doctor Dashboard.', 'warning');
+      } else if (w.isFutureWindow) {
+        addToast('Future shift windows cannot be selected for absence explanation.', 'warning');
+      }
+      return;
+    }
+
+    if (selectedWindows.includes(w.windowLabel)) {
+      setSelectedWindows(selectedWindows.filter(item => item !== w.windowLabel));
     } else {
-      setSelectedWindows([...selectedWindows, windowLabel]);
+      setSelectedWindows([...selectedWindows, w.windowLabel]);
     }
   };
 
@@ -65,7 +73,7 @@ export const ExplanationSubmit = () => {
     }
 
     if (selectedWindows.length === 0) {
-      addToast('Please select at least one missed shift checkpoint hour below.', 'warning');
+      addToast('Please select at least one past missed shift checkpoint hour below.', 'warning');
       return;
     }
 
@@ -112,7 +120,7 @@ export const ExplanationSubmit = () => {
           </div>
           <div>
             <h2 className="text-xl font-bold text-white tracking-tight">Submit Duty Absence Explanation</h2>
-            <p className="text-xs text-slate-400">Select shift date, choose missed checkpoint hours, and submit official justification (3-day deadline rule).</p>
+            <p className="text-xs text-slate-400">Select shift date, choose past missed checkpoint hours, and submit official justification (3-day deadline rule).</p>
           </div>
         </div>
 
@@ -164,10 +172,10 @@ export const ExplanationSubmit = () => {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-amber-400" /> Select Missed Shift Checkpoint Hours for {selectedDate} *
+                <Clock className="w-4 h-4 text-amber-400" /> Select Past Missed Shift Checkpoints for {selectedDate} *
               </label>
               <span className="text-[11px] text-slate-400">
-                Selected: <strong className="text-amber-300">{selectedWindows.length} hour(s)</strong>
+                Selected: <strong className="text-amber-300">{selectedWindows.length} past hour(s)</strong>
               </span>
             </div>
 
@@ -183,6 +191,7 @@ export const ExplanationSubmit = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {dateData?.windows?.map((w) => {
                   const isPresent = w.status === 'PRESENT' || w.status === 'EXPLANATION_APPROVED';
+                  const isPending = w.status === 'PENDING_EXPLANATION';
                   const isSelected = selectedWindows.includes(w.windowLabel);
                   const isSelectable = w.isSelectable && !dateData.isExpired;
 
@@ -191,15 +200,19 @@ export const ExplanationSubmit = () => {
                       key={w.checkpointIndex}
                       type="button"
                       disabled={!isSelectable}
-                      onClick={() => toggleWindowSelection(w.windowLabel)}
+                      onClick={() => toggleWindowSelection(w)}
                       className={`p-3.5 rounded-2xl border text-left transition-all relative overflow-hidden ${
                         isPresent
                           ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300 cursor-not-allowed opacity-80'
+                          : isPending
+                          ? 'bg-amber-950/30 border-amber-500/40 text-amber-300 cursor-not-allowed opacity-90'
                           : isSelected
                           ? 'bg-amber-500/20 border-amber-500 text-white shadow-glow-amber'
                           : isSelectable
-                          ? 'bg-slate-900/80 border-slate-700/80 text-slate-300 hover:border-slate-500'
-                          : 'bg-slate-950 border-slate-800 text-slate-500 cursor-not-allowed'
+                          ? 'bg-slate-900/80 border-slate-700/80 text-slate-300 hover:border-slate-500 cursor-pointer'
+                          : w.isOpenWindow
+                          ? 'bg-sky-950/30 border-sky-500/40 text-sky-300 cursor-not-allowed'
+                          : 'bg-slate-950 border-slate-800/80 text-slate-500 cursor-not-allowed opacity-60'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1">
@@ -208,20 +221,42 @@ export const ExplanationSubmit = () => {
                           <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3" /> PRESENT
                           </span>
+                        ) : isPending ? (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                            PENDING REVIEW
+                          </span>
                         ) : isSelected ? (
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500 text-slate-950 flex items-center gap-1">
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500 text-slate-950 flex items-center gap-1 font-mono">
                             SELECTED
+                          </span>
+                        ) : w.isOpenWindow ? (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30 flex items-center gap-1">
+                            <Radio className="w-3 h-3 text-sky-400 animate-pulse" /> OPEN NOW
+                          </span>
+                        ) : w.isFutureWindow ? (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-1">
+                            <Lock className="w-3 h-3" /> FUTURE
                           </span>
                         ) : (
                           <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1">
-                            <XCircle className="w-3 h-3" /> ABSENT
+                            <XCircle className="w-3 h-3" /> MISSED
                           </span>
                         )}
                       </div>
 
                       <div className="font-extrabold text-sm text-white">{w.windowLabel}</div>
                       <div className="text-[10px] text-slate-400 mt-1">
-                        {isPresent ? 'Verified Present (No Action Required)' : isSelectable ? 'Click to select for explanation' : 'Deadline Expired'}
+                        {isPresent
+                          ? 'Verified Present'
+                          : isPending
+                          ? 'Under Admin Review'
+                          : isSelectable
+                          ? 'Click to select past missed hour'
+                          : w.isOpenWindow
+                          ? 'Mark Present on Dashboard'
+                          : w.isFutureWindow
+                          ? 'Scheduled Future Hour'
+                          : 'Deadline Expired'}
                       </div>
                     </button>
                   );
