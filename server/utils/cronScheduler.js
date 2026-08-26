@@ -36,15 +36,16 @@ function checkAndSendHourlyReminders() {
         now
       );
 
-      // 1. Send Hourly Email Reminder if Active Window is Currently Open
+      // 1. Send Hourly Email Reminder & In-App Notification if Active Window is Currently Open
       if (shiftState.isWindowOpen && shiftState.activeWindow) {
         const win = shiftState.activeWindow;
         const reminderKey = `${doctor._id}:${todayStr}:${win.checkpointIndex}`;
 
         if (!sentRemindersMap.has(reminderKey)) {
           sentRemindersMap.set(reminderKey, true);
-          console.log(`⏰ Dispatching Hourly Duty Checkpoint #${win.checkpointIndex} Email Reminder to Dr. ${doctor.name} (${doctor.email})`);
+          console.log(`⏰ Dispatching Hourly Duty Checkpoint #${win.checkpointIndex} Email & Notification to Dr. ${doctor.name} (${doctor.email})`);
 
+          // Live Email Dispatch to Doctor Inbox
           sendHourlyCheckpointReminderEmail({
             name: doctor.name,
             email: doctor.email,
@@ -52,6 +53,21 @@ function checkAndSendHourlyReminders() {
             windowLabel: win.windowLabel,
             phcName
           });
+
+          // In-App Notification Dispatch
+          memoryStore.notifications.unshift({
+            _id: 'notif_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+            user: doctor._id,
+            recipientEmail: doctor.email,
+            targetRole: 'DOCTOR',
+            title: `Duty Checkpoint #${win.checkpointIndex} Open ⏰`,
+            message: `Your hourly duty attendance window (${win.windowLabel}) is now OPEN at ${phcName}. Please mark present with biometric face scan.`,
+            type: 'WARNING',
+            read: false,
+            isRead: false,
+            createdAt: new Date().toISOString()
+          });
+          saveMemoryStoreToDisk();
         }
       }
 
@@ -62,7 +78,7 @@ function checkAndSendHourlyReminders() {
           const existingAtt = memoryStore.attendances.find(a => 
             String(a.doctor) === String(doctor._id) && 
             a.date === todayStr && 
-            (a.checkpointTime === win.windowStartFormatted || a.windowLabel === w.windowLabel)
+            (a.checkpointTime === win.windowStartFormatted || a.windowLabel === win.windowLabel)
           );
 
           if (!existingAtt) {
