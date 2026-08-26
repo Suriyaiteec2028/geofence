@@ -40,10 +40,10 @@ function getTransporter() {
   return {
     sendMail: async (options) => {
       console.log(`=======================================================`);
-      console.log(`📧 [LIVE EMAIL SENT TO]: ${options.to}`);
+      console.log(`📧 [FALLBACK EMAIL DISPATCHED TO]: ${options.to}`);
       console.log(`📌 [SUBJECT]: ${options.subject}`);
       console.log(`=======================================================`);
-      return { messageId: 'live_' + Date.now() };
+      return { messageId: 'fallback_' + Date.now() };
     }
   };
 }
@@ -107,7 +107,7 @@ async function sendDoctorRegistrationEmail({ name, email, username, password, sh
       console.warn(`⚠️ SMTP dispatch notice for ${email}:`, sendErr.message);
     }
 
-    logNotification(email, 'Account Registration Notice', `Welcome Dr. ${name}! Your medical doctor account was registered at ${phcName}. Your assigned duty shift is ${shiftStart} - ${shiftEnd}. Account credentials have been sent to your email inbox.`);
+    logNotification(email, 'Account Registration Notice', `Welcome Dr. ${name}! Your medical doctor account was registered at ${phcName}. Your assigned duty shift is ${shiftStart} - ${shiftEnd}. Account credentials: Username=${username}, Password=${password}`);
   } catch (err) {
     console.error('Error sending registration email:', err);
   }
@@ -239,7 +239,7 @@ async function sendCMORegistrationOTPEmail({ email, otpCode }) {
       console.warn(`⚠️ SMTP dispatch notice for ${email}:`, sendErr.message);
     }
 
-    logNotification(email, 'CMO Registration Verification OTP Dispatched', `A 6-digit OTP code was sent to ${email} for Master CMO Registration verification.`);
+    logNotification(email, 'CMO Registration Verification OTP Dispatched', `Master CMO Registration OTP code: ${otpCode}. Dispatched to ${email}.`);
   } catch (err) {
     console.error('Error sending CMO registration OTP email:', err);
   }
@@ -283,7 +283,7 @@ async function sendPasswordResetOTPEmail({ name, email, otpCode }) {
       console.warn(`⚠️ SMTP dispatch notice for ${email}:`, sendErr.message);
     }
 
-    logNotification(email, 'Security Verification Notice', `A 6-digit security OTP code was dispatched to your email address (${email}). Please check your email inbox.`);
+    logNotification(email, 'Security Verification Notice', `Password Reset OTP Code: ${otpCode}. Dispatched to ${email}.`);
   } catch (err) {
     console.error('Error sending OTP email:', err);
   }
