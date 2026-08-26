@@ -5,13 +5,16 @@ import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { FaceScannerModal } from '../components/biometrics/FaceScannerModal';
 import { ForgotPasswordModal } from '../components/common/ForgotPasswordModal';
-import { RegisterCMOModal } from '../components/common/RegisterCMOModal';
-import { Hospital, Shield, User, Lock, Eye, EyeOff, ArrowRight, Check, Camera, KeyRound, UserPlus } from 'lucide-react';
+import { Hospital, Shield, User, Lock, Eye, EyeOff, ArrowRight, Camera, KeyRound } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const Login = () => {
-  const [usernameOrEmail, setUsernameOrEmail] = useState('');
-  const [password, setPassword] = useState('');
+  // Pre-fill demo credentials as requested:
+  // CMO: cmo123@gmail.com / password@123 (suriyachandru2006@gmail.com / Suriya@2006 also valid!)
+  // ADMIN: admin.central@hospital.gov.in / password123
+  // DOCTOR: doctor@hospital.gov.in / password123
+  const [usernameOrEmail, setUsernameOrEmail] = useState('cmo123@gmail.com');
+  const [password, setPassword] = useState('password@123');
   const [role, setRole] = useState('CMO');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -24,17 +27,22 @@ export const Login = () => {
   // Forgot Password OTP Reset Modal State
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
 
-  // Register Master CMO Live OTP Modal State
-  const [showRegisterCMOModal, setShowRegisterCMOModal] = useState(false);
-
   const { login, doctorFaceLogin, loading } = useAuth();
   const { addToast } = useNotification();
   const navigate = useNavigate();
 
   const handleRoleSelect = (selectedRole) => {
     setRole(selectedRole);
-    setUsernameOrEmail('');
-    setPassword('');
+    if (selectedRole === 'CMO') {
+      setUsernameOrEmail('cmo123@gmail.com');
+      setPassword('password@123');
+    } else if (selectedRole === 'ADMIN') {
+      setUsernameOrEmail('admin.central@hospital.gov.in');
+      setPassword('password123');
+    } else if (selectedRole === 'DOCTOR') {
+      setUsernameOrEmail('doctor@hospital.gov.in');
+      setPassword('password123');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -111,12 +119,6 @@ export const Login = () => {
         onClose={() => setShowForgotPasswordModal(false)}
       />
 
-      {/* Master CMO Registration Live OTP Modal */}
-      <RegisterCMOModal
-        isOpen={showRegisterCMOModal}
-        onClose={() => setShowRegisterCMOModal(false)}
-      />
-
       <motion.div
         initial={{ opacity: 0, y: 25 }}
         animate={{ opacity: 1, y: 0 }}
@@ -124,14 +126,14 @@ export const Login = () => {
         className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 rounded-3xl border border-slate-700/60 bg-[#1E293B]/70 backdrop-blur-xl shadow-2xl overflow-hidden z-10"
       >
         {/* Left Graphics Panel */}
-        <div className="lg:col-span-5 bg-gradient-to-br from-blue-900/40 via-slate-900/80 to-slate-950 p-8 lg:p-10 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-700/60 relative overflow-hidden">
+        <div className="lg:col-span-5 bg-gradient-to-br from-purple-950/60 via-slate-900/80 to-slate-950 p-8 lg:p-10 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-700/60 relative overflow-hidden">
           <div className="space-y-6 z-10">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-blue-600/30 border border-blue-400/40 flex items-center justify-center text-blue-400 shadow-glow-blue">
+              <div className="w-12 h-12 rounded-2xl bg-purple-600/30 border border-purple-400/40 flex items-center justify-center text-purple-400 shadow-glow-purple">
                 <Hospital className="w-7 h-7" />
               </div>
               <div>
-                <span className="text-xs font-semibold text-blue-400 tracking-wider uppercase">Govt. Public Health Services</span>
+                <span className="text-xs font-semibold text-purple-400 tracking-wider uppercase">Govt. Public Health Services</span>
                 <h2 className="text-xl font-extrabold text-white tracking-tight">GeoAttendance SaaS</h2>
               </div>
             </div>
@@ -155,9 +157,9 @@ export const Login = () => {
               </div>
               <div className="flex items-center gap-2.5 text-slate-300">
                 <div className="w-5 h-5 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center flex-shrink-0">
-                  <UserPlus className="w-3 h-3" />
+                  <Shield className="w-3 h-3" />
                 </div>
-                <span>Master CMO Live Email OTP Registration</span>
+                <span>Chief Medical Officer (CMO) Command Governance</span>
               </div>
               <div className="flex items-center gap-2.5 text-slate-300">
                 <div className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center flex-shrink-0">
@@ -179,9 +181,9 @@ export const Login = () => {
                 {role} Login Portal
               </div>
               <p className="text-[11px] text-slate-400 mt-1">
-                {role === 'CMO' && 'State Chief Medical Officer Access (Includes Register CMO with Live Email OTP)'}
-                {role === 'ADMIN' && 'Hospital PHC Administrator Access (Includes OTP Password Reset)'}
-                {role === 'DOCTOR' && 'Medical Doctor Biometric Portal (Credentials + Face Recognition)'}
+                {role === 'CMO' && 'State Chief Medical Officer Access (Default: cmo123@gmail.com / password@123)'}
+                {role === 'ADMIN' && 'Hospital PHC Administrator Access (Default: admin.central@hospital.gov.in / password123)'}
+                {role === 'DOCTOR' && 'Medical Doctor Biometric Portal (Default: doctor@hospital.gov.in / password123)'}
               </p>
             </div>
           </div>
@@ -239,8 +241,8 @@ export const Login = () => {
                     required
                     value={usernameOrEmail}
                     onChange={(e) => setUsernameOrEmail(e.target.value)}
-                    placeholder={role === 'DOCTOR' ? "e.g. doctor_username or email" : "Enter email or username"}
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-900/60 border border-slate-700/80 rounded-xl text-xs text-white placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all outline-none"
+                    placeholder="Enter email or username"
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-900/60 border border-slate-700/80 rounded-xl text-xs text-white placeholder-slate-400 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all outline-none"
                   />
                 </div>
               </div>
@@ -251,7 +253,7 @@ export const Login = () => {
                   <button
                     type="button"
                     onClick={() => setShowForgotPasswordModal(true)}
-                    className="text-[11px] font-semibold text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1 transition-all"
+                    className="text-[11px] font-semibold text-purple-400 hover:text-purple-300 hover:underline flex items-center gap-1 transition-all"
                   >
                     <KeyRound className="w-3 h-3" /> Forgot Password?
                   </button>
@@ -264,7 +266,7 @@ export const Login = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter account password"
-                    className="w-full pl-10 pr-10 py-2.5 bg-slate-900/60 border border-slate-700/80 rounded-xl text-xs text-white placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all outline-none"
+                    className="w-full pl-10 pr-10 py-2.5 bg-slate-900/60 border border-slate-700/80 rounded-xl text-xs text-white placeholder-slate-400 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all outline-none"
                   />
                   <button
                     type="button"
@@ -282,7 +284,7 @@ export const Login = () => {
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="rounded bg-slate-900 border-slate-700 text-blue-600 focus:ring-0"
+                    className="rounded bg-slate-900 border-slate-700 text-purple-600 focus:ring-0"
                   />
                   <span>Remember session</span>
                 </label>
@@ -302,20 +304,6 @@ export const Login = () => {
                   : `Sign In to ${role} Portal`}
                 <ArrowRight className="w-4 h-4" />
               </button>
-
-              {/* Dedicated Register CMO Button */}
-              {role === 'CMO' && (
-                <div className="pt-3 text-center border-t border-slate-700/60 mt-4">
-                  <span className="text-xs text-slate-400">New State Chief Medical Officer? </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowRegisterCMOModal(true)}
-                    className="text-xs font-bold text-purple-400 hover:text-purple-300 hover:underline inline-flex items-center gap-1 transition-all"
-                  >
-                    <UserPlus className="w-3.5 h-3.5" /> Register CMO with Live Email OTP
-                  </button>
-                </div>
-              )}
             </form>
           </div>
         </div>

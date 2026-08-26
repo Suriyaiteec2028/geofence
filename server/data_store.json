@@ -1,10 +1,31 @@
 {
-  "users": [],
+  "users": [
+    {
+      "_id": "cmo_001",
+      "name": "Chief Medical Officer (CMO)",
+      "email": "suriyachandru2006@gmail.com",
+      "username": "suriyachandru2006@gmail.com",
+      "password": "$2a$10$8aRvw5.LAk/.YOaTDMUZpe0cq9b8OlVWxE2mCgGnK8I.6mpmrQenS",
+      "role": "CMO",
+      "status": "ACTIVE",
+      "createdAt": "2026-08-26T18:53:54.513Z"
+    }
+  ],
   "phcs": [],
   "attendances": [],
   "explanations": [],
   "settings": {},
   "notifications": [
+    {
+      "_id": "notif_1787770513978_hs0ol",
+      "recipientEmail": "suriyan182006@gmail.com",
+      "title": "CMO Registration Verification OTP Dispatched",
+      "message": "Master CMO Registration OTP code: 950850. Dispatched to suriyan182006@gmail.com.",
+      "type": "EMAIL",
+      "read": false,
+      "isRead": false,
+      "createdAt": "2026-08-26T18:55:13.978Z"
+    },
     {
       "_id": "notif_1787770358602_p7srk",
       "recipientEmail": "suriyan182006@gmail.com",

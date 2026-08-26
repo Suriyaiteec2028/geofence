@@ -66,13 +66,15 @@ async function syncMongoToMemory() {
 }
 
 async function initDb() {
-  // 1. Try loading persisted data from data_store.json
+  const seed = await getSeedData();
+
+  // 1. Load data from disk or seed data if empty
   let hasDiskData = false;
   if (fs.existsSync(DATA_FILE_PATH)) {
     try {
       const fileData = fs.readFileSync(DATA_FILE_PATH, 'utf8');
       const parsed = JSON.parse(fileData);
-      if (parsed && Array.isArray(parsed.users)) {
+      if (parsed && Array.isArray(parsed.users) && parsed.users.length > 0) {
         memoryStore.users = parsed.users;
         memoryStore.phcs = parsed.phcs || [];
         memoryStore.attendances = parsed.attendances || [];
@@ -87,35 +89,92 @@ async function initDb() {
     }
   }
 
-  // 2. If no disk data exists, initialize from seed data
-  if (!hasDiskData) {
-    const seed = await getSeedData();
+  if (!hasDiskData || memoryStore.users.length === 0) {
     memoryStore.users = [...seed.users];
     memoryStore.phcs = [...seed.phcs];
     memoryStore.attendances = [...seed.attendances];
     memoryStore.explanations = [...seed.explanations];
     memoryStore.settings = { ...seed.settings };
     memoryStore.notifications = [...seed.notifications];
-    saveMemoryStoreToDisk();
   }
 
-  // Ensure CMO user always exists with password Suriya@2006
-  const cmoIndex = memoryStore.users.findIndex(u => u.role === 'CMO' || u.email === 'suriyachandru2006@gmail.com');
-  if (cmoIndex === -1) {
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash('Suriya@2006', salt);
+  // Ensure BOTH CMO users exist (suriyachandru2006@gmail.com / Suriya@2006 AND cmo123@gmail.com / password@123)
+  const cmo1Index = memoryStore.users.findIndex(u => u.email === 'suriyachandru2006@gmail.com');
+  if (cmo1Index === -1) {
+    const pass1 = await bcrypt.hash('Suriya@2006', 10);
     memoryStore.users.unshift({
       _id: 'cmo_001',
-      name: 'Chief Medical Officer (CMO)',
+      name: 'Dr. Suriya N (CMO)',
       email: 'suriyachandru2006@gmail.com',
       username: 'suriyachandru2006@gmail.com',
-      password: hashedPassword,
+      password: pass1,
+      plainPassword: 'Suriya@2006',
       role: 'CMO',
       status: 'ACTIVE',
       createdAt: new Date().toISOString()
     });
-    saveMemoryStoreToDisk();
   }
+
+  const cmo2Index = memoryStore.users.findIndex(u => u.email === 'cmo123@gmail.com');
+  if (cmo2Index === -1) {
+    const pass2 = await bcrypt.hash('password@123', 10);
+    memoryStore.users.unshift({
+      _id: 'cmo_002',
+      name: 'State Chief Medical Officer (CMO)',
+      email: 'cmo123@gmail.com',
+      username: 'cmo123@gmail.com',
+      password: pass2,
+      plainPassword: 'password@123',
+      role: 'CMO',
+      status: 'ACTIVE',
+      createdAt: new Date().toISOString()
+    });
+  }
+
+  // Ensure default Admin user exists
+  const adminIndex = memoryStore.users.findIndex(u => u.role === 'ADMIN');
+  if (adminIndex === -1) {
+    const passAdmin = await bcrypt.hash('password123', 10);
+    memoryStore.users.push({
+      _id: 'admin_001',
+      name: 'Dr. Central PHC Administrator',
+      email: 'admin.central@hospital.gov.in',
+      username: 'admin.central@hospital.gov.in',
+      password: passAdmin,
+      plainPassword: 'password123',
+      role: 'ADMIN',
+      assignedPHC: 'phc_001',
+      status: 'ACTIVE',
+      createdAt: new Date().toISOString()
+    });
+  }
+
+  // Ensure default Doctor user exists
+  const docIndex = memoryStore.users.findIndex(u => u.role === 'DOCTOR');
+  if (docIndex === -1) {
+    const passDoc = await bcrypt.hash('password123', 10);
+    memoryStore.users.push({
+      _id: 'doc_001',
+      name: 'Dr. Ranjith K (Medical Officer)',
+      email: 'doctor@hospital.gov.in',
+      username: 'doctor@hospital.gov.in',
+      password: passDoc,
+      plainPassword: 'password123',
+      role: 'DOCTOR',
+      assignedPHC: 'phc_001',
+      shiftStart: '10:00 PM',
+      shiftEnd: '04:00 AM',
+      status: 'ACTIVE',
+      createdAt: new Date().toISOString()
+    });
+  }
+
+  // Ensure default PHC exists
+  if (memoryStore.phcs.length === 0) {
+    memoryStore.phcs = [...seed.phcs];
+  }
+
+  saveMemoryStoreToDisk();
 
   const mongoUri = process.env.MONGODB_URI;
 
@@ -127,26 +186,7 @@ async function initDb() {
       console.log('🟢 MongoDB Atlas Cloud Database Connected Successfully!');
       console.log('=======================================================');
       memoryStore.isInMemoryMode = false;
-
-      // Upsert CMO user to MongoDB Atlas
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash('Suriya@2006', salt);
-
-      await User.findOneAndUpdate(
-        { role: 'CMO' },
-        {
-          name: 'Chief Medical Officer (CMO)',
-          email: 'suriyachandru2006@gmail.com',
-          username: 'suriyachandru2006@gmail.com',
-          password: hashedPassword,
-          role: 'CMO',
-          status: 'ACTIVE'
-        },
-        { upsert: true, new: true }
-      );
-
       await syncMongoToMemory();
-
     } catch (err) {
       console.warn('⚠️ MongoDB connection warning:', err.message);
       console.log('Running on resilient Persistent Disk Data Engine!');
