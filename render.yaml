@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: hospital-geofence-attendance
+    env: node
+    plan: free
+    buildCommand: npm run postinstall
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: FACE_SIMILARITY_THRESHOLD
+        value: 0.65
+      - key: SMTP_USER
+        value: sn4194529@gmail.com

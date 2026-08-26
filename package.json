@@ -1,0 +1,19 @@
+{
+  "name": "hospital-geofence-attendance-system",
+  "version": "1.0.0",
+  "description": "Real-World Hospital Geofence Attendance & Deep Biometric System",
+  "main": "server/server.js",
+  "scripts": {
+    "postinstall": "cd server && npm install && cd ../client && npm install && npm run build",
+    "start": "cd server && node server.js"
+  },
+  "keywords": [
+    "geofence",
+    "hospital",
+    "biometric",
+    "face-recognition",
+    "attendance"
+  ],
+  "author": "Government Public Health Services",
+  "license": "ISC"
+}
