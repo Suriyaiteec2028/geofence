@@ -68,113 +68,17 @@ async function syncMongoToMemory() {
 async function initDb() {
   const seed = await getSeedData();
 
-  // 1. Load data from disk or seed data if empty
-  let hasDiskData = false;
-  if (fs.existsSync(DATA_FILE_PATH)) {
-    try {
-      const fileData = fs.readFileSync(DATA_FILE_PATH, 'utf8');
-      const parsed = JSON.parse(fileData);
-      if (parsed && Array.isArray(parsed.users) && parsed.users.length > 0) {
-        memoryStore.users = parsed.users;
-        memoryStore.phcs = parsed.phcs || [];
-        memoryStore.attendances = parsed.attendances || [];
-        memoryStore.explanations = parsed.explanations || [];
-        memoryStore.settings = parsed.settings || {};
-        memoryStore.notifications = parsed.notifications || [];
-        hasDiskData = true;
-        console.log(`📁 Loaded persistent data from disk: ${memoryStore.users.length} Users, ${memoryStore.phcs.length} PHCs, ${memoryStore.attendances.length} Attendance Logs.`);
-      }
-    } catch (e) {
-      console.warn('Error reading data_store.json, falling back to seed data.');
-    }
-  }
+  // Load fresh seed data
+  memoryStore.users = [...seed.users];
+  memoryStore.phcs = [...seed.phcs];
+  memoryStore.attendances = [...seed.attendances];
+  memoryStore.explanations = [...seed.explanations];
+  memoryStore.settings = { ...seed.settings };
+  memoryStore.notifications = [...seed.notifications];
 
-  if (!hasDiskData || memoryStore.users.length === 0) {
-    memoryStore.users = [...seed.users];
-    memoryStore.phcs = [...seed.phcs];
-    memoryStore.attendances = [...seed.attendances];
-    memoryStore.explanations = [...seed.explanations];
-    memoryStore.settings = { ...seed.settings };
-    memoryStore.notifications = [...seed.notifications];
-  }
-
-  // Ensure BOTH CMO users exist (suriyachandru2006@gmail.com / Suriya@2006 AND cmo123@gmail.com / password@123)
-  const cmo1Index = memoryStore.users.findIndex(u => u.email === 'suriyachandru2006@gmail.com');
-  if (cmo1Index === -1) {
-    const pass1 = await bcrypt.hash('Suriya@2006', 10);
-    memoryStore.users.unshift({
-      _id: 'cmo_001',
-      name: 'Dr. Suriya N (CMO)',
-      email: 'suriyachandru2006@gmail.com',
-      username: 'suriyachandru2006@gmail.com',
-      password: pass1,
-      plainPassword: 'Suriya@2006',
-      role: 'CMO',
-      status: 'ACTIVE',
-      createdAt: new Date().toISOString()
-    });
-  }
-
-  const cmo2Index = memoryStore.users.findIndex(u => u.email === 'cmo123@gmail.com');
-  if (cmo2Index === -1) {
-    const pass2 = await bcrypt.hash('password@123', 10);
-    memoryStore.users.unshift({
-      _id: 'cmo_002',
-      name: 'State Chief Medical Officer (CMO)',
-      email: 'cmo123@gmail.com',
-      username: 'cmo123@gmail.com',
-      password: pass2,
-      plainPassword: 'password@123',
-      role: 'CMO',
-      status: 'ACTIVE',
-      createdAt: new Date().toISOString()
-    });
-  }
-
-  // Ensure default Admin user exists
-  const adminIndex = memoryStore.users.findIndex(u => u.role === 'ADMIN');
-  if (adminIndex === -1) {
-    const passAdmin = await bcrypt.hash('password123', 10);
-    memoryStore.users.push({
-      _id: 'admin_001',
-      name: 'Dr. Central PHC Administrator',
-      email: 'admin.central@hospital.gov.in',
-      username: 'admin.central@hospital.gov.in',
-      password: passAdmin,
-      plainPassword: 'password123',
-      role: 'ADMIN',
-      assignedPHC: 'phc_001',
-      status: 'ACTIVE',
-      createdAt: new Date().toISOString()
-    });
-  }
-
-  // Ensure default Doctor user exists
-  const docIndex = memoryStore.users.findIndex(u => u.role === 'DOCTOR');
-  if (docIndex === -1) {
-    const passDoc = await bcrypt.hash('password123', 10);
-    memoryStore.users.push({
-      _id: 'doc_001',
-      name: 'Dr. Ranjith K (Medical Officer)',
-      email: 'doctor@hospital.gov.in',
-      username: 'doctor@hospital.gov.in',
-      password: passDoc,
-      plainPassword: 'password123',
-      role: 'DOCTOR',
-      assignedPHC: 'phc_001',
-      shiftStart: '10:00 PM',
-      shiftEnd: '04:00 AM',
-      status: 'ACTIVE',
-      createdAt: new Date().toISOString()
-    });
-  }
-
-  // Ensure default PHC exists
-  if (memoryStore.phcs.length === 0) {
-    memoryStore.phcs = [...seed.phcs];
-  }
-
+  // Save clean state to disk
   saveMemoryStoreToDisk();
+  console.log(`📁 Reset to fresh scratch testing state: ${memoryStore.users.length} Users, ${memoryStore.phcs.length} PHCs, 0 Attendance Logs.`);
 
   const mongoUri = process.env.MONGODB_URI;
 

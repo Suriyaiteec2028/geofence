@@ -6,34 +6,34 @@ async function getHashedPassword(plainText) {
 }
 
 async function getSeedData() {
-  const cmoPassword1 = await getHashedPassword('Suriya@2006');
-  const cmoPassword2 = await getHashedPassword('password@123');
-  const adminPassword = await getHashedPassword('password123');
-  const doctorPassword = await getHashedPassword('password123');
+  const masterCMOPassword = await getHashedPassword('Suriya@2006');
+  const demoCMOPassword = await getHashedPassword('password@123');
+  const demoAdminPassword = await getHashedPassword('password123');
+  const demoDoctorPassword = await getHashedPassword('password123');
 
   const users = [
     {
-      _id: 'cmo_001',
-      name: 'Dr. Suriya N (Chief Medical Officer)',
+      _id: 'cmo_master_001',
+      name: 'Dr. Suriya N (Master CMO)',
       email: 'suriyachandru2006@gmail.com',
       username: 'suriyachandru2006@gmail.com',
-      password: cmoPassword1,
+      password: masterCMOPassword,
       plainPassword: 'Suriya@2006',
       role: 'CMO',
       gender: 'Male',
       mobile: '+91 98765 43210',
       qualification: 'MBBS, MD (Healthcare Administration)',
-      specialization: 'Chief Medical Officer & Healthcare Director',
+      specialization: 'Master Chief Medical Officer & Healthcare Director',
       assignedPHC: null,
       status: 'ACTIVE',
       createdAt: new Date().toISOString()
     },
     {
-      _id: 'cmo_002',
-      name: 'State Chief Medical Officer (CMO)',
+      _id: 'cmo_demo_002',
+      name: 'State Chief Medical Officer (Demo CMO)',
       email: 'cmo123@gmail.com',
       username: 'cmo123@gmail.com',
-      password: cmoPassword2,
+      password: demoCMOPassword,
       plainPassword: 'password@123',
       role: 'CMO',
       gender: 'Male',
@@ -45,11 +45,11 @@ async function getSeedData() {
       createdAt: new Date().toISOString()
     },
     {
-      _id: 'admin_001',
+      _id: 'admin_demo_001',
       name: 'Dr. Central PHC Administrator',
       email: 'admin.central@hospital.gov.in',
       username: 'admin.central@hospital.gov.in',
-      password: adminPassword,
+      password: demoAdminPassword,
       plainPassword: 'password123',
       role: 'ADMIN',
       gender: 'Female',
@@ -61,11 +61,11 @@ async function getSeedData() {
       createdAt: new Date().toISOString()
     },
     {
-      _id: 'doc_001',
+      _id: 'doc_demo_001',
       name: 'Dr. Ranjith K (Medical Officer)',
       email: 'doctor@hospital.gov.in',
       username: 'doctor@hospital.gov.in',
-      password: doctorPassword,
+      password: demoDoctorPassword,
       plainPassword: 'password123',
       role: 'DOCTOR',
       gender: 'Male',
@@ -92,11 +92,13 @@ async function getSeedData() {
       latitude: 10.7870,
       longitude: 79.1378,
       radius: 200,
-      assignedAdmin: 'admin_001',
+      assignedAdmin: 'admin_demo_001',
+      status: 'ACTIVE',
       createdAt: new Date().toISOString()
     }
   ];
 
+  // Completely clean initial state for scratch testing!
   const attendances = [];
   const explanations = [];
   const notifications = [];
