@@ -1,5 +1,7 @@
 const { memoryStore, saveMemoryStoreToDisk } = require('../config/db');
 const User = require('../models/User');
+const Attendance = require('../models/Attendance');
+const Explanation = require('../models/Explanation');
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const {
@@ -108,6 +110,27 @@ exports.createDoctor = async (req, res) => {
 
     const docId = 'doc_' + Date.now();
 
+    let faceAuthenticationObj = {
+      model: 'FaceRecognitionNet',
+      embeddingDimension: 128,
+      embeddings: [],
+      version: 1,
+      updatedAt: new Date().toISOString()
+    };
+
+    if (faceData) {
+      try {
+        const parsed = typeof faceData === 'string' ? JSON.parse(faceData) : faceData;
+        if (parsed && Array.isArray(parsed.embeddings) && parsed.embeddings.length > 0) {
+          faceAuthenticationObj.embeddings = parsed.embeddings;
+          faceAuthenticationObj.embeddingDimension = parsed.embeddings[0].length;
+        } else if (parsed && Array.isArray(parsed.embedding)) {
+          faceAuthenticationObj.embeddings = [parsed.embedding];
+          faceAuthenticationObj.embeddingDimension = parsed.embedding.length;
+        }
+      } catch (e) {}
+    }
+
     const newDoctor = {
       _id: docId,
       name: name.trim(),
@@ -125,6 +148,7 @@ exports.createDoctor = async (req, res) => {
       shiftEnd: cleanShiftEnd,
       profilePhoto: '',
       faceData: faceData || '',
+      faceAuthentication: faceAuthenticationObj,
       status: 'ACTIVE',
       createdAt: new Date().toISOString()
     };
@@ -153,20 +177,21 @@ exports.createDoctor = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: `Doctor registered! Credentials & shift timings email sent immediately to ${cleanEmail}`,
+      message: `Doctor account created successfully. Direct registration credentials sent to ${cleanEmail}`,
       doctor: { ...newDoctor, password: undefined, plainPassword: undefined }
     });
+
   } catch (err) {
     console.error('Create doctor error:', err);
-    res.status(500).json({ success: false, message: err.message || 'Server error creating doctor' });
+    res.status(500).json({ success: false, message: 'Server error creating doctor profile' });
   }
 };
 
-// Request OTP to existing Doctor email before editing Email, Password, or Face Recognition
+// Request OTP to existing doctor email before modifying Email or Password or Face
 exports.requestDoctorEditOTP = async (req, res) => {
   try {
     const { id } = req.params;
-    const doctor = memoryStore.users.find(u => String(u._id) === String(id) && u.role === 'DOCTOR');
+    const doctor = memoryStore.users.find(u => String(u._id) === String(id));
     if (!doctor) return res.status(404).json({ success: false, message: 'Doctor account not found' });
 
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -178,7 +203,7 @@ exports.requestDoctorEditOTP = async (req, res) => {
       existingEmail: doctor.email
     });
 
-    console.log(`🔑 Generated Doctor Edit OTP for Dr. ${doctor.name} (${doctor.email}): ${otpCode}`);
+    console.log(`🔑 Generated Doctor Edit OTP for ${doctor.name} (${doctor.email}): ${otpCode}`);
 
     await sendPasswordResetOTPEmail({
       name: doctor.name,
@@ -189,7 +214,7 @@ exports.requestDoctorEditOTP = async (req, res) => {
     res.json({
       success: true,
       existingEmail: doctor.email,
-      message: `OTP verification code sent live to Dr. ${doctor.name}'s registered email (${doctor.email}).`
+      message: `6-digit security OTP sent live to existing doctor email (${doctor.email}).`
     });
 
   } catch (err) {
@@ -204,23 +229,22 @@ exports.updateDoctor = async (req, res) => {
     const { id } = req.params;
     const { email, password, faceData, otp } = req.body;
 
-    const docIndex = memoryStore.users.findIndex(u => String(u._id) === String(id) && u.role === 'DOCTOR');
+    const docIndex = memoryStore.users.findIndex(u => String(u._id) === String(id));
     if (docIndex === -1) return res.status(404).json({ success: false, message: 'Doctor not found' });
 
     const currentDoc = memoryStore.users[docIndex];
-
     const isEmailChanged = email && email.trim().toLowerCase() !== currentDoc.email.toLowerCase();
-    const isPasswordChanged = password && password.trim() !== '';
-    const isFaceDataChanged = faceData && faceData !== currentDoc.faceData;
+    const isPasswordChanged = password && password.trim().length > 0;
+    const isFaceChanged = faceData && faceData !== currentDoc.faceData;
 
-    // Require OTP Verification if Email, Password, or Face Recognition is modified
-    if (isEmailChanged || isPasswordChanged || isFaceDataChanged) {
+    // Strict Security Rule: If sensitive credentials (Email, Password, or Face) are modified, verify OTP
+    if (isEmailChanged || isPasswordChanged || isFaceChanged) {
       const otpRecord = doctorEditOtpMap.get(String(id));
       if (!otpRecord) {
         return res.status(400).json({
           success: false,
           requireOtp: true,
-          message: `OTP verification required to modify Doctor credentials (Email, Password, or Face Data). Please request OTP sent to ${currentDoc.email}.`
+          message: `OTP verification required to modify doctor credentials (Email, Password, or Face Data). Please request OTP sent to ${currentDoc.email}.`
         });
       }
 
@@ -229,7 +253,7 @@ exports.updateDoctor = async (req, res) => {
         return res.status(400).json({
           success: false,
           requireOtp: true,
-          message: 'OTP verification code has expired. Please request a new OTP code.'
+          message: 'OTP code has expired. Please request a new code.'
         });
       }
 
@@ -237,11 +261,10 @@ exports.updateDoctor = async (req, res) => {
         return res.status(400).json({
           success: false,
           requireOtp: true,
-          message: `Invalid OTP code. Please check OTP sent to Dr. ${currentDoc.name}'s email (${currentDoc.email}).`
+          message: `Invalid OTP code. Please check OTP sent to existing email (${currentDoc.email}).`
         });
       }
 
-      // OTP verified successfully! Consume OTP
       doctorEditOtpMap.delete(String(id));
     }
 
@@ -260,6 +283,27 @@ exports.updateDoctor = async (req, res) => {
       ...currentDoc,
       ...req.body
     };
+
+    if (isFaceChanged && faceData) {
+      try {
+        const parsed = typeof faceData === 'string' ? JSON.parse(faceData) : faceData;
+        let embeddingsList = [];
+        if (parsed && Array.isArray(parsed.embeddings) && parsed.embeddings.length > 0) {
+          embeddingsList = parsed.embeddings;
+        } else if (parsed && Array.isArray(parsed.embedding)) {
+          embeddingsList = [parsed.embedding];
+        }
+        if (embeddingsList.length > 0) {
+          updated.faceAuthentication = {
+            model: 'FaceRecognitionNet',
+            embeddingDimension: embeddingsList[0].length,
+            embeddings: embeddingsList,
+            version: 1,
+            updatedAt: new Date().toISOString()
+          };
+        }
+      } catch (e) {}
+    }
 
     memoryStore.users[docIndex] = updated;
     saveMemoryStoreToDisk();
@@ -293,23 +337,29 @@ exports.updateDoctor = async (req, res) => {
   }
 };
 
-// Delete Doctor Account
+// Delete Doctor Account and associated logs
 exports.deleteDoctor = async (req, res) => {
   try {
     const { id } = req.params;
     const docIdx = memoryStore.users.findIndex(u => String(u._id) === String(id) && u.role === 'DOCTOR');
     if (docIdx === -1) return res.status(404).json({ success: false, message: 'Doctor not found' });
 
-    const deleted = memoryStore.users.splice(docIdx, 1)[0];
+    const deletedDoctor = memoryStore.users.splice(docIdx, 1)[0];
+
+    // Clean up attendance logs and explanations for this doctor
+    memoryStore.attendances = memoryStore.attendances.filter(a => String(a.doctor) !== String(id));
+    memoryStore.explanations = memoryStore.explanations.filter(e => String(e.doctor) !== String(id));
     saveMemoryStoreToDisk();
 
     if (!memoryStore.isInMemoryMode && mongoose.connection.readyState === 1) {
       try {
         await User.deleteOne({ _id: id });
+        if (Attendance) await Attendance.deleteMany({ doctor: id });
+        if (Explanation) await Explanation.deleteMany({ doctor: id });
       } catch (e) {}
     }
 
-    res.json({ success: true, message: `Doctor "${deleted.name}" removed successfully` });
+    res.json({ success: true, message: `Doctor "${deletedDoctor.name}" and all associated logs removed successfully` });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Error deleting doctor' });
   }
@@ -320,9 +370,10 @@ exports.sendTestDoctorEmail = async (req, res) => {
   try {
     const { id } = req.params;
     const doctor = memoryStore.users.find(u => String(u._id) === String(id));
-    if (!doctor) return res.status(404).json({ success: false, message: 'Doctor account not found' });
+    if (!doctor) return res.status(404).json({ success: false, message: 'Doctor profile not found' });
 
     const phcObj = memoryStore.phcs.find(p => String(p._id) === String(doctor.assignedPHC));
+
     sendDoctorRegistrationEmail({
       name: doctor.name,
       email: doctor.email,
@@ -470,7 +521,7 @@ exports.createAdmin = async (req, res) => {
       role: 'ADMIN',
       gender: gender || 'Male',
       mobile: mobile || '',
-      assignedPHC: assignedPHC || null,
+      assignedPHC: assignedPHC || (memoryStore.phcs[0] ? memoryStore.phcs[0]._id : null),
       status: 'ACTIVE',
       createdAt: new Date().toISOString()
     };
@@ -481,12 +532,14 @@ exports.createAdmin = async (req, res) => {
     if (!memoryStore.isInMemoryMode && mongoose.connection.readyState === 1) {
       try {
         await User.create(newAdmin);
-      } catch (e) {}
+      } catch (mErr) {
+        console.warn('MongoDB Atlas Admin create notice:', mErr.message);
+      }
     }
 
     res.status(201).json({
       success: true,
-      message: `PHC Admin "${name}" created successfully. Credentials sent to ${cleanEmail}`,
+      message: `Admin account "${newAdmin.name}" created successfully.`,
       admin: { ...newAdmin, password: undefined, plainPassword: undefined }
     });
 
@@ -541,11 +594,10 @@ exports.updateAdmin = async (req, res) => {
     if (adminIndex === -1) return res.status(404).json({ success: false, message: 'Admin account not found' });
 
     const currentAdmin = memoryStore.users[adminIndex];
-
     const isEmailChanged = email && email.trim().toLowerCase() !== currentAdmin.email.toLowerCase();
-    const isPasswordChanged = password && password.trim() !== '';
+    const isPasswordChanged = password && password.trim().length > 0;
 
-    // Require OTP Verification if Email or Password is modified by CMO
+    // Strict Security Rule: If sensitive credentials (Email or Password) are modified, verify OTP
     if (isEmailChanged || isPasswordChanged) {
       const otpRecord = adminEditOtpMap.get(String(id));
       if (!otpRecord) {
@@ -573,7 +625,6 @@ exports.updateAdmin = async (req, res) => {
         });
       }
 
-      // OTP verified successfully! Consume OTP
       adminEditOtpMap.delete(String(id));
     }
 
@@ -613,24 +664,68 @@ exports.updateAdmin = async (req, res) => {
   }
 };
 
-// Delete Admin Account (CMO only)
+// Delete Admin Account & Cascading Delete of Respective Admin's Doctors and Attendance Records (CMO only)
 exports.deleteAdmin = async (req, res) => {
   try {
     const { id } = req.params;
     const adminIdx = memoryStore.users.findIndex(u => String(u._id) === String(id) && u.role === 'ADMIN');
     if (adminIdx === -1) return res.status(404).json({ success: false, message: 'Admin not found' });
 
-    const deleted = memoryStore.users.splice(adminIdx, 1)[0];
+    const deletedAdmin = memoryStore.users[adminIdx];
+    const phcId = deletedAdmin.assignedPHC;
+
+    // 1. Identify all doctors belonging to this Admin / PHC
+    const adminDoctors = memoryStore.users.filter(u => 
+      u.role === 'DOCTOR' && 
+      (String(u.assignedPHC) === String(phcId) || String(u.createdByAdmin) === String(id))
+    );
+    const doctorIdsToDelete = adminDoctors.map(d => String(d._id));
+
+    console.log(`🗑️ CMO Deleting Admin "${deletedAdmin.name}". Cascading deletion of ${doctorIdsToDelete.length} assigned doctor accounts and associated logs...`);
+
+    // 2. Remove Admin account
+    memoryStore.users.splice(adminIdx, 1);
+
+    // 3. Remove all Doctors assigned to this Admin / PHC
+    memoryStore.users = memoryStore.users.filter(u => !(
+      u.role === 'DOCTOR' && 
+      (String(u.assignedPHC) === String(phcId) || String(u.createdByAdmin) === String(id))
+    ));
+
+    // 4. Remove all Attendance records for this PHC or deleted doctors
+    memoryStore.attendances = memoryStore.attendances.filter(a => 
+      String(a.phc) !== String(phcId) && !doctorIdsToDelete.includes(String(a.doctor))
+    );
+
+    // 5. Remove all Explanation records for this PHC or deleted doctors
+    memoryStore.explanations = memoryStore.explanations.filter(e => 
+      String(e.phc) !== String(phcId) && !doctorIdsToDelete.includes(String(e.doctor))
+    );
+
+    // 6. Save updated data store to disk
     saveMemoryStoreToDisk();
 
+    // 7. Cascading delete in MongoDB Atlas Cloud DB if connected
     if (!memoryStore.isInMemoryMode && mongoose.connection.readyState === 1) {
       try {
         await User.deleteOne({ _id: id });
-      } catch (e) {}
+        if (doctorIdsToDelete.length > 0) {
+          await User.deleteMany({ _id: { $in: doctorIdsToDelete } });
+          if (Attendance) await Attendance.deleteMany({ $or: [{ phc: phcId }, { doctor: { $in: doctorIdsToDelete } }] });
+          if (Explanation) await Explanation.deleteMany({ $or: [{ phc: phcId }, { doctor: { $in: doctorIdsToDelete } }] });
+        }
+      } catch (e) {
+        console.warn('MongoDB Atlas cascading delete notice:', e.message);
+      }
     }
 
-    res.json({ success: true, message: `Admin account "${deleted.name}" deleted` });
+    res.json({
+      success: true,
+      message: `Admin "${deletedAdmin.name}" and all ${doctorIdsToDelete.length} assigned doctor account(s) and attendance records deleted successfully.`
+    });
+
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Error deleting admin' });
+    console.error('Delete Admin Error:', err);
+    res.status(500).json({ success: false, message: 'Error deleting Admin account and assigned doctor data.' });
   }
 };
