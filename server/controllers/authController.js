@@ -323,3 +323,125 @@ exports.login = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error during login' });
   }
 };
+
+// Request Password Reset OTP
+exports.requestPasswordResetOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ success: false, message: 'Email address is required.' });
+
+    const cleanEmail = email.trim().toLowerCase();
+    const user = memoryStore.users.find(u => u.email && u.email.toLowerCase() === cleanEmail);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'No account registered with this email address.' });
+    }
+
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 mins
+
+    otpStoreMap.set(cleanEmail, { otpCode, expiresAt, verified: false, userId: user._id });
+
+    sendPasswordResetOTPEmail({
+      name: user.name,
+      email: cleanEmail,
+      otpCode
+    });
+
+    res.json({
+      success: true,
+      message: `Verification OTP sent to ${cleanEmail}. Please check your email inbox.`
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Error sending password reset OTP' });
+  }
+};
+
+// Verify Password Reset OTP
+exports.verifyPasswordResetOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) return res.status(400).json({ success: false, message: 'Email and OTP are required.' });
+
+    const cleanEmail = email.trim().toLowerCase();
+    const record = otpStoreMap.get(cleanEmail);
+
+    if (!record || record.otpCode !== otp.trim() || Date.now() > record.expiresAt) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired OTP code.' });
+    }
+
+    record.verified = true;
+    otpStoreMap.set(cleanEmail, record);
+
+    res.json({ success: true, message: 'OTP verified successfully. You may now reset your password.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Error verifying OTP' });
+  }
+};
+
+// Reset Password With OTP
+exports.resetPasswordWithOTP = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Email, OTP, and new password are required.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const record = otpStoreMap.get(cleanEmail);
+
+    if (!record || record.otpCode !== otp.trim() || !record.verified) {
+      return res.status(400).json({ success: false, message: 'OTP verification required before resetting password.' });
+    }
+
+    const userIndex = memoryStore.users.findIndex(u => String(u._id) === String(record.userId));
+    if (userIndex === -1) {
+      return res.status(404).json({ success: false, message: 'User account not found.' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword.trim(), salt);
+
+    memoryStore.users[userIndex].password = hashedPassword;
+    memoryStore.users[userIndex].plainPassword = newPassword.trim();
+    saveMemoryStoreToDisk();
+
+    if (!memoryStore.isInMemoryMode && mongoose.connection.readyState === 1) {
+      try {
+        await User.updateOne({ _id: record.userId }, { password: hashedPassword, plainPassword: newPassword.trim() });
+      } catch (e) {}
+    }
+
+    otpStoreMap.delete(cleanEmail);
+
+    res.json({ success: true, message: 'Password reset successfully! You can now log in with your new password.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Error resetting password' });
+  }
+};
+
+// Get Current User Profile
+exports.getProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = memoryStore.users.find(u => String(u._id) === String(userId));
+    if (!user) return res.status(404).json({ success: false, message: 'User profile not found.' });
+
+    let phcDetails = null;
+    if (user.assignedPHC) {
+      phcDetails = memoryStore.phcs.find(p => String(p._id) === String(user.assignedPHC));
+    }
+
+    res.json({
+      success: true,
+      user: {
+        ...user,
+        password: undefined,
+        plainPassword: undefined,
+        phcDetails
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Error fetching user profile' });
+  }
+};
