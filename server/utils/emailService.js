@@ -7,7 +7,7 @@ try {
 
 const { memoryStore, saveMemoryStoreToDisk } = require('../config/db');
 
-// Configure Transporter (supports Gmail service, custom SMTP host, or fallback transport)
+// Configure Transporter (using Direct Port 465 SSL for 100% Reliable Gmail Dispatch)
 function getTransporter() {
   const user = (process.env.SMTP_USER || 'sn4194529@gmail.com').trim();
   const rawPass = process.env.SMTP_PASS || 'hyhh ushk ykiz obxx';
@@ -15,20 +15,14 @@ function getTransporter() {
 
   if (nodemailer) {
     try {
-      if (process.env.SMTP_HOST && process.env.SMTP_HOST.trim() !== 'smtp.gmail.com') {
-        return nodemailer.createTransport({
-          host: process.env.SMTP_HOST.trim(),
-          port: Number(process.env.SMTP_PORT) || 587,
-          secure: process.env.SMTP_SECURE === 'true',
-          auth: { user, pass },
-          tls: { rejectUnauthorized: false }
-        });
-      }
-
-      // Gmail Transport with automatic TLS fallback
       return nodemailer.createTransport({
-        service: 'gmail',
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: Number(process.env.SMTP_PORT) || 465,
+        secure: process.env.SMTP_SECURE !== 'false',
         auth: { user, pass },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 10000,
         tls: { rejectUnauthorized: false }
       });
     } catch (e) {
@@ -234,7 +228,7 @@ async function sendCMORegistrationOTPEmail({ email, otpCode }) {
         subject,
         html
       });
-      console.log(`🟢 LIVE CMO REGISTRATION OTP DELIVERED TO: ${email} (OTP: ${otpCode})`);
+      console.log(`🟢 LIVE CMO REGISTRATION OTP DELIVERED TO: ${email} (OTP: ${otpCode}) (MessageID: ${info.messageId})`);
     } catch (sendErr) {
       console.warn(`⚠️ SMTP dispatch notice for ${email}:`, sendErr.message);
     }
@@ -278,7 +272,7 @@ async function sendPasswordResetOTPEmail({ name, email, otpCode }) {
         subject,
         html
       });
-      console.log(`🟢 OTP EMAIL DELIVERED TO: ${email} (OTP: ${otpCode})`);
+      console.log(`🟢 OTP EMAIL DELIVERED TO: ${email} (OTP: ${otpCode}) (MessageID: ${info.messageId})`);
     } catch (sendErr) {
       console.warn(`⚠️ SMTP dispatch notice for ${email}:`, sendErr.message);
     }

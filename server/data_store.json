@@ -6,14 +6,14 @@
   "settings": {},
   "notifications": [
     {
-      "_id": "notif_1787768487245_urp06",
+      "_id": "notif_1787769058715_wilgv",
       "recipientEmail": "suriyachandru2006@gmail.com",
       "title": "CMO Registration Verification OTP Dispatched",
       "message": "Master CMO Registration OTP code: 999888. Dispatched to suriyachandru2006@gmail.com.",
       "type": "EMAIL",
       "read": false,
       "isRead": false,
-      "createdAt": "2026-08-26T18:21:27.245Z"
+      "createdAt": "2026-08-26T18:30:58.715Z"
     }
   ]
 }
