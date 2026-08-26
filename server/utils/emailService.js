@@ -48,7 +48,7 @@ function getTransporter() {
   };
 }
 
-// Log notification into System Notifications Audit Store (SECURITY RULE: NEVER INCLUDE OTPs, USERNAMES, OR PASSWORDS)
+// Log notification into System Notifications Audit Store
 function logNotification(recipientEmail, title, message, type = 'EMAIL') {
   const notif = {
     _id: 'notif_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
@@ -64,7 +64,7 @@ function logNotification(recipientEmail, title, message, type = 'EMAIL') {
   saveMemoryStoreToDisk();
 }
 
-// 1. Send Doctor Registration Welcome Email with Credentials (Email only; In-app notification masks credentials)
+// 1. Send Doctor Registration Welcome Email
 async function sendDoctorRegistrationEmail({ name, email, username, password, shiftStart, shiftEnd, phcName }) {
   try {
     const transporter = getTransporter();
@@ -107,14 +107,13 @@ async function sendDoctorRegistrationEmail({ name, email, username, password, sh
       console.warn(`⚠️ SMTP dispatch notice for ${email}:`, sendErr.message);
     }
 
-    // In-App Notification (DOES NOT INCLUDE USERNAME OR PASSWORD)
     logNotification(email, 'Account Registration Notice', `Welcome Dr. ${name}! Your medical doctor account was registered at ${phcName}. Your assigned duty shift is ${shiftStart} - ${shiftEnd}. Account credentials have been sent to your email inbox.`);
   } catch (err) {
     console.error('Error sending registration email:', err);
   }
 }
 
-// 2. Send Duty Shift Timings Update Email
+// 2. Send Shift Update Email
 async function sendShiftUpdateEmail({ name, email, shiftStart, shiftEnd, phcName }) {
   try {
     const transporter = getTransporter();
@@ -158,7 +157,7 @@ async function sendShiftUpdateEmail({ name, email, shiftStart, shiftEnd, phcName
   }
 }
 
-// 3. Send Hourly Duty Checkpoint Attendance Reminder Email
+// 3. Send Hourly Checkpoint Reminder Email
 async function sendHourlyCheckpointReminderEmail({ name, email, checkpointIndex, windowLabel, phcName }) {
   try {
     const transporter = getTransporter();
@@ -202,7 +201,51 @@ async function sendHourlyCheckpointReminderEmail({ name, email, checkpointIndex,
   }
 }
 
-// 4. Send Password Reset OTP Email (Live email only; OTP is NEVER logged to in-app notification panel)
+// 4. Send Master CMO Registration Verification OTP Email
+async function sendCMORegistrationOTPEmail({ email, otpCode }) {
+  try {
+    const transporter = getTransporter();
+
+    const subject = `🔐 Master CMO Registration Verification OTP Code - ${otpCode}`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; background-color: #0F172A; padding: 24px; color: #F8FAFC;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: #1E293B; border: 1px solid #8B5CF6; border-radius: 16px; padding: 24px;">
+          <h2 style="color: #8B5CF6; margin-top: 0;">👑 Master CMO Registration OTP</h2>
+          <p style="font-size: 14px; color: #94A3B8;">Hello,</p>
+          <p style="font-size: 14px; color: #CBD5E1;">A request was made to register a new <strong>State Chief Medical Officer (CMO)</strong> account for email: <strong>${email}</strong>.</p>
+          
+          <div style="background-color: #0F172A; border-left: 4px solid #8B5CF6; padding: 20px; margin: 20px 0; border-radius: 8px; text-align: center;">
+            <p style="font-size: 12px; color: #94A3B8; margin: 0 0 8px 0; font-weight: bold; text-transform: uppercase;">Your 6-Digit Master CMO Verification OTP:</p>
+            <div style="font-size: 36px; font-weight: bold; letter-spacing: 10px; color: #10B981; font-family: monospace;">${otpCode}</div>
+            <p style="font-size: 11px; color: #94A3B8; margin: 10px 0 0 0;">Valid for 10 minutes. Strictly 3 verification attempts permitted.</p>
+          </div>
+
+          <p style="font-size: 12px; color: #94A3B8;">If you did not initiate this CMO registration, please disregard this message.</p>
+          <hr style="border: 0; border-top: 1px solid #334155; margin: 20px 0;" />
+          <p style="font-size: 11px; color: #64748B; text-align: center;">State Directorate of Public Health Services • GeoAttendance System</p>
+        </div>
+      </div>
+    `;
+
+    try {
+      const info = await transporter.sendMail({
+        from: `"State CMO Directorate" <${process.env.SMTP_USER || 'sn4194529@gmail.com'}>`,
+        to: email,
+        subject,
+        html
+      });
+      console.log(`🟢 LIVE CMO REGISTRATION OTP DELIVERED TO: ${email} (OTP: ${otpCode})`);
+    } catch (sendErr) {
+      console.warn(`⚠️ SMTP dispatch notice for ${email}:`, sendErr.message);
+    }
+
+    logNotification(email, 'CMO Registration Verification OTP Dispatched', `A 6-digit OTP code was sent to ${email} for Master CMO Registration verification.`);
+  } catch (err) {
+    console.error('Error sending CMO registration OTP email:', err);
+  }
+}
+
+// 5. Send Password Reset OTP Email
 async function sendPasswordResetOTPEmail({ name, email, otpCode }) {
   try {
     const transporter = getTransporter();
@@ -213,7 +256,7 @@ async function sendPasswordResetOTPEmail({ name, email, otpCode }) {
         <div style="max-width: 600px; margin: 0 auto; background-color: #1E293B; border: 1px solid #3B82F6; border-radius: 16px; padding: 24px;">
           <h2 style="color: #3B82F6; margin-top: 0;">🔐 Security Verification Request</h2>
           <p style="font-size: 14px; color: #94A3B8;">Hello <strong>${name || 'User'}</strong>,</p>
-          <p style="font-size: 14px; color: #CBD5E1;">A credential authorization / password reset request was initiated for your account registered with email: <strong>${email}</strong>.</p>
+          <p style="font-size: 14px; color: #CBD5E1;">A credential authorization request was initiated for your account: <strong>${email}</strong>.</p>
           
           <div style="background-color: #0F172A; border-left: 4px solid #3B82F6; padding: 20px; margin: 20px 0; border-radius: 8px; text-align: center;">
             <p style="font-size: 12px; color: #94A3B8; margin: 0 0 8px 0; font-weight: bold; text-transform: uppercase;">Your 6-Digit OTP Verification Code:</p>
@@ -240,14 +283,13 @@ async function sendPasswordResetOTPEmail({ name, email, otpCode }) {
       console.warn(`⚠️ SMTP dispatch notice for ${email}:`, sendErr.message);
     }
 
-    // SECURITY RULE: DO NOT LOG OTP CODE TO IN-APP NOTIFICATIONS PANEL
     logNotification(email, 'Security Verification Notice', `A 6-digit security OTP code was dispatched to your email address (${email}). Please check your email inbox.`);
   } catch (err) {
     console.error('Error sending OTP email:', err);
   }
 }
 
-// 5. Send Custom Official Notice / Warning Email to Admin or Doctor Inbox
+// 6. Send Custom Message Email
 async function sendCustomMessageEmail({ recipientName, recipientEmail, subject, messageText, senderRole = 'CMO' }) {
   try {
     const transporter = getTransporter();
@@ -290,7 +332,7 @@ async function sendCustomMessageEmail({ recipientName, recipientEmail, subject, 
   }
 }
 
-// 6. Send Attendance Summary Report to Doctor Inbox
+// 7. Send Doctor Attendance Report Email
 async function sendDoctorAttendanceReportEmail({ name, email, attendanceSummary, phcName }) {
   try {
     const transporter = getTransporter();
@@ -354,6 +396,7 @@ module.exports = {
   sendDoctorRegistrationEmail,
   sendShiftUpdateEmail,
   sendHourlyCheckpointReminderEmail,
+  sendCMORegistrationOTPEmail,
   sendPasswordResetOTPEmail,
   sendCustomMessageEmail,
   sendDoctorAttendanceReportEmail,

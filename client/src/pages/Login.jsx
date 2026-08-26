@@ -5,12 +5,13 @@ import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { FaceScannerModal } from '../components/biometrics/FaceScannerModal';
 import { ForgotPasswordModal } from '../components/common/ForgotPasswordModal';
-import { Hospital, Shield, User, Lock, Eye, EyeOff, ArrowRight, Check, Camera, KeyRound } from 'lucide-react';
+import { RegisterCMOModal } from '../components/common/RegisterCMOModal';
+import { Hospital, Shield, User, Lock, Eye, EyeOff, ArrowRight, Check, Camera, KeyRound, UserPlus } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const Login = () => {
-  const [usernameOrEmail, setUsernameOrEmail] = useState('suriyachandru2006@gmail.com');
-  const [password, setPassword] = useState('Suriya@2006');
+  const [usernameOrEmail, setUsernameOrEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [role, setRole] = useState('CMO');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -23,22 +24,17 @@ export const Login = () => {
   // Forgot Password OTP Reset Modal State
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
 
+  // Register Master CMO Live OTP Modal State
+  const [showRegisterCMOModal, setShowRegisterCMOModal] = useState(false);
+
   const { login, doctorFaceLogin, loading } = useAuth();
   const { addToast } = useNotification();
   const navigate = useNavigate();
 
   const handleRoleSelect = (selectedRole) => {
     setRole(selectedRole);
-    if (selectedRole === 'CMO') {
-      setUsernameOrEmail('suriyachandru2006@gmail.com');
-      setPassword('Suriya@2006');
-    } else if (selectedRole === 'ADMIN') {
-      setUsernameOrEmail('admin.central@hospital.gov.in');
-      setPassword('password123');
-    } else if (selectedRole === 'DOCTOR') {
-      setUsernameOrEmail('doctor@hospital.gov.in');
-      setPassword('password123');
-    }
+    setUsernameOrEmail('');
+    setPassword('');
   };
 
   const handleSubmit = async (e) => {
@@ -61,7 +57,6 @@ export const Login = () => {
           setShowDoctorFaceModal(true);
         }
       } catch (err) {
-        // Resilient fallback if backend server is not running
         setDoctorName(usernameOrEmail);
         addToast('Doctor credentials accepted. Launching biometric verification frame...', 'info');
         setShowDoctorFaceModal(true);
@@ -116,6 +111,12 @@ export const Login = () => {
         onClose={() => setShowForgotPasswordModal(false)}
       />
 
+      {/* Master CMO Registration Live OTP Modal */}
+      <RegisterCMOModal
+        isOpen={showRegisterCMOModal}
+        onClose={() => setShowRegisterCMOModal(false)}
+      />
+
       <motion.div
         initial={{ opacity: 0, y: 25 }}
         animate={{ opacity: 1, y: 0 }}
@@ -153,16 +154,16 @@ export const Login = () => {
                 <span>2-Step Biometric Face Recognition for Doctors</span>
               </div>
               <div className="flex items-center gap-2.5 text-slate-300">
+                <div className="w-5 h-5 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center flex-shrink-0">
+                  <UserPlus className="w-3 h-3" />
+                </div>
+                <span>Master CMO Live Email OTP Registration</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-slate-300">
                 <div className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center flex-shrink-0">
                   <KeyRound className="w-3 h-3" />
                 </div>
                 <span>Admin OTP Email Password Reset Workflow</span>
-              </div>
-              <div className="flex items-center gap-2.5 text-slate-300">
-                <div className="w-5 h-5 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center flex-shrink-0">
-                  <Check className="w-3 h-3" />
-                </div>
-                <span>Haversine GPS Radius & Audit Log</span>
               </div>
             </div>
           </div>
@@ -174,11 +175,11 @@ export const Login = () => {
             </span>
             <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-700/60 text-xs">
               <div className="font-bold text-white flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
                 {role} Login Portal
               </div>
               <p className="text-[11px] text-slate-400 mt-1">
-                {role === 'CMO' && 'State Chief Medical Officer Access'}
+                {role === 'CMO' && 'State Chief Medical Officer Access (Includes Register CMO with Live Email OTP)'}
                 {role === 'ADMIN' && 'Hospital PHC Administrator Access (Includes OTP Password Reset)'}
                 {role === 'DOCTOR' && 'Medical Doctor Biometric Portal (Credentials + Face Recognition)'}
               </p>
@@ -290,7 +291,7 @@ export const Login = () => {
               <button
                 type="submit"
                 disabled={loading || verifyingCredentials}
-                className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition-all shadow-glow-blue flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition-all shadow-glow-purple flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {verifyingCredentials
                   ? 'Verifying Credentials...'
@@ -301,6 +302,20 @@ export const Login = () => {
                   : `Sign In to ${role} Portal`}
                 <ArrowRight className="w-4 h-4" />
               </button>
+
+              {/* Dedicated Register CMO Button */}
+              {role === 'CMO' && (
+                <div className="pt-3 text-center border-t border-slate-700/60 mt-4">
+                  <span className="text-xs text-slate-400">New State Chief Medical Officer? </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowRegisterCMOModal(true)}
+                    className="text-xs font-bold text-purple-400 hover:text-purple-300 hover:underline inline-flex items-center gap-1 transition-all"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" /> Register CMO with Live Email OTP
+                  </button>
+                </div>
+              )}
             </form>
           </div>
         </div>

@@ -3,13 +3,16 @@ const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const { memoryStore, saveMemoryStoreToDisk } = require('../config/db');
 const User = require('../models/User');
-const { sendPasswordResetOTPEmail } = require('../utils/emailService');
+const { sendPasswordResetOTPEmail, sendCMORegistrationOTPEmail } = require('../utils/emailService');
 const { evaluateBiometricMatch, FACE_ERROR_CODES } = require('../utils/faceRecognitionEngine');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'hospital_geofence_secret_key_2026';
 
-// Store OTP requests in memory map: email -> { otpCode, expiresAt, verified, userId }
+// Store Password Reset OTP requests: email -> { otpCode, expiresAt, verified, userId }
 const otpStoreMap = new Map();
+
+// Store Master CMO Registration OTP requests: email -> { otpCode, expiresAt, lastRequestedAt, attemptsLeft, verified }
+const cmoOtpStoreMap = new Map();
 
 // Unified Facial Feature Vector Normalizer Fallback
 function extractFacialMatrix(faceDataInput) {
@@ -321,6 +324,200 @@ exports.login = async (req, res) => {
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ success: false, message: 'Server error during login' });
+  }
+};
+
+// ==========================================
+// MASTER CMO REGISTRATION WITH LIVE OTP FLOW
+// ==========================================
+
+// 1. Request Master CMO Registration OTP
+exports.cmoRequestOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ success: false, message: 'Valid official email address is required.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    // Check Cooldown (60 seconds)
+    const existingRecord = cmoOtpStoreMap.get(cleanEmail);
+    if (existingRecord && existingRecord.lastRequestedAt && (Date.now() - existingRecord.lastRequestedAt < 60000)) {
+      const remainingSecs = Math.ceil((60000 - (Date.now() - existingRecord.lastRequestedAt)) / 1000);
+      return res.status(429).json({
+        success: false,
+        message: `Please wait ${remainingSecs} second(s) before requesting a new OTP.`,
+        cooldownSeconds: remainingSecs
+      });
+    }
+
+    // Generate 6-Digit OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes validity
+
+    cmoOtpStoreMap.set(cleanEmail, {
+      otpCode,
+      expiresAt,
+      lastRequestedAt: Date.now(),
+      attemptsLeft: 3,
+      verified: false
+    });
+
+    // Send Live Email
+    sendCMORegistrationOTPEmail({ email: cleanEmail, otpCode });
+
+    res.json({
+      success: true,
+      message: `Master CMO verification OTP sent to ${cleanEmail}. Please check your email inbox.`,
+      cooldownSeconds: 60
+    });
+
+  } catch (err) {
+    console.error('CMO request OTP error:', err);
+    res.status(500).json({ success: false, message: 'Error sending Master CMO verification OTP' });
+  }
+};
+
+// 2. Verify Master CMO Registration OTP (Max 3 Attempts Enforcement)
+exports.cmoVerifyOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ success: false, message: 'Email address and OTP code are required.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanOtp = otp.trim();
+
+    const record = cmoOtpStoreMap.get(cleanEmail);
+
+    if (!record || Date.now() > record.expiresAt) {
+      return res.status(400).json({ success: false, message: 'OTP has expired or was not requested. Please request a new OTP.' });
+    }
+
+    if (record.attemptsLeft <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Maximum 3 invalid OTP attempts reached. Please wait for cooldown to request a new OTP.',
+        attemptsLeft: 0
+      });
+    }
+
+    if (record.otpCode !== cleanOtp) {
+      record.attemptsLeft -= 1;
+      cmoOtpStoreMap.set(cleanEmail, record);
+
+      if (record.attemptsLeft <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Wrong OTP! Maximum 3 invalid attempts reached. Please request a new OTP code after 1-minute cooldown.',
+          attemptsLeft: 0
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: `Wrong OTP! You have ${record.attemptsLeft} attempt(s) remaining.`,
+          attemptsLeft: record.attemptsLeft
+        });
+      }
+    }
+
+    // OTP Verified Successfully
+    record.verified = true;
+    cmoOtpStoreMap.set(cleanEmail, record);
+
+    res.json({
+      success: true,
+      message: 'OTP verified successfully! Please enter your Master CMO username and password to complete registration.'
+    });
+
+  } catch (err) {
+    console.error('CMO verify OTP error:', err);
+    res.status(500).json({ success: false, message: 'Error verifying OTP code' });
+  }
+};
+
+// 3. Complete Master CMO Account Registration & Setup Credentials
+exports.cmoCompleteRegistration = async (req, res) => {
+  try {
+    const { name, email, otp, password } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ success: false, message: 'Full Name, Email, and Password are required.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const record = cmoOtpStoreMap.get(cleanEmail);
+
+    if (!record || !record.verified) {
+      return res.status(400).json({ success: false, message: 'Valid OTP verification is required before setting CMO credentials.' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password.trim(), salt);
+
+    let cmoUser = memoryStore.users.find(u => u.role === 'CMO' || (u.email && u.email.toLowerCase() === cleanEmail));
+
+    if (cmoUser) {
+      cmoUser.name = name.trim();
+      cmoUser.email = cleanEmail;
+      cmoUser.username = cleanEmail;
+      cmoUser.password = hashedPassword;
+      cmoUser.plainPassword = password.trim();
+      cmoUser.role = 'CMO';
+      cmoUser.status = 'ACTIVE';
+    } else {
+      cmoUser = {
+        _id: 'cmo_' + Date.now(),
+        name: name.trim(),
+        email: cleanEmail,
+        username: cleanEmail,
+        password: hashedPassword,
+        plainPassword: password.trim(),
+        role: 'CMO',
+        gender: 'Male',
+        status: 'ACTIVE',
+        createdAt: new Date().toISOString()
+      };
+      memoryStore.users.unshift(cmoUser);
+    }
+
+    saveMemoryStoreToDisk();
+
+    if (!memoryStore.isInMemoryMode && mongoose.connection.readyState === 1) {
+      try {
+        await User.findOneAndUpdate(
+          { role: 'CMO' },
+          { name: name.trim(), email: cleanEmail, username: cleanEmail, password: hashedPassword, plainPassword: password.trim(), status: 'ACTIVE' },
+          { upsert: true }
+        );
+      } catch (e) {}
+    }
+
+    cmoOtpStoreMap.delete(cleanEmail);
+
+    const token = jwt.sign(
+      { id: cmoUser._id, role: cmoUser.role, email: cmoUser.email, name: cmoUser.name },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      success: true,
+      message: `Master CMO account registered successfully! Welcome ${cmoUser.name}`,
+      token,
+      role: 'CMO',
+      user: {
+        _id: cmoUser._id,
+        name: cmoUser.name,
+        email: cmoUser.email,
+        role: 'CMO'
+      }
+    });
+
+  } catch (err) {
+    console.error('CMO registration error:', err);
+    res.status(500).json({ success: false, message: 'Server error completing Master CMO registration' });
   }
 };
 
