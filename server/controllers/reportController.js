@@ -76,7 +76,7 @@ exports.getReportSummary = (req, res) => {
 
 /**
  * Enterprise Dynamic PDF Report Generator
- * 100% Dynamic Bindings for Hospital Name, Hospital Address, Doctor Profile, Admin Credentials, and Database Logs
+ * 100% Dynamic Bindings with Dynamic Vertical Offsets to Prevent Text Overlays
  */
 exports.exportAttendancePDF = (req, res) => {
   try {
@@ -149,12 +149,12 @@ exports.exportAttendancePDF = (req, res) => {
     };
 
     const drawHeader = () => {
-      // Background subtle gradient banner
-      doc.rect(0, 0, 595, 100).fill(COLORS.lightPurpleBg);
+      // Background banner height: 105px
+      doc.rect(0, 0, 595, 105).fill(COLORS.lightPurpleBg);
 
       // 1. Top-Left: Pink Heart with White ECG Heartbeat Line Vector Icon
-      const heartX = 40;
-      const heartY = 30;
+      const heartX = 35;
+      const heartY = 25;
 
       doc.save();
       doc.moveTo(heartX + 16, heartY + 6)
@@ -180,8 +180,8 @@ exports.exportAttendancePDF = (req, res) => {
       doc.restore();
 
       // 2. Top-Right: Stethoscope Vector Illustration
-      const stethX = 535;
-      const stethY = 35;
+      const stethX = 545;
+      const stethY = 30;
       doc.save();
       doc.circle(stethX, stethY + 10, 8).lineWidth(2).strokeColor(COLORS.secondaryPurple).stroke();
       doc.circle(stethX, stethY + 10, 4).fillColor(COLORS.pinkAccent).fill();
@@ -192,28 +192,34 @@ exports.exportAttendancePDF = (req, res) => {
          .stroke();
       doc.restore();
 
-      // 3. Center: 100% Dynamic Hospital Header Information
+      // 3. Center: Dynamic Hospital Header Information (Bounded Width: 380px to Prevent Overlays)
+      const headerBoxX = 107;
+      const headerBoxW = 380;
+
       doc.fillColor(COLORS.primaryPurple)
-         .fontSize(18)
+         .fontSize(16)
          .font('Helvetica-Bold')
-         .text(hospitalNameStr, 0, 24, { align: 'center' });
+         .text(hospitalNameStr, headerBoxX, 18, { width: headerBoxW, align: 'center' });
+
+      // Dynamic Y position after hospital name (prevents overlay even if hospital name wraps)
+      const addressY = doc.y + 3;
 
       doc.fillColor(COLORS.subtleGray)
-         .fontSize(8.5)
+         .fontSize(8)
          .font('Helvetica')
-         .text(hospitalAddressStr, 0, 50, { align: 'center' });
+         .text(hospitalAddressStr, headerBoxX, addressY, { width: headerBoxW, align: 'center' });
 
-      // 4. Subtle Decorative Pink/Purple ECG Line under Header
+      // 4. Decorative Pink/Purple ECG Line dynamically below address
+      const ecgY = doc.y + 6;
       doc.save();
-      const ecgY = 72;
-      doc.moveTo(180, ecgY)
+      doc.moveTo(190, ecgY)
          .lineTo(260, ecgY)
-         .lineTo(266, ecgY - 6)
-         .lineTo(272, ecgY + 8)
-         .lineTo(278, ecgY - 10)
-         .lineTo(284, ecgY + 6)
+         .lineTo(266, ecgY - 5)
+         .lineTo(272, ecgY + 7)
+         .lineTo(278, ecgY - 8)
+         .lineTo(284, ecgY + 5)
          .lineTo(290, ecgY)
-         .lineTo(415, ecgY)
+         .lineTo(405, ecgY)
          .lineWidth(1.2)
          .strokeColor(COLORS.pinkAccent)
          .stroke();
@@ -223,10 +229,10 @@ exports.exportAttendancePDF = (req, res) => {
     // Draw Main Top Header
     drawHeader();
 
-    // 5. 100% Dynamic Doctor Information Card
-    const cardY = 92;
+    // 5. Dynamic Doctor Information Card (Height: 110px to prevent field text overlays)
+    const cardY = 112;
     const cardWidth = 515;
-    const cardHeight = 98;
+    const cardHeight = 110;
     const cardX = (595 - cardWidth) / 2; // 40
 
     // White Card Background with Soft Lavender Border
@@ -236,9 +242,9 @@ exports.exportAttendancePDF = (req, res) => {
     doc.restore();
 
     // Doctor Avatar Circle Frame (Left Side of Card)
-    const avatarX = cardX + 40;
+    const avatarX = cardX + 35;
     const avatarY = cardY + cardHeight / 2;
-    const avatarRadius = 28;
+    const avatarRadius = 26;
 
     doc.save();
     doc.circle(avatarX, avatarY, avatarRadius).fillColor(COLORS.lightPurpleBg).fill();
@@ -247,14 +253,15 @@ exports.exportAttendancePDF = (req, res) => {
     // Dynamic Doctor Gender Avatar Graphic
     const isFemale = targetDoctor && (targetDoctor.gender === 'Female' || targetDoctor.name.toLowerCase().includes('saranya') || targetDoctor.name.toLowerCase().includes('lady'));
     doc.fillColor(COLORS.primaryPurple)
-       .fontSize(22)
+       .fontSize(20)
        .font('Helvetica-Bold')
-       .text(isFemale ? '♀' : '👨‍⚕️', avatarX - 10, avatarY - 12);
+       .text(isFemale ? '♀' : '👨‍⚕️', avatarX - 9, avatarY - 11);
     doc.restore();
 
-    // Doctor Dynamic Fields from Database
-    const infoX = cardX + 90;
-    let textY = cardY + 12;
+    // Doctor Dynamic Fields from Database (Bounded Width: 300px to Prevent Compliance Badge Collisions)
+    const infoX = cardX + 75;
+    const infoWidth = 310;
+    let fieldY = cardY + 10;
 
     const docName = targetDoctor ? targetDoctor.name : 'Dr. K. Aravind Kumar';
     const docSpec = targetDoctor ? (targetDoctor.specialization || targetDoctor.qualification || 'Consultant Cardiologist') : 'Consultant Cardiologist';
@@ -263,25 +270,25 @@ exports.exportAttendancePDF = (req, res) => {
     const docGender = targetDoctor ? (targetDoctor.gender || 'Male') : 'Male';
     const phcFacilityName = targetPhc ? targetPhc.name : 'City Care Primary Health Center';
 
-    // Doctor Name
-    doc.fillColor(COLORS.primaryPurple).fontSize(14).font('Helvetica-Bold').text(docName, infoX, textY);
-    textY += 18;
+    // Doctor Name (Row 1)
+    doc.fillColor(COLORS.primaryPurple).fontSize(13).font('Helvetica-Bold').text(docName, infoX, fieldY, { width: infoWidth });
+    fieldY = doc.y + 2;
 
-    // Designation / Specialization
-    doc.fillColor(COLORS.secondaryPurple).fontSize(9.5).font('Helvetica-Bold').text(`Designation: `, infoX, textY, { continued: true });
-    doc.fillColor(COLORS.darkCharcoal).font('Helvetica').text(docSpec);
-    textY += 14;
+    // Designation / Specialization (Row 2)
+    doc.fillColor(COLORS.secondaryPurple).fontSize(9).font('Helvetica-Bold').text('Designation: ', infoX, fieldY, { continued: true });
+    doc.fillColor(COLORS.darkCharcoal).font('Helvetica').text(docSpec, { width: infoWidth });
+    fieldY = doc.y + 2;
 
-    // Email & Phone Number
-    doc.fillColor(COLORS.secondaryPurple).fontSize(9).font('Helvetica-Bold').text(`Email: `, infoX, textY, { continued: true });
+    // Email & Phone Number (Row 3)
+    doc.fillColor(COLORS.secondaryPurple).fontSize(8.5).font('Helvetica-Bold').text('Email: ', infoX, fieldY, { continued: true });
     doc.fillColor(COLORS.darkCharcoal).font('Helvetica').text(docEmail, { continued: true });
-    doc.fillColor(COLORS.secondaryPurple).font('Helvetica-Bold').text(`   |   Phone: `, { continued: true });
-    doc.fillColor(COLORS.darkCharcoal).font('Helvetica').text(docPhone);
-    textY += 14;
+    doc.fillColor(COLORS.secondaryPurple).font('Helvetica-Bold').text('  |  Phone: ', { continued: true });
+    doc.fillColor(COLORS.darkCharcoal).font('Helvetica').text(docPhone, { width: infoWidth });
+    fieldY = doc.y + 2;
 
-    // Gender & Facility
-    doc.fillColor(COLORS.secondaryPurple).fontSize(9).font('Helvetica-Bold').text(`Gender: `, infoX, textY, { continued: true });
-    doc.fillColor(COLORS.darkCharcoal).font('Helvetica').text(`${docGender}   |   Facility: ${phcFacilityName}`);
+    // Gender & Facility (Row 4)
+    doc.fillColor(COLORS.secondaryPurple).fontSize(8.5).font('Helvetica-Bold').text('Gender: ', infoX, fieldY, { continued: true });
+    doc.fillColor(COLORS.darkCharcoal).font('Helvetica').text(`${docGender}   |   Facility: ${phcFacilityName}`, { width: infoWidth });
 
     // Summary Compliance Score Badge (Top Right of Card)
     const badgeX = cardX + cardWidth - 110;
@@ -295,7 +302,7 @@ exports.exportAttendancePDF = (req, res) => {
     doc.restore();
 
     // 6. Main Content Area (Dynamic Attendance Table)
-    let currentY = 202;
+    let currentY = cardY + cardHeight + 15; // 237
 
     const drawTableHeader = (yPos) => {
       doc.save();
@@ -321,7 +328,7 @@ exports.exportAttendancePDF = (req, res) => {
         if (currentY > 730) {
           doc.addPage();
           drawHeader();
-          currentY = 110;
+          currentY = 120;
           drawTableHeader(currentY);
           currentY += 28;
         }
