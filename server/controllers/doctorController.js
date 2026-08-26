@@ -1,4 +1,5 @@
 const { memoryStore, saveMemoryStoreToDisk } = require('../config/db');
+const { clearRemindersForDoctor } = require('../utils/cronScheduler');
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
 const Explanation = require('../models/Explanation');
@@ -337,7 +338,7 @@ exports.updateDoctor = async (req, res) => {
   }
 };
 
-// Delete Doctor Account and associated logs
+// Delete Doctor Account and associated logs & IMMEDIATELY STOP EMAIL TRIGGERS
 exports.deleteDoctor = async (req, res) => {
   try {
     const { id } = req.params;
@@ -345,6 +346,9 @@ exports.deleteDoctor = async (req, res) => {
     if (docIdx === -1) return res.status(404).json({ success: false, message: 'Doctor not found' });
 
     const deletedDoctor = memoryStore.users.splice(docIdx, 1)[0];
+
+    // IMMEDIATELY STOP EMAIL & NOTIFICATION TRIGGERS for deleted doctor
+    clearRemindersForDoctor(id);
 
     // Clean up attendance logs and explanations for this doctor
     memoryStore.attendances = memoryStore.attendances.filter(a => String(a.doctor) !== String(id));
@@ -359,7 +363,9 @@ exports.deleteDoctor = async (req, res) => {
       } catch (e) {}
     }
 
-    res.json({ success: true, message: `Doctor "${deletedDoctor.name}" and all associated logs removed successfully` });
+    console.log(`🛑 Stopped all automated email reminders and triggers for deleted doctor: Dr. ${deletedDoctor.name} (${deletedDoctor.email})`);
+
+    res.json({ success: true, message: `Doctor "${deletedDoctor.name}" removed successfully. All background email triggers stopped.` });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Error deleting doctor' });
   }
@@ -664,7 +670,7 @@ exports.updateAdmin = async (req, res) => {
   }
 };
 
-// Delete Admin Account & Cascading Delete of Respective Admin's Doctors and Attendance Records (CMO only)
+// Delete Admin Account & Cascading Delete of Respective Admin's Doctors, Attendance Records, and STOP ALL EMAIL REMINDERS (CMO only)
 exports.deleteAdmin = async (req, res) => {
   try {
     const { id } = req.params;
@@ -681,31 +687,34 @@ exports.deleteAdmin = async (req, res) => {
     );
     const doctorIdsToDelete = adminDoctors.map(d => String(d._id));
 
-    console.log(`🗑️ CMO Deleting Admin "${deletedAdmin.name}". Cascading deletion of ${doctorIdsToDelete.length} assigned doctor accounts and associated logs...`);
+    console.log(`🗑️ CMO Deleting Admin "${deletedAdmin.name}". Cascading deletion of ${doctorIdsToDelete.length} assigned doctor accounts and stopping all automated email triggers...`);
 
-    // 2. Remove Admin account
+    // 2. Immediately STOP all automated email reminders for all deleted doctors
+    doctorIdsToDelete.forEach(docId => clearRemindersForDoctor(docId));
+
+    // 3. Remove Admin account
     memoryStore.users.splice(adminIdx, 1);
 
-    // 3. Remove all Doctors assigned to this Admin / PHC
+    // 4. Remove all Doctors assigned to this Admin / PHC
     memoryStore.users = memoryStore.users.filter(u => !(
       u.role === 'DOCTOR' && 
       (String(u.assignedPHC) === String(phcId) || String(u.createdByAdmin) === String(id))
     ));
 
-    // 4. Remove all Attendance records for this PHC or deleted doctors
+    // 5. Remove all Attendance records for this PHC or deleted doctors
     memoryStore.attendances = memoryStore.attendances.filter(a => 
       String(a.phc) !== String(phcId) && !doctorIdsToDelete.includes(String(a.doctor))
     );
 
-    // 5. Remove all Explanation records for this PHC or deleted doctors
+    // 6. Remove all Explanation records for this PHC or deleted doctors
     memoryStore.explanations = memoryStore.explanations.filter(e => 
       String(e.phc) !== String(phcId) && !doctorIdsToDelete.includes(String(e.doctor))
     );
 
-    // 6. Save updated data store to disk
+    // 7. Save updated data store to disk
     saveMemoryStoreToDisk();
 
-    // 7. Cascading delete in MongoDB Atlas Cloud DB if connected
+    // 8. Cascading delete in MongoDB Atlas Cloud DB if connected
     if (!memoryStore.isInMemoryMode && mongoose.connection.readyState === 1) {
       try {
         await User.deleteOne({ _id: id });
@@ -721,7 +730,7 @@ exports.deleteAdmin = async (req, res) => {
 
     res.json({
       success: true,
-      message: `Admin "${deletedAdmin.name}" and all ${doctorIdsToDelete.length} assigned doctor account(s) and attendance records deleted successfully.`
+      message: `Admin "${deletedAdmin.name}" and all ${doctorIdsToDelete.length} assigned doctor account(s) deleted. All background email triggers stopped.`
     });
 
   } catch (err) {

@@ -14,6 +14,16 @@ function cleanOldReminders() {
   }
 }
 
+// Immediately purge reminders map for deleted or inactive doctors
+function clearRemindersForDoctor(doctorId) {
+  if (!doctorId) return;
+  for (const [key] of sentRemindersMap.entries()) {
+    if (key.startsWith(`${doctorId}:`)) {
+      sentRemindersMap.delete(key);
+    }
+  }
+}
+
 function checkAndSendHourlyReminders() {
   try {
     cleanOldReminders();
@@ -22,6 +32,8 @@ function checkAndSendHourlyReminders() {
     const intervalMins = memoryStore.settings.checkpointIntervalMinutes || 60;
     const windowMins = memoryStore.settings.windowDurationMinutes || 5;
 
+    // Filter ONLY ACTIVE registered doctors currently present in memory store
+    // Deleted doctors or inactive doctors are automatically EXCLUDED - NO emails/notifications will ever trigger!
     const doctors = memoryStore.users.filter(u => u.role === 'DOCTOR' && u.status === 'ACTIVE' && u.email);
 
     for (const doctor of doctors) {
@@ -115,5 +127,6 @@ function initCronScheduler() {
 
 module.exports = {
   initCronScheduler,
-  checkAndSendHourlyReminders
+  checkAndSendHourlyReminders,
+  clearRemindersForDoctor
 };
