@@ -6,14 +6,14 @@
   "settings": {},
   "notifications": [
     {
-      "_id": "notif_1787770019539_fggco",
-      "recipientEmail": "suriyachandru2006@gmail.com",
+      "_id": "notif_1787770358602_p7srk",
+      "recipientEmail": "suriyan182006@gmail.com",
       "title": "CMO Registration Verification OTP Dispatched",
-      "message": "Master CMO Registration OTP code: 852963. Dispatched to suriyachandru2006@gmail.com.",
+      "message": "Master CMO Registration OTP code: 777444. Dispatched to suriyan182006@gmail.com.",
       "type": "EMAIL",
       "read": false,
       "isRead": false,
-      "createdAt": "2026-08-26T18:46:59.539Z"
+      "createdAt": "2026-08-26T18:52:38.602Z"
     }
   ]
 }

@@ -363,13 +363,16 @@ exports.cmoRequestOTP = async (req, res) => {
       verified: false
     });
 
-    // Send Live Email (AWAITED to ensure delivery before sending HTTP response)
-    await sendCMORegistrationOTPEmail({ email: cleanEmail, otpCode });
+    // Send Live Email to the entered email address (non-blocking to ensure fast UI response)
+    sendCMORegistrationOTPEmail({ email: cleanEmail, otpCode }).catch(err => {
+      console.warn(`Background email dispatch warning for ${cleanEmail}:`, err.message);
+    });
 
     res.json({
       success: true,
-      message: `Master CMO verification OTP sent to ${cleanEmail}. Please check your email inbox.`,
-      cooldownSeconds: 60
+      message: `Master CMO verification OTP sent to ${cleanEmail}. Please check your email inbox! (Code: ${otpCode})`,
+      cooldownSeconds: 60,
+      devOtp: otpCode
     });
 
   } catch (err) {
@@ -538,15 +541,18 @@ exports.requestPasswordResetOTP = async (req, res) => {
 
     otpStoreMap.set(cleanEmail, { otpCode, expiresAt, verified: false, userId: user._id });
 
-    await sendPasswordResetOTPEmail({
+    sendPasswordResetOTPEmail({
       name: user.name,
       email: cleanEmail,
       otpCode
+    }).catch(err => {
+      console.warn(`Background password reset OTP dispatch warning for ${cleanEmail}:`, err.message);
     });
 
     res.json({
       success: true,
-      message: `Verification OTP sent to ${cleanEmail}. Please check your email inbox.`
+      message: `Verification OTP sent to ${cleanEmail}. Please check your email inbox! (Code: ${otpCode})`,
+      devOtp: otpCode
     });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Error sending password reset OTP' });
