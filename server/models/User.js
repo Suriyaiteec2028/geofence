@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   plainPassword: { type: String },
   role: { type: String, enum: ['CMO', 'ADMIN', 'DOCTOR'], required: true },
+  gender: { type: String, enum: ['Male', 'Female'], default: 'Male' },
   mobile: { type: String, default: '' },
   qualification: { type: String, default: '' },
   specialization: { type: String, default: '' },
@@ -14,7 +15,14 @@ const userSchema = new mongoose.Schema({
   shiftStart: { type: String, default: '09:00' },
   shiftEnd: { type: String, default: '17:00' },
   profilePhoto: { type: String, default: '' },
-  faceData: { type: String, default: '' }, // Biometric facial features template
+  faceData: { type: String, default: '' }, // Legacy fallback
+  faceAuthentication: {
+    model: { type: String, default: 'FaceRecognitionNet' },
+    embeddingDimension: { type: Number, default: 128 },
+    embeddings: { type: [[Number]], default: [] }, // Array of 3-5 normalized 128D deep feature vectors
+    version: { type: Number, default: 1 },
+    updatedAt: { type: Date, default: Date.now }
+  },
   status: { type: String, enum: ['ACTIVE', 'INACTIVE'], default: 'ACTIVE' },
   createdAt: { type: Date, default: Date.now }
 });
