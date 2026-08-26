@@ -285,3 +285,45 @@ exports.markAttendance = (req, res) => {
     res.status(500).json({ success: false, message: 'Server error marking attendance' });
   }
 };
+
+exports.getDoctorAttendanceLogs = (req, res) => {
+  try {
+    const userId = req.user.id;
+    const logs = memoryStore.attendances
+      .filter(a => String(a.doctor) === String(userId))
+      .map(a => {
+        const phc = memoryStore.phcs.find(p => String(p._id) === String(a.phc));
+        const docUser = memoryStore.users.find(u => String(u._id) === String(a.doctor));
+        return {
+          ...a,
+          phcName: phc ? phc.name : 'Primary Health Center',
+          doctorName: docUser ? docUser.name : 'Medical Doctor',
+          doctorSpecialization: docUser ? docUser.specialization : 'Medical Officer'
+        };
+      });
+
+    res.json({ success: true, attendances: logs });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Error fetching doctor attendance logs' });
+  }
+};
+
+exports.getAllAttendanceRecords = (req, res) => {
+  try {
+    const logs = memoryStore.attendances.map(a => {
+      const phc = memoryStore.phcs.find(p => String(p._id) === String(a.phc));
+      const docUser = memoryStore.users.find(u => String(u._id) === String(a.doctor));
+      return {
+        ...a,
+        phcName: phc ? phc.name : 'Primary Health Center',
+        doctorName: docUser ? docUser.name : 'Medical Doctor',
+        doctorSpecialization: docUser ? docUser.specialization : 'Medical Officer',
+        gender: docUser ? docUser.gender : 'Male'
+      };
+    });
+
+    res.json({ success: true, attendances: logs });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Error fetching all attendance records' });
+  }
+};
