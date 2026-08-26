@@ -5,8 +5,7 @@ const { memoryStore, saveMemoryStoreToDisk } = require('../config/db');
 const User = require('../models/User');
 const { sendPasswordResetOTPEmail, sendCMORegistrationOTPEmail } = require('../utils/emailService');
 const { evaluateBiometricMatch, FACE_ERROR_CODES } = require('../utils/faceRecognitionEngine');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'hospital_geofence_secret_key_2026';
+const { JWT_SECRET } = require('../middleware/authMiddleware');
 
 // Store Password Reset OTP requests: email -> { otpCode, expiresAt, verified, userId }
 const otpStoreMap = new Map();
@@ -364,8 +363,8 @@ exports.cmoRequestOTP = async (req, res) => {
       verified: false
     });
 
-    // Send Live Email
-    sendCMORegistrationOTPEmail({ email: cleanEmail, otpCode });
+    // Send Live Email (AWAITED to ensure delivery before sending HTTP response)
+    await sendCMORegistrationOTPEmail({ email: cleanEmail, otpCode });
 
     res.json({
       success: true,
@@ -539,7 +538,7 @@ exports.requestPasswordResetOTP = async (req, res) => {
 
     otpStoreMap.set(cleanEmail, { otpCode, expiresAt, verified: false, userId: user._id });
 
-    sendPasswordResetOTPEmail({
+    await sendPasswordResetOTPEmail({
       name: user.name,
       email: cleanEmail,
       otpCode

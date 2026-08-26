@@ -1,5 +1,16 @@
 {
-  "users": [],
+  "users": [
+    {
+      "_id": "cmo_001",
+      "name": "Chief Medical Officer (CMO)",
+      "email": "suriyachandru2006@gmail.com",
+      "username": "suriyachandru2006@gmail.com",
+      "password": "$2a$10$iMiSwLeU16syVYBaDOENn.mIUuWxISF9Jq8Ql8OctVPHwN5U13VrG",
+      "role": "CMO",
+      "status": "ACTIVE",
+      "createdAt": "2026-08-26T18:31:44.805Z"
+    }
+  ],
   "phcs": [],
   "attendances": [],
   "explanations": [],
