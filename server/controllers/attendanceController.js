@@ -65,12 +65,13 @@ exports.getDoctorShiftStatus = (req, res) => {
   }
 };
 
-// Get Doctor Shift Windows & Statuses for Selected Date (STRICT RULE: ONLY PAST CLOSED MISSED WINDOWS ARE SELECTABLE)
+// Get Doctor Shift Windows for Selected Date (STRICT 3-DAY RULE: 23/08/2026 to 26/08/2026 & PAST MISSED WINDOWS ONLY)
 exports.getDoctorDateWindows = (req, res) => {
   try {
     const doctorId = req.user.id;
     const { date } = req.query; // YYYY-MM-DD
-    const todayStr = new Date().toISOString().split('T')[0];
+    const nowObj = new Date();
+    const todayStr = nowObj.toISOString().split('T')[0];
     const targetDate = date || todayStr;
 
     const doctor = memoryStore.users.find(u => String(u._id) === String(doctorId));
@@ -93,18 +94,21 @@ exports.getDoctorDateWindows = (req, res) => {
       String(a.doctor) === String(doctorId) && a.date === targetDate
     );
 
-    // Calculate 3-Day Submission Deadline Rule (e.g. 5th Aug ➔ Deadline 8th Aug 11:59 PM)
-    const dutyDateObj = new Date(targetDate + 'T23:59:59');
-    const nowObj = new Date();
-    const deadlineObj = new Date(dutyDateObj.getTime() + (3 * 24 * 60 * 60 * 1000));
-    const isExpired = nowObj > deadlineObj;
+    // Calculate Strict 3-Day Window Rule (e.g. today 26/08/2026 -> allowed range 23/08/2026 to 26/08/2026)
+    const minAllowedDateObj = new Date(nowObj);
+    minAllowedDateObj.setDate(nowObj.getDate() - 3);
+    minAllowedDateObj.setHours(0, 0, 0, 0);
+
+    const minAllowedDateStr = minAllowedDateObj.toISOString().split('T')[0];
+
+    const targetDateObj = new Date(targetDate + 'T00:00:00');
+    const isExpired = targetDateObj < minAllowedDateObj;
 
     const isPastDate = targetDate < todayStr;
     const isTodayDate = targetDate === todayStr;
     const isFutureDate = targetDate > todayStr;
 
     const windowsWithStatus = shiftState.windows.map(w => {
-      // Build precise Window End Date Object for day/night shifts
       const windowEndObj = new Date(w.windowEndISO);
       const windowStartObj = new Date(w.windowStartISO);
 
@@ -142,8 +146,7 @@ exports.getDoctorDateWindows = (req, res) => {
         status = 'FUTURE';
       }
 
-      // STRICT RULE: ONLY PAST MISSED/ABSENT WINDOWS ARE SELECTABLE!
-      // Future windows and active open windows are NEVER selectable.
+      // STRICT RULE: ONLY PAST CLOSED MISSED WINDOWS WITHIN 3 DAYS ARE SELECTABLE!
       const isSelectable = !isExpired && isPastWindow && (status === 'ABSENT' || status === 'PENDING_EXPLANATION');
 
       return {
@@ -160,7 +163,8 @@ exports.getDoctorDateWindows = (req, res) => {
     res.json({
       success: true,
       date: targetDate,
-      deadlineDate: deadlineObj.toISOString(),
+      minAllowedDate: minAllowedDateStr,
+      maxAllowedDate: todayStr,
       isExpired,
       windows: windowsWithStatus
     });
