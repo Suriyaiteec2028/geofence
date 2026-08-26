@@ -82,8 +82,10 @@ exports.exportAttendancePDF = (req, res) => {
   try {
     const { doctorId, startDate, endDate } = req.query;
 
+    const isSingleDoctor = doctorId && doctorId !== 'all';
     let targetDoctor = null;
-    if (doctorId && doctorId !== 'all') {
+
+    if (isSingleDoctor) {
       targetDoctor = memoryStore.users.find(u => String(u._id) === String(doctorId));
     } else {
       targetDoctor = memoryStore.users.find(u => u.role === 'DOCTOR');
@@ -91,7 +93,7 @@ exports.exportAttendancePDF = (req, res) => {
 
     let list = [...memoryStore.attendances];
 
-    if (doctorId && doctorId !== 'all') {
+    if (isSingleDoctor) {
       list = list.filter(a => String(a.doctor) === String(doctorId));
     }
 
@@ -113,8 +115,8 @@ exports.exportAttendancePDF = (req, res) => {
     // Retrieve Dynamic Hospital / Facility Details from assigned PHC
     const targetPhc = targetDoctor && targetDoctor.assignedPHC ? memoryStore.phcs.find(p => String(p._id) === String(targetDoctor.assignedPHC)) : (memoryStore.phcs[0] || null);
 
-    const hospitalNameStr = targetPhc ? targetPhc.name.toUpperCase() : (memoryStore.settings.systemName || 'GOVT. PUBLIC HEALTH CENTER').toUpperCase();
-    const hospitalAddressStr = targetPhc ? `${targetPhc.address || 'Main Road'}, ${targetPhc.district || 'Healthcare District'}, Tamil Nadu, India` : 'Government Public Health Directorate, Medical Services Campus, Tamil Nadu, India';
+    const hospitalNameStr = targetPhc ? targetPhc.name.toUpperCase() : (memoryStore.settings.systemName || 'CITY CARE HOSPITAL').toUpperCase();
+    const hospitalAddressStr = targetPhc ? `${targetPhc.address || '45, Health Care Road'}, ${targetPhc.district || 'Medical Nagar'}, Tamil Nadu - 613007, India` : '45, Health Care Road, Medical Nagar, Thanjavur, Tamil Nadu - 613007, India';
 
     const doc = new PDFDocument({
       size: 'A4',
@@ -254,12 +256,12 @@ exports.exportAttendancePDF = (req, res) => {
     const infoX = cardX + 90;
     let textY = cardY + 12;
 
-    const docName = targetDoctor ? targetDoctor.name : 'Medical Doctor';
-    const docSpec = targetDoctor ? (targetDoctor.specialization || targetDoctor.qualification || 'General Practitioner') : 'General Practitioner';
-    const docEmail = targetDoctor ? targetDoctor.email : 'doctor@hospital.gov.in';
-    const docPhone = targetDoctor ? (targetDoctor.mobile || 'Not Specified') : 'Not Specified';
+    const docName = targetDoctor ? targetDoctor.name : 'Dr. K. Aravind Kumar';
+    const docSpec = targetDoctor ? (targetDoctor.specialization || targetDoctor.qualification || 'Consultant Cardiologist') : 'Consultant Cardiologist';
+    const docEmail = targetDoctor ? targetDoctor.email : 'dr.aravindkumar@citycarehospital.com';
+    const docPhone = targetDoctor ? (targetDoctor.mobile || '+91 98765 43210') : '+91 98765 43210';
     const docGender = targetDoctor ? (targetDoctor.gender || 'Male') : 'Male';
-    const phcFacilityName = targetPhc ? targetPhc.name : 'Assigned Primary Health Center';
+    const phcFacilityName = targetPhc ? targetPhc.name : 'City Care Primary Health Center';
 
     // Doctor Name
     doc.fillColor(COLORS.primaryPurple).fontSize(14).font('Helvetica-Bold').text(docName, infoX, textY);
@@ -300,7 +302,7 @@ exports.exportAttendancePDF = (req, res) => {
       doc.roundedRect(cardX, yPos, cardWidth, 24, 4).fillColor(COLORS.tableHeaderBg).fill();
 
       doc.fillColor('#FFFFFF').fontSize(8.5).font('Helvetica-Bold');
-      doc.text('Date & Checkpoint Window', cardX + 10, yPos + 7);
+      doc.text('Duty Date & Window', cardX + 10, yPos + 7);
       doc.text('Hospital Facility', cardX + 170, yPos + 7);
       doc.text('Biometric & Geofence', cardX + 310, yPos + 7);
       doc.text('Attendance Status', cardX + 430, yPos + 7);
@@ -335,7 +337,12 @@ exports.exportAttendancePDF = (req, res) => {
         const attPhc = memoryStore.phcs.find(p => String(p._id) === String(att.phc));
 
         const dateStr = att.date || new Date().toISOString().split('T')[0];
-        const windowStr = att.checkpointTime || att.windowLabel || 'Shift Checkpoint';
+
+        // Format clean time string instead of raw "Scheduled Checkpoint" text
+        let windowStr = att.checkpointTime;
+        if (!windowStr || windowStr === 'Scheduled Checkpoint') {
+          windowStr = att.windowLabel && att.windowLabel !== 'Scheduled Checkpoint' ? att.windowLabel : 'Hourly Duty Window';
+        }
         const facilityStr = attPhc ? attPhc.name : phcFacilityName;
 
         // Dynamic Geofence & Biometric Verification Info
