@@ -75,8 +75,8 @@ exports.getReportSummary = (req, res) => {
 };
 
 /**
- * Enterprise PDF Report Generator
- * Premium Purple + Pink + White Medical Theme with A4 Page Layout, Vector Icons, Doctor Card, and Dynamic Attendance Tables
+ * Enterprise Dynamic PDF Report Generator
+ * 100% Dynamic Bindings for Hospital Name, Hospital Address, Doctor Profile, Admin Credentials, and Database Logs
  */
 exports.exportAttendancePDF = (req, res) => {
   try {
@@ -102,7 +102,7 @@ exports.exportAttendancePDF = (req, res) => {
       list = list.filter(a => a.date <= endDate);
     }
 
-    // Sort logs chronologically
+    // Sort logs chronologically (newest first)
     list.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
     const totalRecords = list.length;
@@ -110,25 +110,31 @@ exports.exportAttendancePDF = (req, res) => {
     const absentCount = list.filter(a => a.status === 'ABSENT' || a.status === 'EXPLANATION_REJECTED').length;
     const rate = totalRecords > 0 ? Math.round((presentCount / totalRecords) * 100) : 100;
 
+    // Retrieve Dynamic Hospital / Facility Details from assigned PHC
+    const targetPhc = targetDoctor && targetDoctor.assignedPHC ? memoryStore.phcs.find(p => String(p._id) === String(targetDoctor.assignedPHC)) : (memoryStore.phcs[0] || null);
+
+    const hospitalNameStr = targetPhc ? targetPhc.name.toUpperCase() : (memoryStore.settings.systemName || 'GOVT. PUBLIC HEALTH CENTER').toUpperCase();
+    const hospitalAddressStr = targetPhc ? `${targetPhc.address || 'Main Road'}, ${targetPhc.district || 'Healthcare District'}, Tamil Nadu, India` : 'Government Public Health Directorate, Medical Services Campus, Tamil Nadu, India';
+
     const doc = new PDFDocument({
       size: 'A4',
       margin: 0,
       bufferPages: true
     });
 
-    const doctorNameStr = targetDoctor ? targetDoctor.name.replace(/\s+/g, '_') : 'All_Doctors';
-    const filename = `Attendance_Report_${doctorNameStr}_${Date.now()}.pdf`;
+    const doctorNameFileStr = targetDoctor ? targetDoctor.name.replace(/\s+/g, '_') : 'All_Doctors';
+    const filename = `Attendance_Report_${doctorNameFileStr}_${Date.now()}.pdf`;
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
     doc.pipe(res);
 
-    // Color Palette Definition
+    // Premium Purple & Pink Palette Definition
     const COLORS = {
       primaryPurple: '#4C1D95', // Deep Purple / Violet
       secondaryPurple: '#6D28D9',
-      lightPurpleBg: '#F5F3FF', // Very soft lavender
+      lightPurpleBg: '#F5F3FF', // Soft lavender
       borderPurple: '#DDD6FE',  // Soft border
       pinkAccent: '#EC4899',    // Medical Pink
       darkCharcoal: '#1E293B',  // Text Dark
@@ -144,11 +150,10 @@ exports.exportAttendancePDF = (req, res) => {
       // Background subtle gradient banner
       doc.rect(0, 0, 595, 100).fill(COLORS.lightPurpleBg);
 
-      // 1. Top-Left: Pink Heart with White ECG Heartbeat Line
+      // 1. Top-Left: Pink Heart with White ECG Heartbeat Line Vector Icon
       const heartX = 40;
       const heartY = 30;
 
-      // Heart path
       doc.save();
       doc.moveTo(heartX + 16, heartY + 6)
          .bezierCurveTo(heartX + 16, heartY + 1, heartX + 9, heartY - 4, heartX + 2, heartY + 4)
@@ -185,16 +190,16 @@ exports.exportAttendancePDF = (req, res) => {
          .stroke();
       doc.restore();
 
-      // 3. Center: Hospital Header Information
+      // 3. Center: 100% Dynamic Hospital Header Information
       doc.fillColor(COLORS.primaryPurple)
-         .fontSize(20)
+         .fontSize(18)
          .font('Helvetica-Bold')
-         .text('CITY CARE HOSPITAL', 0, 24, { align: 'center' });
+         .text(hospitalNameStr, 0, 24, { align: 'center' });
 
       doc.fillColor(COLORS.subtleGray)
          .fontSize(8.5)
          .font('Helvetica')
-         .text('45, Health Care Road, Medical Nagar, Thanjavur, Tamil Nadu - 613007, India', 0, 50, { align: 'center' });
+         .text(hospitalAddressStr, 0, 50, { align: 'center' });
 
       // 4. Subtle Decorative Pink/Purple ECG Line under Header
       doc.save();
@@ -216,13 +221,13 @@ exports.exportAttendancePDF = (req, res) => {
     // Draw Main Top Header
     drawHeader();
 
-    // 5. Doctor Information Card
+    // 5. 100% Dynamic Doctor Information Card
     const cardY = 92;
     const cardWidth = 515;
     const cardHeight = 98;
     const cardX = (595 - cardWidth) / 2; // 40
 
-    // White Card Background with Soft Lavender Border & Shadow Accent
+    // White Card Background with Soft Lavender Border
     doc.save();
     doc.roundedRect(cardX, cardY, cardWidth, cardHeight, 10).fillColor('#FFFFFF').fill();
     doc.roundedRect(cardX, cardY, cardWidth, cardHeight, 10).lineWidth(1).strokeColor(COLORS.borderPurple).stroke();
@@ -237,7 +242,7 @@ exports.exportAttendancePDF = (req, res) => {
     doc.circle(avatarX, avatarY, avatarRadius).fillColor(COLORS.lightPurpleBg).fill();
     doc.circle(avatarX, avatarY, avatarRadius).lineWidth(1.5).strokeColor(COLORS.secondaryPurple).stroke();
 
-    // Doctor Icon (Gender Avatar Graphic)
+    // Dynamic Doctor Gender Avatar Graphic
     const isFemale = targetDoctor && (targetDoctor.gender === 'Female' || targetDoctor.name.toLowerCase().includes('saranya') || targetDoctor.name.toLowerCase().includes('lady'));
     doc.fillColor(COLORS.primaryPurple)
        .fontSize(22)
@@ -245,15 +250,16 @@ exports.exportAttendancePDF = (req, res) => {
        .text(isFemale ? '♀' : '👨‍⚕️', avatarX - 10, avatarY - 12);
     doc.restore();
 
-    // Doctor Information Labels & Dynamic Values (Right Side of Card)
+    // Doctor Dynamic Fields from Database
     const infoX = cardX + 90;
     let textY = cardY + 12;
 
-    const docName = targetDoctor ? targetDoctor.name : 'Dr. K. Aravind Kumar';
-    const docSpec = targetDoctor ? (targetDoctor.specialization || targetDoctor.qualification || 'Consultant Cardiologist') : 'Consultant Cardiologist';
-    const docEmail = targetDoctor ? targetDoctor.email : 'dr.aravindkumar@citycarehospital.com';
-    const docPhone = targetDoctor ? (targetDoctor.mobile || '+91 98765 43210') : '+91 98765 43210';
+    const docName = targetDoctor ? targetDoctor.name : 'Medical Doctor';
+    const docSpec = targetDoctor ? (targetDoctor.specialization || targetDoctor.qualification || 'General Practitioner') : 'General Practitioner';
+    const docEmail = targetDoctor ? targetDoctor.email : 'doctor@hospital.gov.in';
+    const docPhone = targetDoctor ? (targetDoctor.mobile || 'Not Specified') : 'Not Specified';
     const docGender = targetDoctor ? (targetDoctor.gender || 'Male') : 'Male';
+    const phcFacilityName = targetPhc ? targetPhc.name : 'Assigned Primary Health Center';
 
     // Doctor Name
     doc.fillColor(COLORS.primaryPurple).fontSize(14).font('Helvetica-Bold').text(docName, infoX, textY);
@@ -271,14 +277,11 @@ exports.exportAttendancePDF = (req, res) => {
     doc.fillColor(COLORS.darkCharcoal).font('Helvetica').text(docPhone);
     textY += 14;
 
-    // Gender & Assigned Hospital
-    const phcObj = targetDoctor && targetDoctor.assignedPHC ? memoryStore.phcs.find(p => String(p._id) === String(targetDoctor.assignedPHC)) : null;
-    const phcName = phcObj ? phcObj.name : 'City Care Primary Health Center';
-
+    // Gender & Facility
     doc.fillColor(COLORS.secondaryPurple).fontSize(9).font('Helvetica-Bold').text(`Gender: `, infoX, textY, { continued: true });
-    doc.fillColor(COLORS.darkCharcoal).font('Helvetica').text(`${docGender}   |   Facility: ${phcName}`);
+    doc.fillColor(COLORS.darkCharcoal).font('Helvetica').text(`${docGender}   |   Facility: ${phcFacilityName}`);
 
-    // Summary Compliance Badge (Top Right of Card)
+    // Summary Compliance Score Badge (Top Right of Card)
     const badgeX = cardX + cardWidth - 110;
     const badgeY = cardY + 12;
     doc.save();
@@ -307,9 +310,9 @@ exports.exportAttendancePDF = (req, res) => {
     drawTableHeader(currentY);
     currentY += 28;
 
-    // Render Attendance Logs
+    // Render Attendance Logs from Database
     if (list.length === 0) {
-      doc.fillColor(COLORS.subtleGray).fontSize(9.5).font('Helvetica').text('No verified attendance logs recorded for the specified criteria.', cardX + 10, currentY + 10);
+      doc.fillColor(COLORS.subtleGray).fontSize(9.5).font('Helvetica').text('No verified attendance logs recorded for the selected criteria.', cardX + 10, currentY + 10);
     } else {
       list.forEach((att, idx) => {
         // Page Overflow Handling with Header/Footer Maintenance
@@ -331,13 +334,13 @@ exports.exportAttendancePDF = (req, res) => {
         const attDoctor = memoryStore.users.find(u => String(u._id) === String(att.doctor)) || targetDoctor;
         const attPhc = memoryStore.phcs.find(p => String(p._id) === String(att.phc));
 
-        const dateStr = att.date || '2026-08-26';
-        const windowStr = att.checkpointTime || att.windowLabel || '09:00 AM - 10:00 AM';
-        const facilityStr = attPhc ? attPhc.name : phcName;
+        const dateStr = att.date || new Date().toISOString().split('T')[0];
+        const windowStr = att.checkpointTime || att.windowLabel || 'Shift Checkpoint';
+        const facilityStr = attPhc ? attPhc.name : phcFacilityName;
 
         // Dynamic Geofence & Biometric Verification Info
         const isVerified = att.status === 'PRESENT' || att.status === 'EXPLANATION_APPROVED';
-        const verificationStr = isVerified ? '✓ Geofence (15m) • Face Match (92%)' : '✕ Geofence Missed';
+        const verificationStr = isVerified ? '✓ Geofence Verified • Face Match' : '✕ Geofence Missed';
 
         doc.fillColor(COLORS.darkCharcoal).fontSize(8.5).font('Helvetica');
         doc.text(`${dateStr} | ${windowStr}`, cardX + 10, currentY);
@@ -386,7 +389,7 @@ exports.exportAttendancePDF = (req, res) => {
       doc.moveTo(cardX, footerBoxY).lineTo(cardX + cardWidth, footerBoxY).lineWidth(0.8).strokeColor(COLORS.borderPurple).stroke();
       doc.restore();
 
-      // Left Footer: Generated By (Admin Info)
+      // Left Footer: Dynamic Generated By (Authenticated Admin Info)
       doc.fillColor(COLORS.secondaryPurple).fontSize(8).font('Helvetica-Bold').text('GENERATED BY:', cardX + 10, footerBoxY + 8);
       doc.fillColor(COLORS.darkCharcoal).fontSize(8.5).font('Helvetica').text(`${adminName} (${adminRole})`, cardX + 80, footerBoxY + 8);
 
@@ -395,7 +398,7 @@ exports.exportAttendancePDF = (req, res) => {
       doc.moveTo(270, footerBoxY + 6).lineTo(270, footerBoxY + 22).lineWidth(0.8).strokeColor(COLORS.borderPurple).stroke();
       doc.restore();
 
-      // Right Footer: Generated On (Timestamp)
+      // Right Footer: Dynamic Generated On (Actual Generation Timestamp)
       doc.fillColor(COLORS.secondaryPurple).fontSize(8).font('Helvetica-Bold').text('GENERATED ON:', 285, footerBoxY + 8);
       doc.fillColor(COLORS.darkCharcoal).fontSize(8.5).font('Helvetica').text(generationTimeStr, 365, footerBoxY + 8);
 
@@ -410,7 +413,7 @@ exports.exportAttendancePDF = (req, res) => {
     doc.end();
 
   } catch (err) {
-    console.error('Enterprise PDF Export Error:', err);
-    res.status(500).json({ success: false, message: 'Enterprise PDF export failed' });
+    console.error('Enterprise Dynamic PDF Export Error:', err);
+    res.status(500).json({ success: false, message: 'Enterprise Dynamic PDF export failed' });
   }
 };
