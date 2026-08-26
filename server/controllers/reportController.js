@@ -76,7 +76,7 @@ exports.getReportSummary = (req, res) => {
 
 /**
  * Enterprise Dynamic PDF Report Generator
- * 100% Dynamic Bindings with Dynamic Vertical Offsets to Prevent Text Overlays
+ * 100% Native Vector Medical Graphics without Unicode/Emoji Font Corruption
  */
 exports.exportAttendancePDF = (req, res) => {
   try {
@@ -250,12 +250,16 @@ exports.exportAttendancePDF = (req, res) => {
     doc.circle(avatarX, avatarY, avatarRadius).fillColor(COLORS.lightPurpleBg).fill();
     doc.circle(avatarX, avatarY, avatarRadius).lineWidth(1.5).strokeColor(COLORS.secondaryPurple).stroke();
 
-    // Dynamic Doctor Gender Avatar Graphic
-    const isFemale = targetDoctor && (targetDoctor.gender === 'Female' || targetDoctor.name.toLowerCase().includes('saranya') || targetDoctor.name.toLowerCase().includes('lady'));
-    doc.fillColor(COLORS.primaryPurple)
-       .fontSize(20)
-       .font('Helvetica-Bold')
-       .text(isFemale ? '♀' : '👨‍⚕️', avatarX - 9, avatarY - 11);
+    // Pure Native Vector Medical Cross Badge (Prevents Emoji/Unicode Font Encoding Corruption)
+    const crossCenterX = avatarX;
+    const crossCenterY = avatarY;
+
+    // Vertical Bar
+    doc.roundedRect(crossCenterX - 3.5, crossCenterY - 12, 7, 24, 2.5).fillColor(COLORS.secondaryPurple).fill();
+    // Horizontal Bar
+    doc.roundedRect(crossCenterX - 12, crossCenterY - 3.5, 24, 7, 2.5).fillColor(COLORS.secondaryPurple).fill();
+    // Inner Accent Dot
+    doc.circle(crossCenterX, crossCenterY, 3).fillColor(COLORS.pinkAccent).fill();
     doc.restore();
 
     // Doctor Dynamic Fields from Database (Bounded Width: 300px to Prevent Compliance Badge Collisions)
@@ -345,16 +349,16 @@ exports.exportAttendancePDF = (req, res) => {
 
         const dateStr = att.date || new Date().toISOString().split('T')[0];
 
-        // Format clean time string instead of raw "Scheduled Checkpoint" text
+        // Format clean time string without raw unicode checkmarks
         let windowStr = att.checkpointTime;
         if (!windowStr || windowStr === 'Scheduled Checkpoint') {
           windowStr = att.windowLabel && att.windowLabel !== 'Scheduled Checkpoint' ? att.windowLabel : 'Hourly Duty Window';
         }
         const facilityStr = attPhc ? attPhc.name : phcFacilityName;
 
-        // Dynamic Geofence & Biometric Verification Info
+        // Dynamic Geofence & Biometric Verification Info (Clean ASCII Text)
         const isVerified = att.status === 'PRESENT' || att.status === 'EXPLANATION_APPROVED';
-        const verificationStr = isVerified ? '✓ Geofence Verified • Face Match' : '✕ Geofence Missed';
+        const verificationStr = isVerified ? 'Geofence Verified • Face Match' : 'Geofence Missed';
 
         doc.fillColor(COLORS.darkCharcoal).fontSize(8.5).font('Helvetica');
         doc.text(`${dateStr} | ${windowStr}`, cardX + 10, currentY);
