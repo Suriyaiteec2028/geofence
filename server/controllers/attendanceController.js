@@ -65,7 +65,7 @@ exports.getDoctorShiftStatus = (req, res) => {
   }
 };
 
-// Get Doctor Shift Windows for Selected Date (STRICT 3-DAY RULE: 23/08/2026 to 26/08/2026 & PAST MISSED WINDOWS ONLY)
+// Get Doctor Shift Windows for Selected Date (STRICT 3-DAY RULE & PAST MISSED WINDOWS SELECTION)
 exports.getDoctorDateWindows = (req, res) => {
   try {
     const doctorId = req.user.id;
@@ -218,111 +218,70 @@ exports.markAttendance = (req, res) => {
 
     // Geofence check using Haversine formula
     const distanceMeters = calculateHaversineDistance(
-      Number(latitude),
-      Number(longitude),
+      latitude,
+      longitude,
       phc.latitude,
       phc.longitude
     );
 
-    const withinGeofence = distanceMeters <= phc.radius;
+    const isWithinGeofence = distanceMeters <= phc.radius;
+    const activeWin = shiftState.activeWindow;
+    const todayStr = new Date().toISOString().split('T')[0];
 
-    if (!withinGeofence) {
-      return res.status(403).json({
+    let attRecord = memoryStore.attendances.find(a => 
+      String(a.doctor) === String(doctor._id) && 
+      a.date === todayStr && 
+      (a.checkpointTime === activeWin.windowStartFormatted || a.windowLabel === activeWin.windowLabel)
+    );
+
+    if (attRecord && (attRecord.status === 'PRESENT' || attRecord.status === 'EXPLANATION_APPROVED')) {
+      return res.status(400).json({
         success: false,
-        message: `Attendance Rejected! You are outside the hospital premises. Distance: ${distanceMeters}m, Permitted Radius: ${phc.radius}m.`,
-        distanceMeters,
-        allowedRadius: phc.radius,
-        hospitalName: phc.name
+        message: `Attendance already marked as PRESENT for window (${activeWin.windowLabel}).`
       });
     }
 
-    // Success! Record attendance
-    const todayStr = new Date().toISOString().split('T')[0];
-    const activeWin = shiftState.activeWindow;
+    if (!isWithinGeofence) {
+      return res.status(400).json({
+        success: false,
+        message: `Geofence violation! You are ${distanceMeters} meters away from ${phc.name} (Max radius: ${phc.radius}m).`,
+        distanceMeters,
+        allowedRadius: phc.radius
+      });
+    }
 
-    const newAttendance = {
-      _id: 'att_' + Date.now(),
-      doctor: doctor._id,
-      phc: phc._id,
-      date: todayStr,
-      checkpointTime: activeWin.windowStartFormatted,
-      windowLabel: activeWin.windowLabel,
-      markedAt: new Date().toISOString(),
-      status: 'PRESENT',
-      latitude: Number(latitude),
-      longitude: Number(longitude),
-      distanceMeters,
-      withinGeofence: true,
-      createdAt: new Date().toISOString()
-    };
+    if (!attRecord) {
+      attRecord = {
+        _id: 'att_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+        doctor: doctor._id,
+        phc: phc._id,
+        date: todayStr,
+        checkpointTime: activeWin.windowStartFormatted,
+        windowLabel: activeWin.windowLabel,
+        markedAt: new Date().toISOString(),
+        status: 'PRESENT',
+        withinGeofence: true,
+        distanceMeters,
+        createdAt: new Date().toISOString()
+      };
+      memoryStore.attendances.push(attRecord);
+    } else {
+      attRecord.status = 'PRESENT';
+      attRecord.withinGeofence = true;
+      attRecord.distanceMeters = distanceMeters;
+      attRecord.markedAt = new Date().toISOString();
+    }
 
-    memoryStore.attendances.push(newAttendance);
     saveMemoryStoreToDisk();
 
     res.json({
       success: true,
-      message: `Attendance verified & marked PRESENT for ${activeWin.windowLabel}!`,
-      attendance: newAttendance
+      message: `Attendance marked successfully for window (${activeWin.windowLabel})!`,
+      attendance: attRecord
     });
 
   } catch (err) {
     console.error('Error marking attendance:', err);
-    res.status(500).json({ success: false, message: 'Server error processing attendance' });
-  }
-};
-
-// Get Doctor Attendance Logs History
-exports.getDoctorAttendanceLogs = (req, res) => {
-  try {
-    const userRole = req.user.role;
-    const userId = req.user.id;
-    let list = [...memoryStore.attendances];
-
-    if (userRole === 'DOCTOR') {
-      list = list.filter(a => String(a.doctor) === String(userId));
-    } else if (userRole === 'ADMIN' && req.userDetails && req.userDetails.assignedPHC) {
-      list = list.filter(a => String(a.phc) === String(req.userDetails.assignedPHC));
-    }
-
-    const enriched = list.map(a => {
-      const doc = memoryStore.users.find(u => String(u._id) === String(a.doctor));
-      const phc = memoryStore.phcs.find(p => String(p._id) === String(a.phc));
-      return {
-        ...a,
-        doctorName: doc ? doc.name : 'Unknown Doctor',
-        doctorSpecialization: doc ? doc.specialization : '',
-        phcName: phc ? phc.name : 'Unknown PHC'
-      };
-    });
-
-    res.json({ success: true, count: enriched.length, attendances: enriched });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Error fetching attendance logs' });
-  }
-};
-
-// Get All Attendance Records (CMO & Admin)
-exports.getAllAttendanceRecords = (req, res) => {
-  try {
-    let list = [...memoryStore.attendances];
-
-    if (req.user.role === 'ADMIN' && req.userDetails && req.userDetails.assignedPHC) {
-      list = list.filter(a => String(a.phc) === String(req.userDetails.assignedPHC));
-    }
-
-    const enriched = list.map(a => {
-      const doc = memoryStore.users.find(u => String(u._id) === String(a.doctor));
-      const phc = memoryStore.phcs.find(p => String(p._id) === String(a.phc));
-      return {
-        ...a,
-        doctorName: doc ? doc.name : 'Unknown Doctor',
-        doctorSpecialization: doc ? doc.specialization : '',
-        phcName: phc ? phc.name : 'Unknown PHC'
-      };
-    });
-
-    res.json({ success: true, count: enriched.length, attendances: enriched });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Error fetching all attendance records' });
+    res.status(500).json({ success: false, message: 'Server error marking attendance' });
   }
 };

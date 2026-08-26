@@ -33,7 +33,6 @@ function checkAndSendHourlyReminders() {
     const windowMins = memoryStore.settings.windowDurationMinutes || 5;
 
     // Filter ONLY ACTIVE registered doctors currently present in memory store
-    // Deleted doctors or inactive doctors are automatically EXCLUDED - NO emails/notifications will ever trigger!
     const doctors = memoryStore.users.filter(u => u.role === 'DOCTOR' && u.status === 'ACTIVE' && u.email);
 
     for (const doctor of doctors) {
@@ -89,7 +88,7 @@ function checkAndSendHourlyReminders() {
         if (now > windowEndObj) {
           const existingAtt = memoryStore.attendances.find(a => 
             String(a.doctor) === String(doctor._id) && 
-            a.date === todayStr && 
+            (a.date === todayStr || a.checkpointTime === win.windowStartFormatted) && 
             (a.checkpointTime === win.windowStartFormatted || a.windowLabel === win.windowLabel)
           );
 

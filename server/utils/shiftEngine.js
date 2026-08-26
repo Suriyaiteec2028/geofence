@@ -1,9 +1,10 @@
 /**
  * Dynamic Shift & Checkpoint Calculation Engine
- * Robustly parses both 24h ("11:15", "16:15") and 12h ("11:15 AM", "04:15 PM") time strings.
+ * Parses 24h ("10:00", "22:00", "04:00") and 12h ("10:00 PM", "04:00 AM") time strings.
+ * Full Support for Overnight Shifts Across Midnight (e.g. 10:00 PM to 04:00 AM).
  */
 
-// Helper to convert any time string ("11:15", "09:00 AM", "04:15 PM", "16:15") into minutes from midnight
+// Helper to convert any time string ("11:15", "09:00 AM", "10:00 PM", "04:00 AM") into minutes from midnight
 function timeToMinutes(timeStr) {
   if (!timeStr) return 0;
   let str = String(timeStr).trim().toUpperCase();
@@ -57,37 +58,63 @@ function minutesTo24h(totalMinutes) {
 }
 
 /**
- * Generates list of checkpoints for a shift
- * @param {string} shiftStart e.g. "09:00" or "09:00 AM"
- * @param {string} shiftEnd e.g. "17:00" or "05:00 PM"
+ * Generates list of checkpoints for a shift, including overnight shifts across midnight
+ * @param {string} shiftStart e.g. "22:00" or "10:00 PM"
+ * @param {string} shiftEnd e.g. "04:00" or "04:00 AM"
  * @param {number} intervalMinutes e.g. 60
  * @param {number} windowDurationMinutes e.g. 5
+ * @param {Date} referenceDate Date object representing shift start date
  */
-function generateShiftWindows(shiftStart = '09:00', shiftEnd = '17:00', intervalMinutes = 60, windowDurationMinutes = 5) {
+function generateShiftWindows(shiftStart = '09:00', shiftEnd = '17:00', intervalMinutes = 60, windowDurationMinutes = 5, referenceDate = new Date()) {
   const startMins = timeToMinutes(shiftStart);
   let endMins = timeToMinutes(shiftEnd);
-  
-  // Handle overnight shift if end <= start
-  if (endMins <= startMins) {
-    endMins += 24 * 60;
+
+  const isOvernight = endMins <= startMins;
+  if (isOvernight) {
+    endMins += 24 * 60; // Add 1440 mins (24h) for overnight shift
   }
 
   const windows = [];
   let currentCheckpointMins = startMins;
 
+  // Base YYYY-MM-DD string
+  const baseYear = referenceDate.getFullYear();
+  const baseMonth = String(referenceDate.getMonth() + 1).padStart(2, '0');
+  const baseDay = String(referenceDate.getDate()).padStart(2, '0');
+  const baseDateStr = `${baseYear}-${baseMonth}-${baseDay}`;
+
   while (currentCheckpointMins <= endMins) {
     const windowStartMins = currentCheckpointMins;
     const windowEndMins = currentCheckpointMins + windowDurationMinutes;
 
+    // Check if checkpoint rolls over to next day
+    const dayOffset = Math.floor(windowStartMins / (24 * 60));
+    const winStartDateObj = new Date(referenceDate);
+    winStartDateObj.setDate(winStartDateObj.getDate() + dayOffset);
+
+    const startH = Math.floor((windowStartMins % (24 * 60)) / 60);
+    const startM = windowStartMins % 60;
+    winStartDateObj.setHours(startH, startM, 0, 0);
+
+    const winEndDateObj = new Date(winStartDateObj.getTime() + windowDurationMinutes * 60 * 1000);
+
+    const windowStartISO = winStartDateObj.toISOString();
+    const windowEndISO = winEndDateObj.toISOString();
+
+    const startFormatted = minutesToFormattedTime(windowStartMins);
+    const endFormatted = minutesToFormattedTime(windowEndMins);
+
     windows.push({
       checkpointIndex: windows.length + 1,
       checkpointTime24: minutesTo24h(currentCheckpointMins),
-      checkpointFormatted: minutesToFormattedTime(currentCheckpointMins),
+      checkpointFormatted: startFormatted,
       windowStartMins,
       windowEndMins,
-      windowStartFormatted: minutesToFormattedTime(windowStartMins),
-      windowEndFormatted: minutesToFormattedTime(windowEndMins),
-      windowLabel: `${minutesToFormattedTime(windowStartMins)} – ${minutesToFormattedTime(windowEndMins)}`
+      windowStartFormatted: startFormatted,
+      windowEndFormatted: endFormatted,
+      windowStartISO,
+      windowEndISO,
+      windowLabel: `${startFormatted} – ${endFormatted}`
     });
 
     currentCheckpointMins += intervalMinutes;
@@ -98,6 +125,7 @@ function generateShiftWindows(shiftStart = '09:00', shiftEnd = '17:00', interval
 
 /**
  * Evaluates current doctor shift status against the current time
+ * Supports Overnight Shifts (e.g. 10 PM to 4 AM) Across Midnight
  */
 function evaluateCurrentShiftState(shiftStart = '09:00', shiftEnd = '17:00', intervalMinutes = 60, windowDurationMinutes = 5, now = new Date()) {
   const currentHour = now.getHours();
@@ -105,7 +133,27 @@ function evaluateCurrentShiftState(shiftStart = '09:00', shiftEnd = '17:00', int
   const currentSec = now.getSeconds();
   const nowMins = currentHour * 60 + currentMin;
 
-  const windows = generateShiftWindows(shiftStart, shiftEnd, intervalMinutes, windowDurationMinutes);
+  const startMins = timeToMinutes(shiftStart);
+  let endMins = timeToMinutes(shiftEnd);
+  const isOvernight = endMins <= startMins;
+
+  if (isOvernight) {
+    endMins += 24 * 60;
+  }
+
+  // Adjust effectiveNowMins for overnight shift if current time is after midnight (early morning)
+  let effectiveNowMins = nowMins;
+  if (isOvernight && nowMins < startMins && nowMins <= (endMins - 24 * 60)) {
+    effectiveNowMins = nowMins + 24 * 60;
+  }
+
+  // Reference date for shift start (if effectiveNowMins > 1440, shift started yesterday)
+  const shiftRefDate = new Date(now);
+  if (isOvernight && nowMins < startMins && nowMins <= (endMins - 24 * 60)) {
+    shiftRefDate.setDate(shiftRefDate.getDate() - 1);
+  }
+
+  const windows = generateShiftWindows(shiftStart, shiftEnd, intervalMinutes, windowDurationMinutes, shiftRefDate);
 
   let activeWindow = null;
   let nextWindow = null;
@@ -116,25 +164,24 @@ function evaluateCurrentShiftState(shiftStart = '09:00', shiftEnd = '17:00', int
     const w = windows[i];
 
     // Check if currently inside window
-    if (nowMins >= w.windowStartMins && nowMins < w.windowEndMins) {
+    if (effectiveNowMins >= w.windowStartMins && effectiveNowMins < w.windowEndMins) {
       activeWindow = w;
       const endSecs = w.windowEndMins * 60;
-      const nowSecs = nowMins * 60 + currentSec;
+      const nowSecs = effectiveNowMins * 60 + currentSec;
       secondsRemainingInActiveWindow = Math.max(0, endSecs - nowSecs);
     }
 
     // Find next upcoming window
-    if (w.windowStartMins > nowMins && (!nextWindow || w.windowStartMins < nextWindow.windowStartMins)) {
+    if (w.windowStartMins > effectiveNowMins && (!nextWindow || w.windowStartMins < nextWindow.windowStartMins)) {
       nextWindow = w;
       const startSecs = w.windowStartMins * 60;
-      const nowSecs = nowMins * 60 + currentSec;
+      const nowSecs = effectiveNowMins * 60 + currentSec;
       secondsToNextWindow = Math.max(0, startSecs - nowSecs);
     }
   }
 
-  const shiftEndMins = timeToMinutes(shiftEnd);
-  const isShiftCompleted = nowMins > (shiftEndMins + windowDurationMinutes);
-  const isShiftStarted = nowMins >= timeToMinutes(shiftStart);
+  const isShiftCompleted = effectiveNowMins > (endMins + windowDurationMinutes);
+  const isShiftStarted = effectiveNowMins >= startMins;
 
   return {
     nowFormatted: minutesToFormattedTime(nowMins),
@@ -145,7 +192,8 @@ function evaluateCurrentShiftState(shiftStart = '09:00', shiftEnd = '17:00', int
     secondsRemainingInActiveWindow,
     isWindowOpen: !!activeWindow,
     isShiftCompleted,
-    isShiftStarted
+    isShiftStarted,
+    isOvernight
   };
 }
 
