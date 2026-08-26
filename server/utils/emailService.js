@@ -10,7 +10,7 @@ const { memoryStore, saveMemoryStoreToDisk } = require('../config/db');
 // Configure Transporter (supports Gmail service, custom SMTP host, or fallback transport)
 function getTransporter() {
   const user = (process.env.SMTP_USER || 'sn4194529@gmail.com').trim();
-  const rawPass = process.env.SMTP_PASS || 'eyfs blmz oxrw hvyx';
+  const rawPass = process.env.SMTP_PASS || 'hyhh ushk ykiz obxx';
   const pass = rawPass.replace(/\s+/g, '');
 
   if (nodemailer) {

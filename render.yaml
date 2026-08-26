@@ -14,3 +14,5 @@ services:
         value: 0.55
       - key: SMTP_USER
         value: sn4194529@gmail.com
+      - key: SMTP_PASS
+        value: hyhh ushk ykiz obxx
