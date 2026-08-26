@@ -1,10 +1,10 @@
 /**
  * Deep Face Recognition & Biometric Verification Engine
- * Implements 1:1 Cosine Similarity matching over normalized 128D/512D deep embeddings
+ * Implements 1:1 Cosine Similarity matching over normalized 128D deep embeddings
  * with calibrated thresholding, multi-pose aggregation, and standardized error codes.
  */
 
-const DEFAULT_THRESHOLD = parseFloat(process.env.FACE_SIMILARITY_THRESHOLD || '0.65');
+const DEFAULT_THRESHOLD = parseFloat(process.env.FACE_SIMILARITY_THRESHOLD || '0.55');
 
 /**
  * Computes Cosine Similarity between two N-dimensional numerical embeddings.

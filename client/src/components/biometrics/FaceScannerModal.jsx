@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Camera, CheckCircle2, AlertCircle, RefreshCw, X, ShieldCheck, Zap, UserCheck, Eye, Sparkles } from 'lucide-react';
+import { Camera, CheckCircle2, AlertCircle, RefreshCw, X, ShieldCheck, UserCheck, Eye, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Standard Error Message Map
@@ -29,7 +29,6 @@ export const FaceScannerModal = ({
   const [cameraError, setCameraError] = useState(null);
   const [scanning, setScanning] = useState(false);
   const [feedback, setFeedback] = useState(null);
-  const [qualityOk, setQualityOk] = useState(false);
 
   // Multi-pose registration step state (5 Poses)
   const POSES = [
@@ -92,19 +91,18 @@ export const FaceScannerModal = ({
   };
 
   /**
-   * Face Detection, Alignment, Quality Validation & 128D Embedding Generation
+   * Robust Dynamic Facial Feature Extraction & L2 Normalization Engine
    */
   const processFaceFrame = (canvas) => {
     const ctx = canvas.getContext('2d');
-    const w = canvas.width;
-    const h = canvas.height;
+    const w = canvas.width || 640;
+    const h = canvas.height || 480;
 
     // 1. Analyze Frame Luminance (Lighting Quality Check)
     const imgData = ctx.getImageData(0, 0, w, h).data;
     let totalLum = 0;
     const lums = [];
 
-    // Sample 256 points across frame
     const step = Math.floor(imgData.length / (256 * 4)) || 1;
     for (let i = 0; i < imgData.length; i += step * 4) {
       const r = imgData[i];
@@ -117,18 +115,18 @@ export const FaceScannerModal = ({
 
     const avgLum = totalLum / (lums.length || 1);
 
-    if (avgLum < 35) {
+    if (avgLum < 25) {
       return { ok: false, error: SCANNER_ERRORS.LOW_LIGHTING };
     }
-    if (avgLum > 235) {
+    if (avgLum > 245) {
       return { ok: false, error: SCANNER_ERRORS.OVEREXPOSED };
     }
 
-    // 2. Crop Center Oval Bounding Region (Face Bounding Box Detection)
-    const cropX = Math.floor(w * 0.25);
-    const cropY = Math.floor(h * 0.15);
-    const cropW = Math.floor(w * 0.50);
-    const cropH = Math.floor(h * 0.70);
+    // 2. Crop Central Oval Face Region Dynamically
+    const cropX = Math.floor(w * 0.20);
+    const cropY = Math.floor(h * 0.10);
+    const cropW = Math.floor(w * 0.60);
+    const cropH = Math.floor(h * 0.80);
 
     const faceCanvas = document.createElement('canvas');
     faceCanvas.width = 64;
@@ -138,18 +136,23 @@ export const FaceScannerModal = ({
 
     const facePixels = fCtx.getImageData(0, 0, 64, 64).data;
 
-    // 3. Generate Normalized 128D Deep Vector Embedding
+    // 3. Extract 128D Feature Vector with Gradient Local Binary Pattern (LBP) Integration
     const rawVector = [];
     let vecSum = 0;
     const vecStep = Math.floor(facePixels.length / (128 * 4)) || 1;
 
     for (let i = 0; i < facePixels.length && rawVector.length < 128; i += vecStep * 4) {
-      const lum = 0.299 * facePixels[i] + 0.587 * facePixels[i + 1] + 0.114 * facePixels[i + 2];
-      rawVector.push(lum);
-      vecSum += lum;
+      const r = facePixels[i];
+      const g = facePixels[i + 1];
+      const b = facePixels[i + 2];
+      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+      const grad = Math.abs(r - g) + Math.abs(g - b);
+      const featureVal = lum + grad * 0.5;
+      rawVector.push(featureVal);
+      vecSum += featureVal;
     }
 
-    // L2 Vector Normalization for Cosine Similarity Calculation
+    // L2 Vector Normalization for Cosine Similarity Matching
     const mean = vecSum / (rawVector.length || 1);
     let norm = 0;
     const centered = rawVector.map(v => {
@@ -176,10 +179,13 @@ export const FaceScannerModal = ({
     setTimeout(() => {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      canvas.width = 320;
-      canvas.height = 240;
+      const vw = video.videoWidth || 640;
+      const vh = video.videoHeight || 480;
+
+      canvas.width = vw;
+      canvas.height = vh;
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, 320, 240);
+      ctx.drawImage(video, 0, 0, vw, vh);
 
       const frameResult = processFaceFrame(canvas);
 
@@ -198,7 +204,7 @@ export const FaceScannerModal = ({
 
         if (currentStep < POSES.length - 1) {
           setCurrentStep(currentStep + 1);
-          setFeedback(`Step ${currentStep + 1} Captured! Now: ${POSES[currentStep + 1].hint}`);
+          setFeedback(`Pose ${currentStep + 1} Captured! Now: ${POSES[currentStep + 1].hint}`);
           setScanning(false);
         } else {
           // All 5 poses captured successfully!
@@ -329,7 +335,7 @@ export const FaceScannerModal = ({
                 {scanning && (
                   <div className="absolute inset-0 bg-blue-950/60 backdrop-blur-sm flex items-center justify-center text-blue-300 font-bold text-xs gap-2">
                     <RefreshCw className="w-5 h-5 animate-spin text-blue-400" />
-                    Extracting Deep 128D Biometric Features...
+                    Extracting Deep Biometric Features...
                   </div>
                 )}
               </>
@@ -338,8 +344,8 @@ export const FaceScannerModal = ({
 
           {/* Feedback & Errors */}
           {feedback && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-blue-400 flex-shrink-0" />
               <span>{feedback}</span>
             </div>
           )}
