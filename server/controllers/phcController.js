@@ -3,6 +3,26 @@ const { memoryStore, saveMemoryStoreToDisk } = require('../config/db');
 
 exports.getAllPHCs = (req, res) => {
   try {
+    // Resilient fallback: ensure default PHC exists if list is empty
+    if (memoryStore.phcs.length === 0) {
+      memoryStore.phcs.push({
+        _id: 'phc_001',
+        name: 'City Care Hospital & Central PHC',
+        code: 'PHC-THANJAVUR-01',
+        address: '45, Health Care Road, Medical Nagar, Thanjavur, Tamil Nadu - 613007, India',
+        district: 'Thanjavur',
+        state: 'Tamil Nadu',
+        pincode: '613007',
+        latitude: 10.7870,
+        longitude: 79.1378,
+        radius: 200,
+        assignedAdmin: 'admin_001',
+        status: 'ACTIVE',
+        createdAt: new Date().toISOString()
+      });
+      saveMemoryStoreToDisk();
+    }
+
     const { search, district, status } = req.query;
     let list = [...memoryStore.phcs];
 
@@ -55,7 +75,6 @@ exports.createPHC = async (req, res) => {
 
     let finalAdminId = assignedAdmin || null;
 
-    // Handle creating a new Admin on-the-fly during PHC creation
     if (createNewAdmin && adminData) {
       const { adminName, adminEmail, adminUsername, adminPassword, adminMobile, adminQualification } = adminData;
       if (!adminName || !adminEmail || !adminUsername || !adminPassword) {
@@ -104,7 +123,6 @@ exports.createPHC = async (req, res) => {
 
     memoryStore.phcs.push(newPhc);
 
-    // Update assigned admin's assignedPHC reference
     if (finalAdminId) {
       const admin = memoryStore.users.find(u => u._id === finalAdminId);
       if (admin) admin.assignedPHC = newPhc._id;
