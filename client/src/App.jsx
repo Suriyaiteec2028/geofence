@@ -76,7 +76,7 @@ function ProtectedLayout({ allowedRoles }) {
 }
 
 export default function App() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
 
   return (
     <Routes>
@@ -84,25 +84,17 @@ export default function App() {
       <Route
         path="/*"
         element={
-          <ProtectedLayout
-            allowedRoles={user?.role ? [user.role] : ['CMO', 'ADMIN', 'DOCTOR']}
-          />
-        }
-      />
-      <Route
-        path="/"
-        element={
-          user?.role === 'CMO' ? (
-            <Navigate to="/cmo" replace />
-          ) : user?.role === 'ADMIN' ? (
-            <Navigate to="/admin" replace />
-          ) : user?.role === 'DOCTOR' ? (
-            <Navigate to="/doctor" replace />
+          token && user ? (
+            <ProtectedLayout
+              allowedRoles={user?.role ? [user.role] : ['CMO', 'ADMIN', 'DOCTOR']}
+            />
           ) : (
             <Navigate to="/login" replace />
           )
         }
       />
+      {/* ALWAYS REDIRECT ROOT URL (http://localhost:5000/) DIRECTLY TO THE COMMON LOGIN PAGE */}
+      <Route path="/" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }
