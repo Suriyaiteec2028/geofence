@@ -4,7 +4,7 @@
  * with calibrated thresholding, multi-pose aggregation, and standardized error codes.
  */
 
-const DEFAULT_THRESHOLD = parseFloat(process.env.FACE_SIMILARITY_THRESHOLD || '0.55');
+const DEFAULT_THRESHOLD = parseFloat(process.env.FACE_SIMILARITY_THRESHOLD || '0.72');
 
 /**
  * Computes Cosine Similarity between two N-dimensional numerical embeddings.

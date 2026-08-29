@@ -14,7 +14,6 @@ const {
 } = require('../utils/emailService');
 
 // Temporary in-memory OTP stores for credential edit authorizations
-// Key: Admin or Doctor ID -> Value: { otpCode, expiresAt, existingEmail }
 const adminEditOtpMap = new Map();
 const doctorEditOtpMap = new Map();
 
@@ -33,10 +32,11 @@ const formatTime12h = (timeStr) => {
   return `${padH}:${padM} ${period}`;
 };
 
-// Get All Registered Doctors
+// Get All Registered Doctors (Workspace Isolated)
 exports.getAllDoctors = async (req, res) => {
   try {
-    let doctors = memoryStore.users.filter(u => u.role === 'DOCTOR');
+    const userWorkspace = req.user?.workspaceId || req.userDetails?.workspaceId || 'workspace_demo_public';
+    let doctors = memoryStore.users.filter(u => u.role === 'DOCTOR' && (u.workspaceId || 'workspace_demo_public') === userWorkspace);
 
     const enriched = doctors.map(d => {
       const phc = memoryStore.phcs.find(p => String(p._id) === String(d.assignedPHC));
@@ -60,9 +60,10 @@ exports.getAllDoctors = async (req, res) => {
   }
 };
 
-// Create New Doctor (By CMO or Admin)
+// Create New Doctor (By CMO or Admin within Workspace)
 exports.createDoctor = async (req, res) => {
   try {
+    const userWorkspace = req.user?.workspaceId || req.userDetails?.workspaceId || 'workspace_demo_public';
     const { name, email, username, password, gender, mobile, qualification, specialization, assignedPHC, shiftStart, shiftEnd, faceData } = req.body;
 
     if (!name || !email || !username || !password) {
@@ -75,12 +76,14 @@ exports.createDoctor = async (req, res) => {
     const cleanPassword = password.trim();
 
     let existing = memoryStore.users.find(u => 
-      u.email.toLowerCase() === cleanEmail || u.username.toLowerCase() === cleanUsername
+      (u.workspaceId || 'workspace_demo_public') === userWorkspace &&
+      (u.email.toLowerCase() === cleanEmail || u.username.toLowerCase() === cleanUsername)
     );
 
     if (!existing && !memoryStore.isInMemoryMode && mongoose.connection.readyState === 1) {
       try {
         const dbExisting = await User.findOne({
+          workspaceId: userWorkspace,
           $or: [
             { email: new RegExp(`^${cleanEmail}$`, 'i') },
             { username: new RegExp(`^${cleanUsername}$`, 'i') }
@@ -91,15 +94,16 @@ exports.createDoctor = async (req, res) => {
     }
 
     if (existing) {
-      return res.status(400).json({ success: false, message: 'An account with this email address or username already exists.' });
+      return res.status(400).json({ success: false, message: 'An account with this email address or username already exists in your workspace.' });
     }
 
     let targetPhcId = assignedPHC;
     if (!targetPhcId || targetPhcId === '') {
+      const phcsInWorkspace = memoryStore.phcs.filter(p => (p.workspaceId || 'workspace_demo_public') === userWorkspace);
       if (req.userDetails && req.userDetails.assignedPHC) {
         targetPhcId = req.userDetails.assignedPHC;
-      } else if (memoryStore.phcs.length > 0) {
-        targetPhcId = memoryStore.phcs[0]._id;
+      } else if (phcsInWorkspace.length > 0) {
+        targetPhcId = phcsInWorkspace[0]._id;
       }
     }
 
@@ -150,6 +154,7 @@ exports.createDoctor = async (req, res) => {
       profilePhoto: '',
       faceData: faceData || '',
       faceAuthentication: faceAuthenticationObj,
+      workspaceId: userWorkspace,
       status: 'ACTIVE',
       createdAt: new Date().toISOString()
     };
@@ -178,7 +183,7 @@ exports.createDoctor = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: `Doctor account created successfully. Direct registration credentials sent to ${cleanEmail}`,
+      message: `Doctor account created successfully. Credentials sent to ${cleanEmail}`,
       doctor: { ...newDoctor, password: undefined, plainPassword: undefined }
     });
 
@@ -204,8 +209,6 @@ exports.requestDoctorEditOTP = async (req, res) => {
       existingEmail: doctor.email
     });
 
-    console.log(`🔑 Generated Doctor Edit OTP for ${doctor.name} (${doctor.email}): ${otpCode}`);
-
     await sendPasswordResetOTPEmail({
       name: doctor.name,
       email: doctor.email,
@@ -219,12 +222,11 @@ exports.requestDoctorEditOTP = async (req, res) => {
     });
 
   } catch (err) {
-    console.error('Request Doctor Edit OTP error:', err);
     res.status(500).json({ success: false, message: 'Server error generating OTP for Doctor edit.' });
   }
 };
 
-// Update Doctor Details (Requires OTP if Email, Password, or Face Data is modified)
+// Update Doctor Details
 exports.updateDoctor = async (req, res) => {
   try {
     const { id } = req.params;
@@ -238,14 +240,13 @@ exports.updateDoctor = async (req, res) => {
     const isPasswordChanged = password && password.trim().length > 0;
     const isFaceChanged = faceData && faceData !== currentDoc.faceData;
 
-    // Strict Security Rule: If sensitive credentials (Email, Password, or Face) are modified, verify OTP
     if (isEmailChanged || isPasswordChanged || isFaceChanged) {
       const otpRecord = doctorEditOtpMap.get(String(id));
       if (!otpRecord) {
         return res.status(400).json({
           success: false,
           requireOtp: true,
-          message: `OTP verification required to modify doctor credentials (Email, Password, or Face Data). Please request OTP sent to ${currentDoc.email}.`
+          message: `OTP verification required to modify doctor credentials. Please request OTP sent to ${currentDoc.email}.`
         });
       }
 
@@ -285,60 +286,21 @@ exports.updateDoctor = async (req, res) => {
       ...req.body
     };
 
-    if (isFaceChanged && faceData) {
-      try {
-        const parsed = typeof faceData === 'string' ? JSON.parse(faceData) : faceData;
-        let embeddingsList = [];
-        if (parsed && Array.isArray(parsed.embeddings) && parsed.embeddings.length > 0) {
-          embeddingsList = parsed.embeddings;
-        } else if (parsed && Array.isArray(parsed.embedding)) {
-          embeddingsList = [parsed.embedding];
-        }
-        if (embeddingsList.length > 0) {
-          updated.faceAuthentication = {
-            model: 'FaceRecognitionNet',
-            embeddingDimension: embeddingsList[0].length,
-            embeddings: embeddingsList,
-            version: 1,
-            updatedAt: new Date().toISOString()
-          };
-        }
-      } catch (e) {}
-    }
-
     memoryStore.users[docIndex] = updated;
     saveMemoryStoreToDisk();
 
-    if (!memoryStore.isInMemoryMode && mongoose.connection.readyState === 1) {
-      try {
-        await User.updateOne({ _id: currentDoc._id }, updated);
-      } catch (mErr) {
-        console.warn('MongoDB Atlas update notice:', mErr.message);
-      }
-    }
-
-    const phcObj = memoryStore.phcs.find(p => String(p._id) === String(updated.assignedPHC));
-    sendShiftUpdateEmail({
-      name: updated.name,
-      email: updated.email,
-      shiftStart: formatTime12h(updated.shiftStart),
-      shiftEnd: formatTime12h(updated.shiftEnd),
-      phcName: phcObj ? phcObj.name : 'Assigned PHC'
-    });
-
     res.json({
       success: true,
-      message: `Doctor details updated! Schedule update email sent to ${updated.email}`,
+      message: `Doctor details updated successfully`,
       doctor: { ...updated, password: undefined, plainPassword: undefined }
     });
 
   } catch (err) {
-    console.error('Update doctor error:', err);
     res.status(500).json({ success: false, message: 'Server error updating doctor' });
   }
 };
 
-// Delete Doctor Account and associated logs & IMMEDIATELY STOP EMAIL TRIGGERS
+// Delete Doctor Account
 exports.deleteDoctor = async (req, res) => {
   try {
     const { id } = req.params;
@@ -347,31 +309,18 @@ exports.deleteDoctor = async (req, res) => {
 
     const deletedDoctor = memoryStore.users.splice(docIdx, 1)[0];
 
-    // IMMEDIATELY STOP EMAIL & NOTIFICATION TRIGGERS for deleted doctor
     clearRemindersForDoctor(id);
-
-    // Clean up attendance logs and explanations for this doctor
     memoryStore.attendances = memoryStore.attendances.filter(a => String(a.doctor) !== String(id));
     memoryStore.explanations = memoryStore.explanations.filter(e => String(e.doctor) !== String(id));
     saveMemoryStoreToDisk();
 
-    if (!memoryStore.isInMemoryMode && mongoose.connection.readyState === 1) {
-      try {
-        await User.deleteOne({ _id: id });
-        if (Attendance) await Attendance.deleteMany({ doctor: id });
-        if (Explanation) await Explanation.deleteMany({ doctor: id });
-      } catch (e) {}
-    }
-
-    console.log(`🛑 Stopped all automated email reminders and triggers for deleted doctor: Dr. ${deletedDoctor.name} (${deletedDoctor.email})`);
-
-    res.json({ success: true, message: `Doctor "${deletedDoctor.name}" removed successfully. All background email triggers stopped.` });
+    res.json({ success: true, message: `Doctor "${deletedDoctor.name}" removed successfully.` });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Error deleting doctor' });
   }
 };
 
-// Send Direct Test Registration Email to Doctor
+// Send Direct Test Registration Email
 exports.sendTestDoctorEmail = async (req, res) => {
   try {
     const { id } = req.params;
@@ -399,7 +348,7 @@ exports.sendTestDoctorEmail = async (req, res) => {
   }
 };
 
-// Send Attendance Audit Summary Email to Doctor
+// Send Attendance Audit Summary Email
 exports.sendDoctorAttendanceReport = async (req, res) => {
   try {
     const { id } = req.params;
@@ -436,7 +385,7 @@ exports.sendDoctorAttendanceReport = async (req, res) => {
   }
 };
 
-// Send Custom Official Warning / Notice Email
+// Send Custom Official Notice Email
 exports.sendCustomNoticeEmail = async (req, res) => {
   try {
     const { recipientEmail, recipientName, subject, messageText } = req.body;
@@ -462,12 +411,14 @@ exports.sendCustomNoticeEmail = async (req, res) => {
   }
 };
 
-// --- ADMIN MANAGEMENT BY CMO ---
+// --- ADMIN MANAGEMENT BY CMO (Workspace Isolated) ---
 
 // Get All Admins (CMO only)
 exports.getAllAdmins = async (req, res) => {
   try {
-    const admins = memoryStore.users.filter(u => u.role === 'ADMIN');
+    const userWorkspace = req.user?.workspaceId || req.userDetails?.workspaceId || 'workspace_demo_public';
+    const admins = memoryStore.users.filter(u => u.role === 'ADMIN' && (u.workspaceId || 'workspace_demo_public') === userWorkspace);
+
     const enriched = admins.map(a => {
       const phc = memoryStore.phcs.find(p => String(p._id) === String(a.assignedPHC));
       return {
@@ -493,6 +444,7 @@ exports.getAllAdmins = async (req, res) => {
 // Create Admin (CMO only)
 exports.createAdmin = async (req, res) => {
   try {
+    const userWorkspace = req.user?.workspaceId || req.userDetails?.workspaceId || 'workspace_demo_public';
     const { name, email, username, password, gender, assignedPHC, mobile } = req.body;
 
     if (!name || !email || !username || !password) {
@@ -505,17 +457,19 @@ exports.createAdmin = async (req, res) => {
     const cleanPassword = password.trim();
 
     let existing = memoryStore.users.find(u => 
-      u.email.toLowerCase() === cleanEmail || u.username.toLowerCase() === cleanUsername
+      (u.workspaceId || 'workspace_demo_public') === userWorkspace &&
+      (u.email.toLowerCase() === cleanEmail || u.username.toLowerCase() === cleanUsername)
     );
 
     if (existing) {
-      return res.status(400).json({ success: false, message: 'An account with this email address or username already exists.' });
+      return res.status(400).json({ success: false, message: 'An account with this email address or username already exists in your workspace.' });
     }
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(cleanPassword, salt);
 
     const adminId = 'admin_' + Date.now();
+    const phcsInWorkspace = memoryStore.phcs.filter(p => (p.workspaceId || 'workspace_demo_public') === userWorkspace);
 
     const newAdmin = {
       _id: adminId,
@@ -527,21 +481,14 @@ exports.createAdmin = async (req, res) => {
       role: 'ADMIN',
       gender: gender || 'Male',
       mobile: mobile || '',
-      assignedPHC: assignedPHC || (memoryStore.phcs[0] ? memoryStore.phcs[0]._id : null),
+      assignedPHC: assignedPHC || (phcsInWorkspace[0] ? phcsInWorkspace[0]._id : null),
+      workspaceId: userWorkspace,
       status: 'ACTIVE',
       createdAt: new Date().toISOString()
     };
 
     memoryStore.users.push(newAdmin);
     saveMemoryStoreToDisk();
-
-    if (!memoryStore.isInMemoryMode && mongoose.connection.readyState === 1) {
-      try {
-        await User.create(newAdmin);
-      } catch (mErr) {
-        console.warn('MongoDB Atlas Admin create notice:', mErr.message);
-      }
-    }
 
     res.status(201).json({
       success: true,
@@ -570,8 +517,6 @@ exports.requestAdminEditOTP = async (req, res) => {
       existingEmail: admin.email
     });
 
-    console.log(`🔑 Generated Admin Edit OTP for ${admin.name} (${admin.email}): ${otpCode}`);
-
     await sendPasswordResetOTPEmail({
       name: admin.name,
       email: admin.email,
@@ -585,12 +530,11 @@ exports.requestAdminEditOTP = async (req, res) => {
     });
 
   } catch (err) {
-    console.error('Request Admin Edit OTP error:', err);
     res.status(500).json({ success: false, message: 'Server error generating OTP for Admin edit.' });
   }
 };
 
-// Update Admin Details by CMO (Requires OTP if Email or Password is modified)
+// Update Admin Details by CMO
 exports.updateAdmin = async (req, res) => {
   try {
     const { id } = req.params;
@@ -603,34 +547,15 @@ exports.updateAdmin = async (req, res) => {
     const isEmailChanged = email && email.trim().toLowerCase() !== currentAdmin.email.toLowerCase();
     const isPasswordChanged = password && password.trim().length > 0;
 
-    // Strict Security Rule: If sensitive credentials (Email or Password) are modified, verify OTP
     if (isEmailChanged || isPasswordChanged) {
       const otpRecord = adminEditOtpMap.get(String(id));
-      if (!otpRecord) {
+      if (!otpRecord || Date.now() > otpRecord.expiresAt || !otp || otp.trim() !== otpRecord.otpCode) {
         return res.status(400).json({
           success: false,
           requireOtp: true,
-          message: `OTP verification required to modify Admin credentials (Email or Password). Please request OTP sent to ${currentAdmin.email}.`
+          message: `Invalid or missing OTP code sent to existing email (${currentAdmin.email}).`
         });
       }
-
-      if (Date.now() > otpRecord.expiresAt) {
-        adminEditOtpMap.delete(String(id));
-        return res.status(400).json({
-          success: false,
-          requireOtp: true,
-          message: 'OTP code has expired. Please request a new code.'
-        });
-      }
-
-      if (!otp || otp.trim() !== otpRecord.otpCode) {
-        return res.status(400).json({
-          success: false,
-          requireOtp: true,
-          message: `Invalid OTP code. Please check OTP sent to existing email (${currentAdmin.email}).`
-        });
-      }
-
       adminEditOtpMap.delete(String(id));
     }
 
@@ -653,12 +578,6 @@ exports.updateAdmin = async (req, res) => {
     memoryStore.users[adminIndex] = updated;
     saveMemoryStoreToDisk();
 
-    if (!memoryStore.isInMemoryMode && mongoose.connection.readyState === 1) {
-      try {
-        await User.updateOne({ _id: currentAdmin._id }, updated);
-      } catch (e) {}
-    }
-
     res.json({
       success: true,
       message: `Admin details updated successfully`,
@@ -670,7 +589,7 @@ exports.updateAdmin = async (req, res) => {
   }
 };
 
-// Delete Admin Account & Cascading Delete of Respective Admin's Doctors, Attendance Records, and STOP ALL EMAIL REMINDERS (CMO only)
+// Delete Admin Account
 exports.deleteAdmin = async (req, res) => {
   try {
     const { id } = req.params;
@@ -680,61 +599,36 @@ exports.deleteAdmin = async (req, res) => {
     const deletedAdmin = memoryStore.users[adminIdx];
     const phcId = deletedAdmin.assignedPHC;
 
-    // 1. Identify all doctors belonging to this Admin / PHC
     const adminDoctors = memoryStore.users.filter(u => 
       u.role === 'DOCTOR' && 
       (String(u.assignedPHC) === String(phcId) || String(u.createdByAdmin) === String(id))
     );
     const doctorIdsToDelete = adminDoctors.map(d => String(d._id));
 
-    console.log(`🗑️ CMO Deleting Admin "${deletedAdmin.name}". Cascading deletion of ${doctorIdsToDelete.length} assigned doctor accounts and stopping all automated email triggers...`);
-
-    // 2. Immediately STOP all automated email reminders for all deleted doctors
     doctorIdsToDelete.forEach(docId => clearRemindersForDoctor(docId));
-
-    // 3. Remove Admin account
     memoryStore.users.splice(adminIdx, 1);
 
-    // 4. Remove all Doctors assigned to this Admin / PHC
     memoryStore.users = memoryStore.users.filter(u => !(
       u.role === 'DOCTOR' && 
       (String(u.assignedPHC) === String(phcId) || String(u.createdByAdmin) === String(id))
     ));
 
-    // 5. Remove all Attendance records for this PHC or deleted doctors
     memoryStore.attendances = memoryStore.attendances.filter(a => 
       String(a.phc) !== String(phcId) && !doctorIdsToDelete.includes(String(a.doctor))
     );
 
-    // 6. Remove all Explanation records for this PHC or deleted doctors
     memoryStore.explanations = memoryStore.explanations.filter(e => 
-      String(e.phc) !== String(phcId) && !doctorIdsToDelete.includes(String(e.doctor))
+      String(e.phc) !== String(phcId) && !doctorIdsToDelete.includes(String(a.doctor))
     );
 
-    // 7. Save updated data store to disk
     saveMemoryStoreToDisk();
-
-    // 8. Cascading delete in MongoDB Atlas Cloud DB if connected
-    if (!memoryStore.isInMemoryMode && mongoose.connection.readyState === 1) {
-      try {
-        await User.deleteOne({ _id: id });
-        if (doctorIdsToDelete.length > 0) {
-          await User.deleteMany({ _id: { $in: doctorIdsToDelete } });
-          if (Attendance) await Attendance.deleteMany({ $or: [{ phc: phcId }, { doctor: { $in: doctorIdsToDelete } }] });
-          if (Explanation) await Explanation.deleteMany({ $or: [{ phc: phcId }, { doctor: { $in: doctorIdsToDelete } }] });
-        }
-      } catch (e) {
-        console.warn('MongoDB Atlas cascading delete notice:', e.message);
-      }
-    }
 
     res.json({
       success: true,
-      message: `Admin "${deletedAdmin.name}" and all ${doctorIdsToDelete.length} assigned doctor account(s) deleted. All background email triggers stopped.`
+      message: `Admin "${deletedAdmin.name}" and assigned doctor account(s) deleted.`
     });
 
   } catch (err) {
-    console.error('Delete Admin Error:', err);
-    res.status(500).json({ success: false, message: 'Error deleting Admin account and assigned doctor data.' });
+    res.status(500).json({ success: false, message: 'Error deleting Admin account.' });
   }
 };

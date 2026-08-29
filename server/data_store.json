@@ -13,6 +13,7 @@
       "qualification": "MBBS, MD (Healthcare Administration)",
       "specialization": "Master Chief Medical Officer & Healthcare Director",
       "assignedPHC": null,
+      "workspaceId": "workspace_master_suriyachandru",
       "status": "ACTIVE",
       "createdAt": "2026-08-27T00:00:00.000Z"
     },
@@ -29,6 +30,7 @@
       "qualification": "MBBS, MD (Public Health)",
       "specialization": "Chief Medical Officer",
       "assignedPHC": null,
+      "workspaceId": "workspace_demo_public",
       "status": "ACTIVE",
       "createdAt": "2026-08-27T00:00:00.000Z"
     },
@@ -45,6 +47,7 @@
       "qualification": "MBBS, MHA",
       "specialization": "Hospital Administrator",
       "assignedPHC": "phc_001",
+      "workspaceId": "workspace_demo_public",
       "status": "ACTIVE",
       "createdAt": "2026-08-27T00:00:00.000Z"
     },
@@ -63,11 +66,28 @@
       "assignedPHC": "phc_001",
       "shiftStart": "10:00 PM",
       "shiftEnd": "04:00 AM",
+      "workspaceId": "workspace_demo_public",
       "status": "ACTIVE",
       "createdAt": "2026-08-27T00:00:00.000Z"
     }
   ],
   "phcs": [
+    {
+      "_id": "phc_master_001",
+      "name": "Master State PHC Directorate",
+      "code": "PHC-MASTER-01",
+      "address": "1, State Directorate Road, Central Healthcare Complex, Chennai, Tamil Nadu - 600006, India",
+      "district": "Chennai",
+      "state": "Tamil Nadu",
+      "pincode": "600006",
+      "latitude": 13.0827,
+      "longitude": 80.2707,
+      "radius": 200,
+      "assignedAdmin": null,
+      "workspaceId": "workspace_master_suriyachandru",
+      "status": "ACTIVE",
+      "createdAt": "2026-08-27T00:00:00.000Z"
+    },
     {
       "_id": "phc_001",
       "name": "City Care Hospital & Central PHC",
@@ -80,6 +100,7 @@
       "longitude": 79.1378,
       "radius": 200,
       "assignedAdmin": "admin_demo_001",
+      "workspaceId": "workspace_demo_public",
       "status": "ACTIVE",
       "createdAt": "2026-08-27T00:00:00.000Z"
     }

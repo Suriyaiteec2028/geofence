@@ -25,6 +25,7 @@ async function getSeedData() {
       qualification: 'MBBS, MD (Healthcare Administration)',
       specialization: 'Master Chief Medical Officer & Healthcare Director',
       assignedPHC: null,
+      workspaceId: 'workspace_master_suriyachandru',
       status: 'ACTIVE',
       createdAt: new Date().toISOString()
     },
@@ -41,6 +42,7 @@ async function getSeedData() {
       qualification: 'MBBS, MD (Public Health)',
       specialization: 'Chief Medical Officer',
       assignedPHC: null,
+      workspaceId: 'workspace_demo_public',
       status: 'ACTIVE',
       createdAt: new Date().toISOString()
     },
@@ -57,6 +59,7 @@ async function getSeedData() {
       qualification: 'MBBS, MHA',
       specialization: 'Hospital Administrator',
       assignedPHC: 'phc_001',
+      workspaceId: 'workspace_demo_public',
       status: 'ACTIVE',
       createdAt: new Date().toISOString()
     },
@@ -75,12 +78,29 @@ async function getSeedData() {
       assignedPHC: 'phc_001',
       shiftStart: '10:00 PM',
       shiftEnd: '04:00 AM',
+      workspaceId: 'workspace_demo_public',
       status: 'ACTIVE',
       createdAt: new Date().toISOString()
     }
   ];
 
   const phcs = [
+    {
+      _id: 'phc_master_001',
+      name: 'Master State PHC Directorate',
+      code: 'PHC-MASTER-01',
+      address: '1, State Directorate Road, Central Healthcare Complex, Chennai, Tamil Nadu - 600006, India',
+      district: 'Chennai',
+      state: 'Tamil Nadu',
+      pincode: '600006',
+      latitude: 13.0827,
+      longitude: 80.2707,
+      radius: 200,
+      assignedAdmin: null,
+      workspaceId: 'workspace_master_suriyachandru',
+      status: 'ACTIVE',
+      createdAt: new Date().toISOString()
+    },
     {
       _id: 'phc_001',
       name: 'City Care Hospital & Central PHC',
@@ -93,12 +113,12 @@ async function getSeedData() {
       longitude: 79.1378,
       radius: 200,
       assignedAdmin: 'admin_demo_001',
+      workspaceId: 'workspace_demo_public',
       status: 'ACTIVE',
       createdAt: new Date().toISOString()
     }
   ];
 
-  // Completely clean initial state for scratch testing!
   const attendances = [];
   const explanations = [];
   const notifications = [];

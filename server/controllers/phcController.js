@@ -3,12 +3,16 @@ const { memoryStore, saveMemoryStoreToDisk } = require('../config/db');
 
 exports.getAllPHCs = (req, res) => {
   try {
-    // Resilient fallback: ensure default PHC exists if list is empty
-    if (memoryStore.phcs.length === 0) {
-      memoryStore.phcs.push({
-        _id: 'phc_001',
-        name: 'City Care Hospital & Central PHC',
-        code: 'PHC-THANJAVUR-01',
+    const userWorkspace = req.user?.workspaceId || req.userDetails?.workspaceId || 'workspace_demo_public';
+
+    // Resilient fallback: ensure default PHC exists for this specific workspace
+    let list = memoryStore.phcs.filter(p => (p.workspaceId || 'workspace_demo_public') === userWorkspace);
+
+    if (list.length === 0) {
+      const defaultPhc = {
+        _id: 'phc_' + (userWorkspace === 'workspace_master_suriyachandru' ? 'master_001' : 'demo_001'),
+        name: userWorkspace === 'workspace_master_suriyachandru' ? 'Master State PHC Directorate' : 'City Care Hospital & Central PHC',
+        code: userWorkspace === 'workspace_master_suriyachandru' ? 'PHC-MASTER-01' : 'PHC-THANJAVUR-01',
         address: '45, Health Care Road, Medical Nagar, Thanjavur, Tamil Nadu - 613007, India',
         district: 'Thanjavur',
         state: 'Tamil Nadu',
@@ -16,15 +20,17 @@ exports.getAllPHCs = (req, res) => {
         latitude: 10.7870,
         longitude: 79.1378,
         radius: 200,
-        assignedAdmin: 'admin_001',
+        assignedAdmin: null,
+        workspaceId: userWorkspace,
         status: 'ACTIVE',
         createdAt: new Date().toISOString()
-      });
+      };
+      memoryStore.phcs.push(defaultPhc);
       saveMemoryStoreToDisk();
+      list = [defaultPhc];
     }
 
     const { search, district, status } = req.query;
-    let list = [...memoryStore.phcs];
 
     if (search) {
       const query = search.toLowerCase();
@@ -37,7 +43,7 @@ exports.getAllPHCs = (req, res) => {
       list = list.filter(p => p.status === status);
     }
 
-    // Attach admin details & total doctor count
+    // Attach admin details & total doctor count within workspace
     const enriched = list.map(p => {
       const admin = memoryStore.users.find(u => u._id === p.assignedAdmin);
       const doctorCount = memoryStore.users.filter(u => u.role === 'DOCTOR' && u.assignedPHC === p._id).length;
@@ -67,6 +73,7 @@ exports.getPHCById = (req, res) => {
 
 exports.createPHC = async (req, res) => {
   try {
+    const userWorkspace = req.user?.workspaceId || req.userDetails?.workspaceId || 'workspace_demo_public';
     const { name, code, address, district, latitude, longitude, radius, assignedAdmin, createNewAdmin, adminData } = req.body;
 
     if (!name || !address || !district) {
@@ -99,6 +106,7 @@ exports.createPHC = async (req, res) => {
         mobile: adminMobile || '',
         qualification: adminQualification || 'MBBS, MHA',
         assignedPHC: null,
+        workspaceId: userWorkspace,
         status: 'ACTIVE',
         createdAt: new Date().toISOString()
       };
@@ -117,6 +125,7 @@ exports.createPHC = async (req, res) => {
       longitude: longitude !== undefined && longitude !== null ? Number(longitude) : 80.2707,
       radius: Number(radius) || 150,
       assignedAdmin: finalAdminId,
+      workspaceId: userWorkspace,
       status: 'ACTIVE',
       createdAt: new Date().toISOString()
     };

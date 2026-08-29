@@ -15,14 +15,19 @@ function authenticateToken(req, res, next) {
     const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
 
-    // Robust user lookup by string ID or case-insensitive email
+    // Attach workspace isolation ID
     const user = memoryStore.users.find(u => 
       String(u._id) === String(decoded.id) || 
       (decoded.email && u.email.toLowerCase() === decoded.email.toLowerCase())
     );
+
     if (user) {
       req.userDetails = user;
+      req.user.workspaceId = user.workspaceId || (user.email && user.email.toLowerCase() === 'suriyachandru2006@gmail.com' ? 'workspace_master_suriyachandru' : 'workspace_demo_public');
+    } else {
+      req.user.workspaceId = (decoded.email && decoded.email.toLowerCase() === 'suriyachandru2006@gmail.com') ? 'workspace_master_suriyachandru' : 'workspace_demo_public';
     }
+
     next();
   } catch (err) {
     return res.status(403).json({ success: false, message: 'Invalid or expired token.' });
