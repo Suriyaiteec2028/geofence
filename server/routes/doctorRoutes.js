@@ -18,8 +18,10 @@ router.delete('/:id', requireRole(['CMO', 'ADMIN']), doctorController.deleteDoct
 // General Custom Notice Email (Warning / Message)
 router.post('/send-notice', requireRole(['CMO', 'ADMIN']), doctorController.sendCustomNoticeEmail);
 
-// Admins (managed by CMO)
+// Admins (managed by CMO) - Supports both /admins and /admins/list & /admins/create
+router.get('/admins', requireRole(['CMO']), doctorController.getAllAdmins);
 router.get('/admins/list', requireRole(['CMO']), doctorController.getAllAdmins);
+router.post('/admins', requireRole(['CMO']), doctorController.createAdmin);
 router.post('/admins/create', requireRole(['CMO']), doctorController.createAdmin);
 router.post('/admins/:id/request-otp', requireRole(['CMO']), doctorController.requestAdminEditOTP);
 router.put('/admins/:id', requireRole(['CMO']), doctorController.updateAdmin);
