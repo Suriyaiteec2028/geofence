@@ -2,7 +2,24 @@
  * Dynamic Shift & Checkpoint Calculation Engine
  * Parses 24h ("10:00", "22:00", "04:00") and 12h ("10:00 PM", "04:00 AM") time strings.
  * Full Support for Overnight Shifts Across Midnight (e.g. 10:00 PM to 04:00 AM).
+ * Strict Asia/Kolkata (IST, UTC+5:30) Timezone Handling.
  */
+
+// Convert any Date into an IST Date object (Asia/Kolkata - UTC+5:30)
+function getISTDate(dateInput = new Date()) {
+  const utc = dateInput.getTime() + dateInput.getTimezoneOffset() * 60000;
+  const istOffset = 5.5 * 3600000; // +05:30 in ms
+  return new Date(utc + istOffset);
+}
+
+// Format IST Date to YYYY-MM-DD
+function getISTDateString(dateInput = new Date()) {
+  const ist = getISTDate(dateInput);
+  const year = ist.getFullYear();
+  const month = String(ist.getMonth() + 1).padStart(2, '0');
+  const day = String(ist.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 // Helper to convert any time string ("11:15", "09:00 AM", "10:00 PM", "04:00 AM") into minutes from midnight
 function timeToMinutes(timeStr) {
@@ -58,51 +75,36 @@ function minutesTo24h(totalMinutes) {
 }
 
 /**
- * Generates list of checkpoints for a shift, including overnight shifts across midnight
- * @param {string} shiftStart e.g. "22:00" or "10:00 PM"
- * @param {string} shiftEnd e.g. "04:00" or "04:00 AM"
+ * Generates list of checkpoints for a shift, including 5-minute pre-checkpoint reminder times
+ * @param {string} shiftStart e.g. "14:00" or "02:00 PM"
+ * @param {string} shiftEnd e.g. "22:00" or "10:00 PM"
  * @param {number} intervalMinutes e.g. 60
  * @param {number} windowDurationMinutes e.g. 5
- * @param {Date} referenceDate Date object representing shift start date
+ * @param {Date} referenceDate Date object representing shift start date in IST
  */
 function generateShiftWindows(shiftStart = '09:00', shiftEnd = '17:00', intervalMinutes = 60, windowDurationMinutes = 5, referenceDate = new Date()) {
+  const istRef = getISTDate(referenceDate);
   const startMins = timeToMinutes(shiftStart);
   let endMins = timeToMinutes(shiftEnd);
 
   const isOvernight = endMins <= startMins;
   if (isOvernight) {
-    endMins += 24 * 60; // Add 1440 mins (24h) for overnight shift
+    endMins += 24 * 60; // Add 1440 mins for overnight shift
   }
 
   const windows = [];
   let currentCheckpointMins = startMins;
 
-  // Base YYYY-MM-DD string
-  const baseYear = referenceDate.getFullYear();
-  const baseMonth = String(referenceDate.getMonth() + 1).padStart(2, '0');
-  const baseDay = String(referenceDate.getDate()).padStart(2, '0');
-  const baseDateStr = `${baseYear}-${baseMonth}-${baseDay}`;
-
   while (currentCheckpointMins <= endMins) {
     const windowStartMins = currentCheckpointMins;
     const windowEndMins = currentCheckpointMins + windowDurationMinutes;
-
-    // Check if checkpoint rolls over to next day
-    const dayOffset = Math.floor(windowStartMins / (24 * 60));
-    const winStartDateObj = new Date(referenceDate);
-    winStartDateObj.setDate(winStartDateObj.getDate() + dayOffset);
-
-    const startH = Math.floor((windowStartMins % (24 * 60)) / 60);
-    const startM = windowStartMins % 60;
-    winStartDateObj.setHours(startH, startM, 0, 0);
-
-    const winEndDateObj = new Date(winStartDateObj.getTime() + windowDurationMinutes * 60 * 1000);
-
-    const windowStartISO = winStartDateObj.toISOString();
-    const windowEndISO = winEndDateObj.toISOString();
+    
+    // Reminder is ALWAYS 5 Minutes BEFORE the Checkpoint!
+    const reminderMins = currentCheckpointMins - 5;
 
     const startFormatted = minutesToFormattedTime(windowStartMins);
     const endFormatted = minutesToFormattedTime(windowEndMins);
+    const reminderFormatted = minutesToFormattedTime(reminderMins);
 
     windows.push({
       checkpointIndex: windows.length + 1,
@@ -110,10 +112,10 @@ function generateShiftWindows(shiftStart = '09:00', shiftEnd = '17:00', interval
       checkpointFormatted: startFormatted,
       windowStartMins,
       windowEndMins,
+      reminderMins,
+      reminderFormatted,
       windowStartFormatted: startFormatted,
       windowEndFormatted: endFormatted,
-      windowStartISO,
-      windowEndISO,
       windowLabel: `${startFormatted} – ${endFormatted}`
     });
 
@@ -124,13 +126,13 @@ function generateShiftWindows(shiftStart = '09:00', shiftEnd = '17:00', interval
 }
 
 /**
- * Evaluates current doctor shift status against the current time
- * Supports Overnight Shifts (e.g. 10 PM to 4 AM) Across Midnight
+ * Evaluates current doctor shift status against IST current time
  */
-function evaluateCurrentShiftState(shiftStart = '09:00', shiftEnd = '17:00', intervalMinutes = 60, windowDurationMinutes = 5, now = new Date()) {
-  const currentHour = now.getHours();
-  const currentMin = now.getMinutes();
-  const currentSec = now.getSeconds();
+function evaluateCurrentShiftState(shiftStart = '09:00', shiftEnd = '17:00', intervalMinutes = 60, windowDurationMinutes = 5, nowInput = new Date()) {
+  const istNow = getISTDate(nowInput);
+  const currentHour = istNow.getHours();
+  const currentMin = istNow.getMinutes();
+  const currentSec = istNow.getSeconds();
   const nowMins = currentHour * 60 + currentMin;
 
   const startMins = timeToMinutes(shiftStart);
@@ -141,14 +143,12 @@ function evaluateCurrentShiftState(shiftStart = '09:00', shiftEnd = '17:00', int
     endMins += 24 * 60;
   }
 
-  // Adjust effectiveNowMins for overnight shift if current time is after midnight (early morning)
   let effectiveNowMins = nowMins;
   if (isOvernight && nowMins < startMins && nowMins <= (endMins - 24 * 60)) {
     effectiveNowMins = nowMins + 24 * 60;
   }
 
-  // Reference date for shift start (if effectiveNowMins > 1440, shift started yesterday)
-  const shiftRefDate = new Date(now);
+  const shiftRefDate = new Date(istNow);
   if (isOvernight && nowMins < startMins && nowMins <= (endMins - 24 * 60)) {
     shiftRefDate.setDate(shiftRefDate.getDate() - 1);
   }
@@ -157,26 +157,24 @@ function evaluateCurrentShiftState(shiftStart = '09:00', shiftEnd = '17:00', int
 
   let activeWindow = null;
   let nextWindow = null;
-  let secondsToNextWindow = null;
-  let secondsRemainingInActiveWindow = null;
+  let dueReminderWindow = null;
 
   for (let i = 0; i < windows.length; i++) {
     const w = windows[i];
 
-    // Check if currently inside window
+    // Check if currently inside 5-minute checkpoint window
     if (effectiveNowMins >= w.windowStartMins && effectiveNowMins < w.windowEndMins) {
       activeWindow = w;
-      const endSecs = w.windowEndMins * 60;
-      const nowSecs = effectiveNowMins * 60 + currentSec;
-      secondsRemainingInActiveWindow = Math.max(0, endSecs - nowSecs);
     }
 
-    // Find next upcoming window
+    // Check if current time matches the 5-Minute Pre-Checkpoint Reminder Window (reminderMins <= effectiveNowMins < windowStartMins)
+    if (effectiveNowMins >= w.reminderMins && effectiveNowMins < w.windowStartMins) {
+      dueReminderWindow = w;
+    }
+
+    // Find next upcoming checkpoint
     if (w.windowStartMins > effectiveNowMins && (!nextWindow || w.windowStartMins < nextWindow.windowStartMins)) {
       nextWindow = w;
-      const startSecs = w.windowStartMins * 60;
-      const nowSecs = effectiveNowMins * 60 + currentSec;
-      secondsToNextWindow = Math.max(0, startSecs - nowSecs);
     }
   }
 
@@ -184,12 +182,12 @@ function evaluateCurrentShiftState(shiftStart = '09:00', shiftEnd = '17:00', int
   const isShiftStarted = effectiveNowMins >= startMins;
 
   return {
-    nowFormatted: minutesToFormattedTime(nowMins),
+    istNowFormatted: minutesToFormattedTime(nowMins),
+    istDateStr: getISTDateString(nowInput),
     windows,
     activeWindow,
     nextWindow,
-    secondsToNextWindow,
-    secondsRemainingInActiveWindow,
+    dueReminderWindow,
     isWindowOpen: !!activeWindow,
     isShiftCompleted,
     isShiftStarted,
@@ -198,6 +196,8 @@ function evaluateCurrentShiftState(shiftStart = '09:00', shiftEnd = '17:00', int
 }
 
 module.exports = {
+  getISTDate,
+  getISTDateString,
   timeToMinutes,
   minutesToFormattedTime,
   generateShiftWindows,

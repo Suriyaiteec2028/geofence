@@ -6,6 +6,10 @@ const upload = require('../middleware/uploadMiddleware');
 
 router.use(authenticateToken);
 
+// Duty Reminder Testing & Monitoring Endpoints
+router.post('/test-reminder-schedule', requireRole(['CMO', 'ADMIN']), doctorController.testDutyReminderSchedule);
+router.get('/duty-reminders-log', requireRole(['CMO', 'ADMIN']), doctorController.getDutyRemindersLog);
+
 // Doctors
 router.get('/', requireRole(['CMO', 'ADMIN']), doctorController.getAllDoctors);
 router.post('/', requireRole(['CMO', 'ADMIN']), upload.single('profilePhoto'), doctorController.createDoctor);

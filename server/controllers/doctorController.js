@@ -9,6 +9,7 @@ const {
   sendCustomMessageEmail, 
   sendDoctorAttendanceReportEmail 
 } = require('../utils/emailService');
+const { triggerImmediateReminderTest } = require('../utils/cronScheduler');
 
 // Map to store temporary Doctor & Admin edit OTPs in memory
 const doctorEditOtpMap = new Map();
@@ -28,6 +29,35 @@ const formatTime12h = (timeStr) => {
   const padH = h < 10 ? `0${h}` : `${h}`;
   const padM = m < 10 ? `0${m}` : `${m}`;
   return `${padH}:${padM} ${period}`;
+};
+
+// Test & Simulate Duty Reminder Email Dispatch Immediately
+exports.testDutyReminderSchedule = async (req, res) => {
+  try {
+    const { doctorId } = req.body || {};
+    const results = await triggerImmediateReminderTest(doctorId);
+    res.json({
+      success: true,
+      message: `Test duty reminder emails dispatched successfully to ${results.length} active doctor(s).`,
+      results
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to test duty reminder schedule' });
+  }
+};
+
+// Get Duty Reminders Audit Log for Admin Monitoring
+exports.getDutyRemindersLog = async (req, res) => {
+  try {
+    const reminders = (memoryStore.notifications || []).filter(n => n.type === 'DUTY_REMINDER');
+    res.json({
+      success: true,
+      count: reminders.length,
+      reminders
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to fetch duty reminders log' });
+  }
 };
 
 // Get All Doctors (Filtered by Caller Workspace)

@@ -150,7 +150,7 @@ async function sendShiftUpdateEmail({ name, email, shiftStart, shiftEnd, phcName
             <p style="font-size: 12px; color: #94A3B8; margin: 5px 0 0 0;">Hospital: ${phcName || 'Assigned PHC'}</p>
           </div>
 
-          <p style="font-size: 12px; color: #94A3B8;">Hourly 60-minute checkpoint reminders will trigger automatically during your new duty hours.</p>
+          <p style="font-size: 12px; color: #94A3B8;">Automatic reminders will be sent to your email 5 minutes before every hourly duty checkpoint.</p>
           <hr style="border: 0; border-top: 1px solid #334155; margin: 20px 0;" />
           <p style="font-size: 11px; color: #64748B; text-align: center;">Automated System Notification • Department of Public Health Services</p>
         </div>
@@ -170,41 +170,49 @@ async function sendShiftUpdateEmail({ name, email, shiftStart, shiftEnd, phcName
   }
 }
 
-// 3. Send Hourly Checkpoint Reminder Email
-async function sendHourlyCheckpointReminderEmail({ name, email, checkpointIndex, windowLabel, phcName }) {
+// 3. Send 5-Minute Pre-Checkpoint Duty Reminder Email (Server-Side Backend Automated)
+async function sendHourlyCheckpointReminderEmail({ name, email, checkpointTime, reminderTime, dutyDate, shiftLabel, phcName }) {
   try {
     const user = (process.env.SMTP_USER || 'sn4194529@gmail.com').trim();
-    const subject = `⏰ Hourly Attendance Checkpoint #${checkpointIndex} Open (${windowLabel}) - Dr. ${name}`;
+    const subject = `⏰ Duty Checkpoint Reminder: ${checkpointTime} Window Approaching (Dr. ${name})`;
     const html = `
       <div style="font-family: Arial, sans-serif; background-color: #0F172A; padding: 24px; color: #F8FAFC;">
         <div style="max-width: 600px; margin: 0 auto; background-color: #1E293B; border: 1px solid #10B981; border-radius: 16px; padding: 24px;">
-          <h2 style="color: #10B981; margin-top: 0;">⏰ Hourly Attendance Reminder</h2>
+          <h2 style="color: #10B981; margin-top: 0;">⏰ Hourly Attendance Checkpoint Reminder</h2>
           <p style="font-size: 14px; color: #94A3B8;">Hello <strong>Dr. ${name}</strong>,</p>
-          <p style="font-size: 14px; color: #CBD5E1;">Your duty checkpoint window <strong>#${checkpointIndex}</strong> is now open for attendance marking.</p>
+          <p style="font-size: 14px; color: #CBD5E1;">Your hourly duty attendance checkpoint is approaching at <strong style="color: #10B981;">${checkpointTime}</strong>.</p>
           
-          <div style="background-color: #0F172A; border-left: 4px solid #10B981; padding: 16px; margin: 20px 0; border-radius: 8px;">
-            <h4 style="margin: 0 0 5px 0; color: #F1F5F9;">Open Checkpoint Window:</h4>
-            <p style="font-size: 18px; color: #10B981; margin: 0; font-weight: bold;">${windowLabel}</p>
-            <p style="font-size: 12px; color: #94A3B8; margin: 5px 0 0 0;">Hospital: ${phcName}</p>
+          <div style="background-color: #0F172A; border-left: 4px solid #10B981; padding: 18px; margin: 20px 0; border-radius: 8px;">
+            <h4 style="margin: 0 0 10px 0; color: #F1F5F9; font-size: 14px;">Duty Checkpoint Details:</h4>
+            <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #94A3B8; line-height: 1.8;">
+              <li><strong>Hospital PHC:</strong> <span style="color: #F8FAFC;">${phcName || 'Primary Health Center'}</span></li>
+              <li><strong>Duty Date:</strong> <span style="color: #F8FAFC;">${dutyDate || 'Today'}</span></li>
+              <li><strong>Duty Shift Window:</strong> <span style="color: #F59E0B; font-weight: bold;">${shiftLabel || 'Scheduled Shift'}</span></li>
+              <li><strong>Upcoming Checkpoint:</strong> <span style="color: #10B981; font-weight: bold; font-size: 15px;">${checkpointTime}</span></li>
+              <li><strong>Reminder Sent At:</strong> <span style="color: #38BDF8;">${reminderTime || '5 minutes before checkpoint'}</span></li>
+            </ul>
           </div>
 
-          <p style="font-size: 12px; color: #94A3B8;">Please open your Doctor Portal on your mobile or device and click <strong>Mark Attendance Now</strong> while inside the hospital geofence radius.</p>
+          <p style="font-size: 13px; color: #CBD5E1; line-height: 1.6;">
+            <strong>Action Required:</strong> Please open the Hospital Attendance System and complete your biometric face scan & geofence verification to mark attendance for this interval.
+          </p>
+
           <hr style="border: 0; border-top: 1px solid #334155; margin: 20px 0;" />
-          <p style="font-size: 11px; color: #64748B; text-align: center;">Automated Hourly Duty Scheduler • Hospital GeoAttendance System</p>
+          <p style="font-size: 11px; color: #64748B; text-align: center;">Automated Production Backend Scheduler • Department of Public Health Services</p>
         </div>
       </div>
     `;
 
     await sendMailWithFallback({
-      from: `"GeoAttendance Duty Bot" <${user}>`,
+      from: `"GeoAttendance Duty Scheduler" <${user}>`,
       to: email,
       subject,
       html
     });
 
-    logNotification(email, `Hourly Checkpoint #${checkpointIndex} Reminder`, `Dr. ${name}, your hourly attendance window (${windowLabel}) is open now.`);
+    logNotification(email, `Duty Checkpoint Reminder: ${checkpointTime}`, `Dr. ${name}, your hourly duty checkpoint at ${checkpointTime} opens in 5 minutes (Reminder sent at ${reminderTime}).`);
   } catch (err) {
-    console.error('Error sending hourly reminder email:', err);
+    console.error('Error sending duty reminder email:', err);
   }
 }
 
