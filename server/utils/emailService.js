@@ -7,39 +7,70 @@ try {
 
 const { memoryStore, saveMemoryStoreToDisk } = require('../config/db');
 
-// Configure Transporter (using Direct Port 465 SSL for 100% Reliable Gmail Dispatch)
-function getTransporter() {
+// Helper to send email with dual-port fallback (Port 465 SSL -> Port 587 TLS)
+async function sendMailWithFallback({ from, to, subject, html }) {
   const user = (process.env.SMTP_USER || 'sn4194529@gmail.com').trim();
   const rawPass = process.env.SMTP_PASS || 'hyhh ushk ykiz obxx';
   const pass = rawPass.replace(/\s+/g, '');
 
-  if (nodemailer) {
-    try {
-      return nodemailer.createTransport({
-        host: process.env.SMTP_HOST || 'smtp.gmail.com',
-        port: Number(process.env.SMTP_PORT) || 465,
-        secure: process.env.SMTP_SECURE !== 'false',
-        auth: { user, pass },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 10000,
-        tls: { rejectUnauthorized: false }
-      });
-    } catch (e) {
-      console.warn('Nodemailer initialization warning:', e.message);
-    }
+  if (!nodemailer) {
+    console.log(`=======================================================`);
+    console.log(`📧 [FALLBACK EMAIL DISPATCHED TO]: ${to}`);
+    console.log(`📌 [SUBJECT]: ${subject}`);
+    console.log(`=======================================================`);
+    return { messageId: 'fallback_' + Date.now() };
   }
 
-  // Fallback Transport Engine
-  return {
-    sendMail: async (options) => {
-      console.log(`=======================================================`);
-      console.log(`📧 [FALLBACK EMAIL DISPATCHED TO]: ${options.to}`);
-      console.log(`📌 [SUBJECT]: ${options.subject}`);
-      console.log(`=======================================================`);
-      return { messageId: 'fallback_' + Date.now() };
-    }
-  };
+  // 1. Try SSL Port 465
+  try {
+    const transporter465 = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: { user, pass },
+      connectionTimeout: 8000,
+      greetingTimeout: 8000,
+      socketTimeout: 8000,
+      tls: { rejectUnauthorized: false }
+    });
+
+    const info = await transporter465.sendMail({
+      from: from || `"Govt. Health Services" <${user}>`,
+      to,
+      subject,
+      html
+    });
+    console.log(`🟢 LIVE EMAIL DISPATCHED (Port 465) TO: ${to} (MessageID: ${info.messageId})`);
+    return info;
+  } catch (err465) {
+    console.warn(`⚠️ Port 465 dispatch notice for ${to}, trying Port 587 TLS fallback...`, err465.message);
+  }
+
+  // 2. Try TLS Port 587 Fallback
+  try {
+    const transporter587 = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      auth: { user, pass },
+      connectionTimeout: 8000,
+      greetingTimeout: 8000,
+      socketTimeout: 8000,
+      tls: { rejectUnauthorized: false }
+    });
+
+    const info = await transporter587.sendMail({
+      from: from || `"Govt. Health Services" <${user}>`,
+      to,
+      subject,
+      html
+    });
+    console.log(`🟢 LIVE EMAIL DISPATCHED (Port 587) TO: ${to} (MessageID: ${info.messageId})`);
+    return info;
+  } catch (err587) {
+    console.error(`❌ Port 587 dispatch failed for ${to}:`, err587.message);
+    throw err587;
+  }
 }
 
 // Log notification into System Notifications Audit Store
@@ -61,8 +92,7 @@ function logNotification(recipientEmail, title, message, type = 'EMAIL') {
 // 1. Send Doctor Registration Welcome Email
 async function sendDoctorRegistrationEmail({ name, email, username, password, shiftStart, shiftEnd, phcName }) {
   try {
-    const transporter = getTransporter();
-
+    const user = (process.env.SMTP_USER || 'sn4194529@gmail.com').trim();
     const subject = `Welcome Dr. ${name} - Your GeoAttendance Login Credentials & Shift Timings`;
     const html = `
       <div style="font-family: Arial, sans-serif; background-color: #0F172A; padding: 24px; color: #F8FAFC;">
@@ -89,17 +119,12 @@ async function sendDoctorRegistrationEmail({ name, email, username, password, sh
       </div>
     `;
 
-    try {
-      const info = await transporter.sendMail({
-        from: `"Govt. Health Services" <${process.env.SMTP_USER || 'sn4194529@gmail.com'}>`,
-        to: email,
-        subject,
-        html
-      });
-      console.log(`🟢 LIVE REGISTRATION EMAIL DELIVERED TO: ${email} (MessageID: ${info.messageId})`);
-    } catch (sendErr) {
-      console.warn(`⚠️ SMTP dispatch notice for ${email}:`, sendErr.message);
-    }
+    await sendMailWithFallback({
+      from: `"Govt. Health Services" <${user}>`,
+      to: email,
+      subject,
+      html
+    });
 
     logNotification(email, 'Account Registration Notice', `Welcome Dr. ${name}! Your medical doctor account was registered at ${phcName}. Your assigned duty shift is ${shiftStart} - ${shiftEnd}. Account credentials: Username=${username}, Password=${password}`);
   } catch (err) {
@@ -110,8 +135,7 @@ async function sendDoctorRegistrationEmail({ name, email, username, password, sh
 // 2. Send Shift Update Email
 async function sendShiftUpdateEmail({ name, email, shiftStart, shiftEnd, phcName }) {
   try {
-    const transporter = getTransporter();
-
+    const user = (process.env.SMTP_USER || 'sn4194529@gmail.com').trim();
     const subject = `Notice: Duty Shift Schedule Updated (Dr. ${name})`;
     const html = `
       <div style="font-family: Arial, sans-serif; background-color: #0F172A; padding: 24px; color: #F8FAFC;">
@@ -133,17 +157,12 @@ async function sendShiftUpdateEmail({ name, email, shiftStart, shiftEnd, phcName
       </div>
     `;
 
-    try {
-      const info = await transporter.sendMail({
-        from: `"Hospital Admin" <${process.env.SMTP_USER || 'sn4194529@gmail.com'}>`,
-        to: email,
-        subject,
-        html
-      });
-      console.log(`🟢 LIVE SHIFT UPDATE EMAIL DELIVERED TO: ${email} (MessageID: ${info.messageId})`);
-    } catch (sendErr) {
-      console.warn(`⚠️ SMTP dispatch notice for ${email}:`, sendErr.message);
-    }
+    await sendMailWithFallback({
+      from: `"Hospital Admin" <${user}>`,
+      to: email,
+      subject,
+      html
+    });
 
     logNotification(email, 'Duty Shift Schedule Updated', `Dr. ${name}, your shift timings were updated to ${shiftStart} - ${shiftEnd}.`);
   } catch (err) {
@@ -154,8 +173,7 @@ async function sendShiftUpdateEmail({ name, email, shiftStart, shiftEnd, phcName
 // 3. Send Hourly Checkpoint Reminder Email
 async function sendHourlyCheckpointReminderEmail({ name, email, checkpointIndex, windowLabel, phcName }) {
   try {
-    const transporter = getTransporter();
-
+    const user = (process.env.SMTP_USER || 'sn4194529@gmail.com').trim();
     const subject = `⏰ Hourly Attendance Checkpoint #${checkpointIndex} Open (${windowLabel}) - Dr. ${name}`;
     const html = `
       <div style="font-family: Arial, sans-serif; background-color: #0F172A; padding: 24px; color: #F8FAFC;">
@@ -177,17 +195,12 @@ async function sendHourlyCheckpointReminderEmail({ name, email, checkpointIndex,
       </div>
     `;
 
-    try {
-      const info = await transporter.sendMail({
-        from: `"GeoAttendance Duty Bot" <${process.env.SMTP_USER || 'sn4194529@gmail.com'}>`,
-        to: email,
-        subject,
-        html
-      });
-      console.log(`🟢 LIVE HOURLY REMINDER EMAIL DELIVERED TO: ${email} (MessageID: ${info.messageId})`);
-    } catch (sendErr) {
-      console.warn(`⚠️ SMTP dispatch notice for ${email}:`, sendErr.message);
-    }
+    await sendMailWithFallback({
+      from: `"GeoAttendance Duty Bot" <${user}>`,
+      to: email,
+      subject,
+      html
+    });
 
     logNotification(email, `Hourly Checkpoint #${checkpointIndex} Reminder`, `Dr. ${name}, your hourly attendance window (${windowLabel}) is open now.`);
   } catch (err) {
@@ -198,8 +211,7 @@ async function sendHourlyCheckpointReminderEmail({ name, email, checkpointIndex,
 // 4. Send Master CMO Registration Verification OTP Email
 async function sendCMORegistrationOTPEmail({ email, otpCode }) {
   try {
-    const transporter = getTransporter();
-
+    const user = (process.env.SMTP_USER || 'sn4194529@gmail.com').trim();
     const subject = `🔐 Master CMO Registration Verification OTP Code - ${otpCode}`;
     const html = `
       <div style="font-family: Arial, sans-serif; background-color: #0F172A; padding: 24px; color: #F8FAFC;">
@@ -221,17 +233,12 @@ async function sendCMORegistrationOTPEmail({ email, otpCode }) {
       </div>
     `;
 
-    try {
-      const info = await transporter.sendMail({
-        from: `"State CMO Directorate" <${process.env.SMTP_USER || 'sn4194529@gmail.com'}>`,
-        to: email,
-        subject,
-        html
-      });
-      console.log(`🟢 LIVE CMO REGISTRATION OTP DELIVERED TO: ${email} (OTP: ${otpCode}) (MessageID: ${info.messageId})`);
-    } catch (sendErr) {
-      console.warn(`⚠️ SMTP dispatch notice for ${email}:`, sendErr.message);
-    }
+    await sendMailWithFallback({
+      from: `"State CMO Directorate" <${user}>`,
+      to: email,
+      subject,
+      html
+    });
 
     logNotification(email, 'CMO Registration Verification OTP Dispatched', `Master CMO Registration OTP code: ${otpCode}. Dispatched to ${email}.`);
   } catch (err) {
@@ -239,43 +246,37 @@ async function sendCMORegistrationOTPEmail({ email, otpCode }) {
   }
 }
 
-// 5. Send Password Reset OTP Email
+// 5. Send Password Reset / Security Verification OTP Email
 async function sendPasswordResetOTPEmail({ name, email, otpCode }) {
   try {
-    const transporter = getTransporter();
-
-    const subject = `🔐 Security Verification Request - GeoAttendance Portal`;
+    const user = (process.env.SMTP_USER || 'sn4194529@gmail.com').trim();
+    const subject = `🔐 Security Verification OTP Code: ${otpCode} - GeoAttendance Portal`;
     const html = `
       <div style="font-family: Arial, sans-serif; background-color: #0F172A; padding: 24px; color: #F8FAFC;">
         <div style="max-width: 600px; margin: 0 auto; background-color: #1E293B; border: 1px solid #3B82F6; border-radius: 16px; padding: 24px;">
           <h2 style="color: #3B82F6; margin-top: 0;">🔐 Security Verification Request</h2>
           <p style="font-size: 14px; color: #94A3B8;">Hello <strong>${name || 'User'}</strong>,</p>
-          <p style="font-size: 14px; color: #CBD5E1;">A credential authorization request was initiated for your account: <strong>${email}</strong>.</p>
+          <p style="font-size: 14px; color: #CBD5E1;">A credential authorization request was initiated for account: <strong>${email}</strong>.</p>
           
           <div style="background-color: #0F172A; border-left: 4px solid #3B82F6; padding: 20px; margin: 20px 0; border-radius: 8px; text-align: center;">
-            <p style="font-size: 12px; color: #94A3B8; margin: 0 0 8px 0; font-weight: bold; text-transform: uppercase;">Your 6-Digit OTP Verification Code:</p>
-            <div style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #10B981; font-family: monospace;">${otpCode}</div>
+            <p style="font-size: 12px; color: #94A3B8; margin: 0 0 8px 0; font-weight: bold; text-transform: uppercase;">Your 6-Digit Verification OTP Code:</p>
+            <div style="font-size: 34px; font-weight: bold; letter-spacing: 8px; color: #10B981; font-family: monospace;">${otpCode}</div>
             <p style="font-size: 11px; color: #64748B; margin: 8px 0 0 0;">Valid for 10 minutes. Do not share this OTP with anyone.</p>
           </div>
 
-          <p style="font-size: 12px; color: #94A3B8;">If you did not request this authorization, please contact administration.</p>
+          <p style="font-size: 12px; color: #94A3B8;">If you did not request this authorization, please contact administration immediately.</p>
           <hr style="border: 0; border-top: 1px solid #334155; margin: 20px 0;" />
           <p style="font-size: 11px; color: #64748B; text-align: center;">Govt. Public Health GeoAttendance Security System</p>
         </div>
       </div>
     `;
 
-    try {
-      const info = await transporter.sendMail({
-        from: `"GeoAttendance Security" <${process.env.SMTP_USER || 'sn4194529@gmail.com'}>`,
-        to: email,
-        subject,
-        html
-      });
-      console.log(`🟢 OTP EMAIL DELIVERED TO: ${email} (OTP: ${otpCode}) (MessageID: ${info.messageId})`);
-    } catch (sendErr) {
-      console.warn(`⚠️ SMTP dispatch notice for ${email}:`, sendErr.message);
-    }
+    await sendMailWithFallback({
+      from: `"GeoAttendance Security" <${user}>`,
+      to: email,
+      subject,
+      html
+    });
 
     logNotification(email, 'Security Verification Notice', `Password Reset OTP Code: ${otpCode}. Dispatched to ${email}.`);
   } catch (err) {
@@ -286,8 +287,7 @@ async function sendPasswordResetOTPEmail({ name, email, otpCode }) {
 // 6. Send Custom Message Email
 async function sendCustomMessageEmail({ recipientName, recipientEmail, subject, messageText, senderRole = 'CMO' }) {
   try {
-    const transporter = getTransporter();
-
+    const user = (process.env.SMTP_USER || 'sn4194529@gmail.com').trim();
     const mailSubject = subject || `Official Notice from ${senderRole} Office - ${recipientName}`;
     const html = `
       <div style="font-family: Arial, sans-serif; background-color: #0F172A; padding: 24px; color: #F8FAFC;">
@@ -308,17 +308,12 @@ async function sendCustomMessageEmail({ recipientName, recipientEmail, subject, 
       </div>
     `;
 
-    try {
-      const info = await transporter.sendMail({
-        from: `"${senderRole} Directorate" <${process.env.SMTP_USER || 'sn4194529@gmail.com'}>`,
-        to: recipientEmail,
-        subject: mailSubject,
-        html
-      });
-      console.log(`🟢 OFFICIAL NOTICE EMAIL DELIVERED TO: ${recipientEmail} (MessageID: ${info.messageId})`);
-    } catch (sendErr) {
-      console.warn(`⚠️ SMTP dispatch notice for ${recipientEmail}:`, sendErr.message);
-    }
+    await sendMailWithFallback({
+      from: `"${senderRole} Directorate" <${user}>`,
+      to: recipientEmail,
+      subject: mailSubject,
+      html
+    });
 
     logNotification(recipientEmail, mailSubject, `Official Notice from ${senderRole}: ${messageText}`);
   } catch (err) {
@@ -329,8 +324,7 @@ async function sendCustomMessageEmail({ recipientName, recipientEmail, subject, 
 // 7. Send Doctor Attendance Report Email
 async function sendDoctorAttendanceReportEmail({ name, email, attendanceSummary, phcName }) {
   try {
-    const transporter = getTransporter();
-
+    const user = (process.env.SMTP_USER || 'sn4194529@gmail.com').trim();
     const subject = `📊 Duty Attendance Audit & Performance Report - Dr. ${name}`;
     const html = `
       <div style="font-family: Arial, sans-serif; background-color: #0F172A; padding: 24px; color: #F8FAFC;">
@@ -368,17 +362,12 @@ async function sendDoctorAttendanceReportEmail({ name, email, attendanceSummary,
       </div>
     `;
 
-    try {
-      const info = await transporter.sendMail({
-        from: `"Attendance Audit Bot" <${process.env.SMTP_USER || 'sn4194529@gmail.com'}>`,
-        to: email,
-        subject,
-        html
-      });
-      console.log(`🟢 ATTENDANCE REPORT EMAIL DELIVERED TO: ${email} (MessageID: ${info.messageId})`);
-    } catch (sendErr) {
-      console.warn(`⚠️ SMTP dispatch notice for ${email}:`, sendErr.message);
-    }
+    await sendMailWithFallback({
+      from: `"Attendance Audit Bot" <${user}>`,
+      to: email,
+      subject,
+      html
+    });
 
     logNotification(email, 'Attendance Audit Report Dispatched', `Attendance summary report sent to ${email} (Compliance: ${attendanceSummary.complianceRate || '100%'}).`);
   } catch (err) {
