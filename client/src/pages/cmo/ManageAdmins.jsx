@@ -5,11 +5,11 @@ import { Table } from '../../components/common/Table';
 import { Modal } from '../../components/common/Modal';
 import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
 import { UserAvatar } from '../../components/common/UserAvatar';
+import { OTPVerificationModal } from '../../components/common/OTPVerificationModal';
 import { useNotification } from '../../context/NotificationContext';
 import { 
-  UserCheck, Shield, Edit3, Trash2, Mail, Building2, KeyRound, Lock, Eye, EyeOff, ShieldAlert, Phone 
+  UserPlus, Search, Edit3, Trash2, Mail, Shield, Building2, Lock, Eye, EyeOff, KeyRound, AlertTriangle 
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 
 export const ManageAdmins = () => {
   const [admins, setAdmins] = useState([]);
@@ -21,7 +21,6 @@ export const ManageAdmins = () => {
 
   // OTP Verification Modal State
   const [showOtpModal, setShowOtpModal] = useState(false);
-  const [otpInput, setOtpInput] = useState('');
   const [sendingOtp, setSendingOtp] = useState(false);
   const [savingWithOtp, setSavingWithOtp] = useState(false);
 
@@ -44,13 +43,13 @@ export const ManageAdmins = () => {
   const fetchData = async () => {
     try {
       const [adminRes, phcRes] = await Promise.all([
-        axios.get('/api/doctors/admins/list'),
+        axios.get('/api/doctors/admins'),
         axios.get('/api/phcs')
       ]);
       if (adminRes.data.success) setAdmins(adminRes.data.admins);
       if (phcRes.data.success) setPhcs(phcRes.data.phcs);
     } catch (err) {
-      addToast('Failed to load admins list', 'danger');
+      addToast('Failed to load administrators list', 'danger');
     } finally {
       setLoading(false);
     }
@@ -67,7 +66,6 @@ export const ManageAdmins = () => {
       mobile: '',
       assignedPHC: phcs.length > 0 ? phcs[0]._id : ''
     });
-    setShowPassword(false);
     setShowModal(true);
   };
 
@@ -77,12 +75,11 @@ export const ManageAdmins = () => {
       name: admin.name || '',
       email: admin.email || '',
       username: admin.username || '',
-      password: '', // Keep password blank
+      password: '',
       gender: admin.gender || 'Male',
       mobile: admin.mobile || '',
-      assignedPHC: admin.assignedPHC || ''
+      assignedPHC: admin.assignedPHC || (phcs.length > 0 ? phcs[0]._id : '')
     });
-    setShowPassword(false);
     setShowModal(true);
   };
 
@@ -90,37 +87,31 @@ export const ManageAdmins = () => {
     e.preventDefault();
 
     if (!editingAdmin) {
-      // 1st Time Creation by CMO
-      if (!formData.password) {
-        addToast('Please enter a password for the new admin account', 'warning');
-        return;
-      }
+      // Create Admin - No OTP required
       try {
-        const res = await axios.post('/api/doctors/admins/create', formData);
+        const res = await axios.post('/api/doctors/admins', formData);
         if (res.data.success) {
-          addToast(res.data.message || 'New PHC Administrator created successfully', 'success');
+          addToast(res.data.message || 'Admin account appointed successfully', 'success');
           setShowModal(false);
           fetchData();
         }
       } catch (err) {
-        addToast(err.response?.data?.message || 'Error creating admin', 'danger');
+        addToast(err.response?.data?.message || 'Error creating admin account', 'danger');
       }
       return;
     }
 
-    // Subsequent Edit by CMO: Check if Email or Password is changed
+    // Subsequent Edit: Check if Email or Password is changed
     const isEmailChanged = formData.email.trim().toLowerCase() !== editingAdmin.email.toLowerCase();
     const isPasswordChanged = formData.password && formData.password.trim() !== '';
 
     if (isEmailChanged || isPasswordChanged) {
-      // Trigger OTP to Admin's existing registered email inbox
       setSendingOtp(true);
-      addToast(`Sending 6-digit security OTP to existing email (${editingAdmin.email})...`, 'info');
+      addToast(`Sending 6-digit security OTP to Admin ${editingAdmin.name}'s email (${editingAdmin.email})...`, 'info');
       try {
         const res = await axios.post(`/api/doctors/admins/${editingAdmin._id}/request-otp`);
         if (res.data.success) {
           addToast(`OTP Code sent live to ${editingAdmin.email}. Please enter OTP to authorize changes.`, 'success', 'OTP Sent');
-          setOtpInput('');
           setShowOtpModal(true);
         }
       } catch (err) {
@@ -129,7 +120,6 @@ export const ManageAdmins = () => {
         setSendingOtp(false);
       }
     } else {
-      // Non-sensitive details edit - No OTP required
       saveAdminUpdates({});
     }
   };
@@ -154,13 +144,12 @@ export const ManageAdmins = () => {
     }
   };
 
-  const handleVerifyOtpAndSave = (e) => {
-    e.preventDefault();
-    if (!otpInput || otpInput.trim().length !== 6) {
-      addToast('Please enter the 6-digit OTP code sent to existing email.', 'warning');
-      return;
+  const handleResendOTP = async () => {
+    if (!editingAdmin) return;
+    const res = await axios.post(`/api/doctors/admins/${editingAdmin._id}/request-otp`);
+    if (res.data.success) {
+      addToast(`New OTP verification code sent live to ${editingAdmin.email}`, 'success', 'OTP Resent');
     }
-    saveAdminUpdates({ otp: otpInput.trim() });
   };
 
   const handleDeleteAdmin = async (id, name) => {
@@ -178,80 +167,81 @@ export const ManageAdmins = () => {
 
   const columns = [
     {
-      header: 'Administrator Name',
-      key: 'name',
-      sortable: true,
+      header: 'Administrator Name & Profile',
+      accessor: 'name',
       render: (row) => (
         <div className="flex items-center gap-3">
-          {/* Gender-Based Admin Avatar */}
-          <UserAvatar gender={row.gender} role="ADMIN" name={row.name} size="md" />
+          <UserAvatar name={row.name} gender={row.gender || 'Male'} size="md" />
           <div>
             <div className="font-bold text-white text-xs flex items-center gap-1.5">
               {row.name}
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-semibold ${
-                row.gender === 'Female' ? 'bg-pink-500/20 text-pink-300 border border-pink-500/30' : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-              }`}>
-                {row.gender === 'Female' ? '♀ Female Admin' : '♂ Male Admin'}
-              </span>
+              {row.status === 'ACTIVE' ? (
+                <span className="w-2 h-2 rounded-full bg-emerald-400" title="Active Account" />
+              ) : (
+                <span className="w-2 h-2 rounded-full bg-slate-500" title="Inactive Account" />
+              )}
             </div>
-            <div className="text-[10px] text-purple-400 font-semibold">PHC Administrator</div>
+            <div className="text-[11px] text-purple-300 font-medium">{row.qualification || 'MBBS, MHA'} • Hospital Admin</div>
+            {row.mobile && <div className="text-[10px] text-slate-500">{row.mobile}</div>}
           </div>
         </div>
       )
     },
     {
-      header: 'Credentials & Email',
-      key: 'email',
+      header: 'Contact Credentials',
+      accessor: 'email',
       render: (row) => (
-        <div className="text-xs space-y-0.5">
-          <div className="text-slate-200 font-semibold flex items-center gap-1">
-            <Mail className="w-3.5 h-3.5 text-blue-400" /> {row.email}
+        <div className="space-y-0.5 text-xs">
+          <div className="text-slate-300 flex items-center gap-1">
+            <Mail className="w-3 h-3 text-sky-400" /> {row.email}
           </div>
-          <div className="text-[10px] text-slate-400 font-mono">
-            Username: <strong className="text-purple-300">{row.username}</strong>
+          <div className="text-[11px] text-slate-400 font-mono">
+            Username: <span className="text-slate-200">{row.username || row.email}</span>
           </div>
         </div>
       )
     },
     {
-      header: 'Assigned Hospital Center',
-      key: 'assignedPHC',
-      render: (row) => (
-        <div className="text-xs">
-          <div className="text-slate-200 font-semibold flex items-center gap-1">
-            <Building2 className="w-3.5 h-3.5 text-emerald-400" />
-            {row.phcDetails ? row.phcDetails.name : 'All Regional PHCs'}
+      header: 'Assigned PHC Hospital Center',
+      accessor: 'assignedPHC',
+      render: (row) => {
+        const phc = row.phcDetails || phcs.find(p => String(p._id) === String(row.assignedPHC));
+        return (
+          <div className="space-y-0.5 text-xs">
+            <div className="font-bold text-slate-200 flex items-center gap-1">
+              <Building2 className="w-3.5 h-3.5 text-purple-400" />
+              {phc ? phc.name : 'Unassigned'}
+            </div>
+            {phc && <div className="text-[11px] text-slate-400">{phc.district || phc.address}</div>}
           </div>
-          <div className="text-[10px] text-slate-400">{row.phcDetails?.district || 'District Center'}</div>
-        </div>
+        );
+      }
+    },
+    {
+      header: 'Account Status',
+      accessor: 'status',
+      render: (row) => (
+        <span className="px-2.5 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-xs flex items-center gap-1 w-fit">
+          <Shield className="w-3.5 h-3.5" /> Active Admin
+        </span>
       )
     },
     {
-      header: 'Contact Number',
-      key: 'mobile',
+      header: 'Actions',
+      accessor: 'actions',
       render: (row) => (
-        <div className="text-xs text-slate-300 flex items-center gap-1">
-          <Phone className="w-3.5 h-3.5 text-slate-400" />
-          {row.mobile || '+91 Unspecified'}
-        </div>
-      )
-    },
-    {
-      header: 'Governance Action',
-      key: 'actions',
-      render: (row) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <button
             onClick={() => handleOpenEdit(row)}
-            className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border border-blue-500/30 transition-all text-xs font-semibold flex items-center gap-1.5"
-            title="Edit Admin Details"
+            className="p-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 transition-all"
+            title="Edit Admin Credentials"
           >
-            <Edit3 className="w-3.5 h-3.5" /> Edit Admin
+            <Edit3 className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => handleDeleteAdmin(row._id, row.name)}
-            className="p-1.5 rounded-lg bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 border border-rose-500/30 transition-all"
-            title="Delete Admin Account"
+            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-all"
+            title="Remove Admin Account"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -264,89 +254,42 @@ export const ManageAdmins = () => {
     <div className="space-y-6">
       <Breadcrumb />
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Header Banner */}
+      <div className="p-6 rounded-3xl bg-gradient-to-r from-purple-950/60 via-slate-900 to-slate-950 border border-purple-500/20 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white tracking-tight">Manage PHC Administrators</h2>
-          <p className="text-xs text-slate-400">Appoint hospital admins, assign health centers, and manage admin credentials.</p>
+          <h2 className="text-xl font-bold text-white tracking-tight">Manage Hospital Administrators</h2>
+          <p className="text-xs text-slate-400 mt-1">
+            Appoint administrators, assign Primary Health Center (PHC) governance, and manage credential security.
+          </p>
         </div>
-        <button
-          onClick={handleOpenCreate}
-          className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg transition-all"
-        >
-          <UserCheck className="w-4 h-4" /> Appoint New Admin
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleOpenCreate}
+            className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition-all shadow-glow-purple flex items-center gap-1.5"
+          >
+            <UserPlus className="w-4 h-4" /> Appoint New Admin
+          </button>
+        </div>
       </div>
 
+      {/* Main Table */}
       {loading ? (
         <LoadingSkeleton type="table" count={4} />
       ) : (
-        <Table columns={columns} data={admins} searchPlaceholder="Search admin name, email, or PHC..." />
+        <Table columns={columns} data={admins} searchPlaceholder="Search by admin name, email, or PHC hospital..." />
       )}
 
-      {/* 6-Digit Security OTP Modal */}
-      <AnimatePresence>
-        {showOtpModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-md bg-[#1E293B] border border-purple-500/30 rounded-3xl p-6 shadow-2xl space-y-5"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center font-bold">
-                  <KeyRound className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white tracking-tight">Security OTP Verification Required</h3>
-                  <p className="text-[11px] text-slate-400">Sent live to {editingAdmin?.name}'s email ({editingAdmin?.email})</p>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
-                <div className="flex items-center gap-2 text-xs font-semibold text-amber-400">
-                  <ShieldAlert className="w-4 h-4" /> Sensitive Credential Modification
-                </div>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Modifying an Admin's <strong>Email Address</strong> or <strong>Password</strong> requires OTP security verification. Please enter the 6-digit OTP code sent live to <strong>{editingAdmin?.email}</strong>.
-                </p>
-              </div>
-
-              <form onSubmit={handleVerifyOtpAndSave} className="space-y-4">
-                <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">Enter 6-Digit Verification OTP</label>
-                  <input
-                    type="text"
-                    required
-                    maxLength={6}
-                    value={otpInput}
-                    onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))}
-                    placeholder="123456"
-                    className="w-full px-4 py-3 bg-slate-900 border border-purple-500/40 rounded-xl text-lg font-mono font-bold tracking-widest text-center text-emerald-400 placeholder-slate-600 focus:outline-none focus:border-purple-400"
-                  />
-                </div>
-
-                <div className="flex items-center justify-end gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowOtpModal(false)}
-                    className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={savingWithOtp || otpInput.length !== 6}
-                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-glow-emerald disabled:opacity-50 flex items-center gap-1.5"
-                  >
-                    {savingWithOtp ? 'Verifying OTP...' : 'Verify OTP & Save Updates'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Universal Foreground OTP Verification Modal (Stacking z-[100]) */}
+      <OTPVerificationModal
+        isOpen={showOtpModal}
+        onClose={() => setShowOtpModal(false)}
+        email={editingAdmin?.email}
+        title="Admin Security OTP Verification"
+        subtitle={`Sent live to Admin ${editingAdmin?.name}'s email (${editingAdmin?.email})`}
+        onVerify={(otpCode) => saveAdminUpdates({ otp: otpCode })}
+        onResend={handleResendOTP}
+        loading={savingWithOtp}
+      />
 
       {/* Appoint / Edit Admin Modal */}
       <Modal
@@ -356,7 +299,7 @@ export const ManageAdmins = () => {
       >
         <form onSubmit={handleSubmitForm} className="space-y-4">
           {editingAdmin && (
-            <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/30 text-xs text-purple-300 flex items-center gap-2">
+            <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/30 text-xs text-purple-300 flex items-center gap-2">
               <Lock className="w-4 h-4 text-purple-400 flex-shrink-0" />
               <span>Modifying <strong>Email Address</strong> or <strong>Password</strong> sends a 6-digit OTP code live to <strong>{editingAdmin.email}</strong>. Existing passwords are never shown for security.</span>
             </div>
@@ -465,32 +408,35 @@ export const ManageAdmins = () => {
             </div>
 
             <div className="md:col-span-2">
-              <label className="text-xs font-semibold text-slate-300 block mb-1">Assigned Health Center (PHC)</label>
+              <label className="text-xs font-semibold text-slate-300 block mb-1">Assigned Primary Health Center (PHC)</label>
               <select
                 value={formData.assignedPHC}
                 onChange={(e) => setFormData({ ...formData, assignedPHC: e.target.value })}
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
               >
-                <option value="">Select Primary Health Center (PHC)</option>
-                {phcs.map((p) => (
+                {phcs.map(p => (
                   <option key={p._id} value={p._id}>
-                    {p.name} ({p.district})
+                    {p.name} ({p.district || 'PHC'})
                   </option>
                 ))}
               </select>
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-3">
-            <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">
+          <div className="flex items-center justify-end gap-3 pt-3">
+            <button
+              type="button"
+              onClick={() => setShowModal(false)}
+              className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+            >
               Cancel
             </button>
             <button
               type="submit"
               disabled={sendingOtp}
-              className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-lg disabled:opacity-50"
+              className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-glow-purple disabled:opacity-50"
             >
-              {sendingOtp ? 'Sending Security OTP...' : editingAdmin ? 'Save Admin Changes' : 'Appoint Admin'}
+              {sendingOtp ? 'Sending Security OTP...' : editingAdmin ? 'Save Admin Changes' : 'Appoint New Admin'}
             </button>
           </div>
         </form>

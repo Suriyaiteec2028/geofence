@@ -5,7 +5,7 @@
       "name": "Dr. Suriya N (Master CMO)",
       "email": "suriyachandru2006@gmail.com",
       "username": "suriyachandru2006@gmail.com",
-      "password": "$2a$10$f308t1fR7tYqZt.0J7a6h.y7oZ7wO7m1x.5y3v7k0n9m8l7k6j5h4",
+      "password": "$2a$10$o0RXUC6THwTQ/f16LKT0hu.yBFiSwXWaXmgtfh1tH.4NQJi8xsJdK",
       "plainPassword": "Suriya@2006",
       "role": "CMO",
       "gender": "Male",
@@ -15,14 +15,14 @@
       "assignedPHC": null,
       "workspaceId": "workspace_master_suriyachandru",
       "status": "ACTIVE",
-      "createdAt": "2026-08-27T00:00:00.000Z"
+      "createdAt": "2026-09-18T08:29:58.586Z"
     },
     {
       "_id": "cmo_demo_002",
       "name": "State Chief Medical Officer (Demo CMO)",
       "email": "cmo123@gmail.com",
       "username": "cmo123@gmail.com",
-      "password": "$2a$10$abcdefghijklmnopqrstuvwxyz1234567890",
+      "password": "$2a$10$4jowsgdy86ZHp0twIYQPs.2iV8BuZb6KU/Rnkd9Ms9pxkgC94NKDq",
       "plainPassword": "password@123",
       "role": "CMO",
       "gender": "Male",
@@ -32,14 +32,14 @@
       "assignedPHC": null,
       "workspaceId": "workspace_demo_public",
       "status": "ACTIVE",
-      "createdAt": "2026-08-27T00:00:00.000Z"
+      "createdAt": "2026-09-18T08:29:58.587Z"
     },
     {
       "_id": "admin_demo_001",
       "name": "Dr. Central PHC Administrator",
       "email": "admin.central@hospital.gov.in",
       "username": "admin.central@hospital.gov.in",
-      "password": "$2a$10$abcdefghijklmnopqrstuvwxyz1234567890",
+      "password": "$2a$10$SzFrjxeS3BRK6dDgBZhpS.x4Q7FQg0UjIEmE5INmEVfKePGPK0RCW",
       "plainPassword": "password123",
       "role": "ADMIN",
       "gender": "Female",
@@ -49,14 +49,14 @@
       "assignedPHC": "phc_001",
       "workspaceId": "workspace_demo_public",
       "status": "ACTIVE",
-      "createdAt": "2026-08-27T00:00:00.000Z"
+      "createdAt": "2026-09-18T08:29:58.587Z"
     },
     {
       "_id": "doc_demo_001",
       "name": "Dr. Ranjith K (Medical Officer)",
       "email": "doctor@hospital.gov.in",
       "username": "doctor@hospital.gov.in",
-      "password": "$2a$10$abcdefghijklmnopqrstuvwxyz1234567890",
+      "password": "$2a$10$/AA27DHEy1US1NyhEbxMOuwcOQ7Yvp2glk6wo0lYQ7NJG2buktcJ6",
       "plainPassword": "password123",
       "role": "DOCTOR",
       "gender": "Male",
@@ -68,7 +68,7 @@
       "shiftEnd": "04:00 AM",
       "workspaceId": "workspace_demo_public",
       "status": "ACTIVE",
-      "createdAt": "2026-08-27T00:00:00.000Z"
+      "createdAt": "2026-09-18T08:29:58.587Z"
     }
   ],
   "phcs": [
@@ -86,7 +86,7 @@
       "assignedAdmin": null,
       "workspaceId": "workspace_master_suriyachandru",
       "status": "ACTIVE",
-      "createdAt": "2026-08-27T00:00:00.000Z"
+      "createdAt": "2026-09-18T08:29:58.587Z"
     },
     {
       "_id": "phc_001",
@@ -102,7 +102,7 @@
       "assignedAdmin": "admin_demo_001",
       "workspaceId": "workspace_demo_public",
       "status": "ACTIVE",
-      "createdAt": "2026-08-27T00:00:00.000Z"
+      "createdAt": "2026-09-18T08:29:58.587Z"
     }
   ],
   "attendances": [],

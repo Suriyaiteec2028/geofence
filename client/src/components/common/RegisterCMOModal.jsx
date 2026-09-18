@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Shield, Mail, KeyRound, Lock, User, ArrowRight, RefreshCw, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -21,17 +20,30 @@ export const RegisterCMOModal = ({ isOpen, onClose }) => {
 
   const { addToast } = useNotification();
   const navigate = useNavigate();
+  const otpInputRef = useRef(null);
 
   // Cooldown Countdown Ticker
   useEffect(() => {
     let timer;
     if (cooldown > 0) {
       timer = setInterval(() => {
-        setCooldown((prev) => prev - 1);
+        setCooldown((prev) => (prev > 0 ? prev - 1 : 0));
       }, 1000);
     }
     return () => clearInterval(timer);
   }, [cooldown]);
+
+  // Auto-focus OTP input field when entering Step 2
+  useEffect(() => {
+    if (step === 2) {
+      const timer = setTimeout(() => {
+        if (otpInputRef.current) {
+          otpInputRef.current.focus();
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [step]);
 
   if (!isOpen) return null;
 
@@ -64,6 +76,7 @@ export const RegisterCMOModal = ({ isOpen, onClose }) => {
         setStep(2);
         setCooldown(res.data.cooldownSeconds || 60);
         setAttemptsLeft(3);
+        setOtp('');
       }
     } catch (err) {
       const msg = err.response?.data?.message || 'Failed to send OTP code.';
@@ -76,9 +89,9 @@ export const RegisterCMOModal = ({ isOpen, onClose }) => {
     }
   };
 
-  // Step 2: Resend OTP (Respects 60-Second Cooldown)
+  // Step 2: Resend OTP
   const handleResendOTP = async () => {
-    if (cooldown > 0) return;
+    if (cooldown > 0 || loading) return;
     setLoading(true);
     try {
       const res = await axios.post('/api/auth/cmo-request-otp', { email });
@@ -96,7 +109,7 @@ export const RegisterCMOModal = ({ isOpen, onClose }) => {
     }
   };
 
-  // Step 2: Verify OTP (Max 3 Attempts Enforcement)
+  // Step 2: Verify OTP
   const handleVerifyOTP = async (e) => {
     if (e) e.preventDefault();
     if (!otp || otp.length < 6) {
@@ -126,7 +139,7 @@ export const RegisterCMOModal = ({ isOpen, onClose }) => {
     }
   };
 
-  // Step 3: Complete CMO Registration & Sign In
+  // Step 3: Complete CMO Registration
   const handleCompleteRegistration = async (e) => {
     if (e) e.preventDefault();
     if (!fullName || !password) {
@@ -172,7 +185,7 @@ export const RegisterCMOModal = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -203,7 +216,7 @@ export const RegisterCMOModal = ({ isOpen, onClose }) => {
           <div className={`py-1.5 rounded-lg border transition-all ${step >= 1 ? 'bg-purple-600/30 border-purple-500 text-purple-300' : 'bg-slate-900 border-slate-800 text-slate-600'}`}>
             1. Email ID
           </div>
-          <div className={`py-1.5 rounded-lg border transition-all ${step >= 2 ? 'bg-purple-600/30 border-purple-500 text-purple-300' : 'bg-slate-900 border-slate-800 text-slate-600'}`}>
+          <div className={`py-1.5 rounded-lg border transition-all ${step >= 2 ? 'bg-purple-600/30 border-purple-500 text-purple-300 shadow-glow-purple' : 'bg-slate-900 border-slate-800 text-slate-600'}`}>
             2. Live OTP
           </div>
           <div className={`py-1.5 rounded-lg border transition-all ${step >= 3 ? 'bg-purple-600/30 border-purple-500 text-purple-300' : 'bg-slate-900 border-slate-800 text-slate-600'}`}>
@@ -250,7 +263,7 @@ export const RegisterCMOModal = ({ isOpen, onClose }) => {
             <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-700/80 space-y-2 text-xs">
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">Target Email:</span>
-                <span className="font-bold text-purple-300">{email}</span>
+                <span className="font-bold text-purple-300 font-mono">{email}</span>
               </div>
               <div className="flex items-center justify-between border-t border-slate-800 pt-2">
                 <span className="text-slate-400 flex items-center gap-1">
@@ -275,13 +288,14 @@ export const RegisterCMOModal = ({ isOpen, onClose }) => {
               <div className="relative">
                 <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
+                  ref={otpInputRef}
                   type="text"
                   maxLength={6}
                   required
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                  placeholder="e.g. 123456"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-center text-base font-mono font-bold tracking-widest text-emerald-400 placeholder-slate-600 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none"
+                  placeholder="123456"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-900/80 border border-purple-500/50 rounded-xl text-center text-base font-mono font-bold tracking-widest text-emerald-400 placeholder-slate-600 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none"
                 />
               </div>
             </div>
@@ -294,7 +308,7 @@ export const RegisterCMOModal = ({ isOpen, onClose }) => {
                 className="w-1/3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs flex items-center justify-center gap-1 transition-all disabled:opacity-40"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-                {cooldown > 0 ? `${cooldown}s` : 'Resend OTP'}
+                {cooldown > 0 ? `${cooldown}s` : 'Resend'}
               </button>
 
               <button
