@@ -69,6 +69,21 @@
       "workspaceId": "workspace_demo_public",
       "status": "ACTIVE",
       "createdAt": "2026-09-21T06:39:35.844Z"
+    },
+    {
+      "_id": "admin_1789979882230",
+      "name": "Suriya N",
+      "email": "sms621280@gmail.com",
+      "username": "Suriya@2006",
+      "password": "$2a$10$fyi6a2wPFKAFcPeE0mrOgu2MHpGLRw5hDXZlDosQhOvPfcW1bFy9S",
+      "plainPassword": "Suriya@2006",
+      "role": "ADMIN",
+      "gender": "Male",
+      "mobile": "+916369073790",
+      "assignedPHC": "phc_1789979815269",
+      "workspaceId": "workspace_master_suriyachandru",
+      "status": "ACTIVE",
+      "createdAt": "2026-09-21T08:38:02.230Z"
     }
   ],
   "phcs": [
@@ -103,6 +118,29 @@
       "workspaceId": "workspace_demo_public",
       "status": "ACTIVE",
       "createdAt": "2026-09-21T06:39:35.844Z"
+    },
+    {
+      "_id": "phc_1789979815269",
+      "name": "primary phc",
+      "code": "PHC-882",
+      "address": "T.palur",
+      "district": "Central Metro",
+      "latitude": 13.0827,
+      "longitude": 80.2707,
+      "radius": 150,
+      "assignedAdmin": "",
+      "workspaceId": "workspace_master_suriyachandru",
+      "status": "ACTIVE",
+      "createdAt": "2026-09-21T08:36:55.269Z",
+      "createNewAdmin": false,
+      "adminData": {
+        "adminName": "",
+        "adminEmail": "",
+        "adminUsername": "",
+        "adminPassword": "",
+        "adminMobile": "",
+        "adminQualification": "MBBS, MHA"
+      }
     }
   ],
   "attendances": [],
