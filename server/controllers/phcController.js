@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const PHC = require('../models/PHC');
 const User = require('../models/User');
 const { memoryStore, saveMemoryStoreToDisk } = require('../config/db');
+const { sendAdminRegistrationEmail } = require('../utils/emailService');
 
 exports.getAllPHCs = (req, res) => {
   try {
@@ -149,6 +150,16 @@ exports.createPHC = async (req, res) => {
         admin.assignedPHC = newPhc._id;
         if (mongoose.connection.readyState === 1) {
           User.findByIdAndUpdate(finalAdminId, { assignedPHC: newPhc._id }).catch(err => console.warn('Admin PHC update mongo notice:', err.message));
+        }
+
+        if (createNewAdmin && adminData) {
+          sendAdminRegistrationEmail({
+            name: admin.name,
+            email: admin.email,
+            username: admin.username,
+            password: adminData.adminPassword,
+            phcName: newPhc.name
+          }).catch(e => console.error('Admin welcome email error on PHC creation:', e));
         }
       }
     }

@@ -4,6 +4,7 @@ const User = require('../models/User');
 const { memoryStore, saveMemoryStoreToDisk } = require('../config/db');
 const { 
   sendDoctorRegistrationEmail, 
+  sendAdminRegistrationEmail,
   sendShiftUpdateEmail, 
   sendPasswordResetOTPEmail, 
   sendCustomMessageEmail, 
@@ -551,9 +552,19 @@ exports.createAdmin = async (req, res) => {
       }
     }
 
+    // Send Welcome Email with credentials to Admin's email
+    const assignedPhcObj = memoryStore.phcs.find(p => String(p._id) === String(newAdmin.assignedPHC));
+    sendAdminRegistrationEmail({
+      name: newAdmin.name,
+      email: newAdmin.email,
+      username: rawUsername,
+      password: cleanPassword,
+      phcName: assignedPhcObj ? assignedPhcObj.name : 'Primary Health Center'
+    }).catch(e => console.error('Admin welcome email trigger error:', e));
+
     res.status(201).json({
       success: true,
-      message: `Admin account "${newAdmin.name}" created successfully.`,
+      message: `Admin account "${newAdmin.name}" created successfully. Credentials email sent to ${newAdmin.email}.`,
       admin: { ...newAdmin, password: undefined, plainPassword: undefined }
     });
 

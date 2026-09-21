@@ -383,8 +383,52 @@ async function sendDoctorAttendanceReportEmail({ name, email, attendanceSummary,
   }
 }
 
+// 8. Send Admin Registration Welcome Email
+async function sendAdminRegistrationEmail({ name, email, username, password, phcName }) {
+  try {
+    const user = (process.env.SMTP_USER || 'sn4194529@gmail.com').trim();
+    const subject = `Welcome Admin ${name} - Your GeoAttendance Admin Login Credentials`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; background-color: #0F172A; padding: 24px; color: #F8FAFC;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: #1E293B; border: 1px solid #38BDF8; border-radius: 16px; padding: 24px;">
+          <h2 style="color: #38BDF8; margin-top: 0;">Govt. Health Services GeoAttendance Portal</h2>
+          <p style="font-size: 14px; color: #94A3B8;">Hello <strong>Admin ${name}</strong>,</p>
+          <p style="font-size: 14px; color: #CBD5E1;">Your administrator account has been created in the Hospital Geofence Attendance System by the Chief Medical Officer (CMO).</p>
+          
+          <div style="background-color: #0F172A; border-left: 4px solid #38BDF8; padding: 16px; margin: 20px 0; border-radius: 8px;">
+            <h4 style="margin: 0 0 10px 0; color: #F1F5F9;">Your Admin Account Credentials:</h4>
+            <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #94A3B8; line-height: 1.9;">
+              <li><strong>Assigned Hospital/PHC:</strong> <span style="color: #F8FAFC;">${phcName || 'Primary Health Center Management'}</span></li>
+              <li><strong>Registered Email:</strong> <span style="color: #F8FAFC;">${email}</span></li>
+              <li><strong>Login Username:</strong> <span style="color: #38BDF8; font-weight: bold;">${username}</span></li>
+              <li><strong>Login Password:</strong> <span style="color: #10B981; font-weight: bold;">${password}</span></li>
+              <li><strong>Role:</strong> <span style="color: #F59E0B; font-weight: bold;">HOSPITAL ADMIN</span></li>
+            </ul>
+          </div>
+
+          <p style="font-size: 12px; color: #94A3B8;">Instructions: Please select the <strong>ADMIN</strong> tab on the login screen and enter your credentials above to manage doctors, view live geofence attendance logs, and monitor duty shifts.</p>
+          <hr style="border: 0; border-top: 1px solid #334155; margin: 20px 0;" />
+          <p style="font-size: 11px; color: #64748B; text-align: center;">Automated System Notification • Department of Public Health Services</p>
+        </div>
+      </div>
+    `;
+
+    await sendMailWithFallback({
+      from: `"CMO Directorate" <${user}>`,
+      to: email,
+      subject,
+      html
+    });
+
+    logNotification(email, 'Admin Account Registration Notice', `Welcome Admin ${name}! Your hospital administrator account was registered for ${phcName || 'PHC'}. Account credentials: Username=${username}, Password=${password}`);
+  } catch (err) {
+    console.error('Error sending admin registration email:', err);
+  }
+}
+
 module.exports = {
   sendDoctorRegistrationEmail,
+  sendAdminRegistrationEmail,
   sendShiftUpdateEmail,
   sendHourlyCheckpointReminderEmail,
   sendCMORegistrationOTPEmail,
