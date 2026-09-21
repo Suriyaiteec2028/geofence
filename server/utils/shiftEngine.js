@@ -178,8 +178,21 @@ function evaluateCurrentShiftState(shiftStart = '09:00', shiftEnd = '17:00', int
     }
   }
 
-  const isShiftCompleted = effectiveNowMins > (endMins + windowDurationMinutes);
+  const isShiftCompleted = effectiveNowMins >= (endMins + windowDurationMinutes);
   const isShiftStarted = effectiveNowMins >= startMins;
+
+  const effectiveNowSecs = effectiveNowMins * 60 + currentSec;
+  let secondsRemainingInActiveWindow = null;
+  if (activeWindow) {
+    const activeEndSecs = activeWindow.windowEndMins * 60;
+    secondsRemainingInActiveWindow = Math.max(0, activeEndSecs - effectiveNowSecs);
+  }
+
+  let secondsToNextWindow = null;
+  if (nextWindow) {
+    const nextStartSecs = nextWindow.windowStartMins * 60;
+    secondsToNextWindow = Math.max(0, nextStartSecs - effectiveNowSecs);
+  }
 
   return {
     istNowFormatted: minutesToFormattedTime(nowMins),
@@ -189,6 +202,8 @@ function evaluateCurrentShiftState(shiftStart = '09:00', shiftEnd = '17:00', int
     nextWindow,
     dueReminderWindow,
     isWindowOpen: !!activeWindow,
+    secondsRemainingInActiveWindow,
+    secondsToNextWindow,
     isShiftCompleted,
     isShiftStarted,
     isOvernight
