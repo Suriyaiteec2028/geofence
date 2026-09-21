@@ -165,7 +165,8 @@ exports.createDoctor = async (req, res) => {
     memoryStore.users.push(newDoctor);
     saveMemoryStoreToDisk();
 
-    if (!memoryStore.isInMemoryMode && mongoose.connection.readyState === 1) {
+    // MongoDB Atlas Mongoose Persistence
+    if (mongoose.connection.readyState === 1) {
       try {
         await User.create(newDoctor);
       } catch (mErr) {
@@ -307,6 +308,15 @@ exports.updateDoctor = async (req, res) => {
     memoryStore.users[docIndex] = updatedDoc;
     saveMemoryStoreToDisk();
 
+    // MongoDB Atlas Mongoose Persistence
+    if (mongoose.connection.readyState === 1) {
+      try {
+        await User.findByIdAndUpdate(id, { $set: updatedDoc }, { new: true, upsert: true });
+      } catch (mErr) {
+        console.warn('MongoDB Atlas doctor update notice:', mErr.message);
+      }
+    }
+
     // Check if shift timing changed -> trigger notification email
     const isShiftStartChanged = req.body.shiftStart && req.body.shiftStart !== currentDoc.shiftStart;
     const isShiftEndChanged = req.body.shiftEnd && req.body.shiftEnd !== currentDoc.shiftEnd;
@@ -434,6 +444,15 @@ exports.deleteDoctor = async (req, res) => {
     memoryStore.users.splice(docIndex, 1);
     saveMemoryStoreToDisk();
 
+    // MongoDB Atlas Mongoose Deletion
+    if (mongoose.connection.readyState === 1) {
+      try {
+        await User.findByIdAndDelete(id);
+      } catch (mErr) {
+        console.warn('MongoDB Atlas doctor delete notice:', mErr.message);
+      }
+    }
+
     res.json({
       success: true,
       message: `Doctor account "${doc.name}" removed successfully.`
@@ -522,6 +541,15 @@ exports.createAdmin = async (req, res) => {
 
     memoryStore.users.push(newAdmin);
     saveMemoryStoreToDisk();
+
+    // MongoDB Atlas Mongoose Persistence
+    if (mongoose.connection.readyState === 1) {
+      try {
+        await User.create(newAdmin);
+      } catch (mErr) {
+        console.warn('MongoDB Atlas admin create notice:', mErr.message);
+      }
+    }
 
     res.status(201).json({
       success: true,
@@ -626,6 +654,15 @@ exports.updateAdmin = async (req, res) => {
     memoryStore.users[adminIndex] = updatedAdmin;
     saveMemoryStoreToDisk();
 
+    // MongoDB Atlas Mongoose Persistence
+    if (mongoose.connection.readyState === 1) {
+      try {
+        await User.findByIdAndUpdate(id, { $set: updatedAdmin }, { new: true, upsert: true });
+      } catch (mErr) {
+        console.warn('MongoDB Atlas admin update notice:', mErr.message);
+      }
+    }
+
     res.json({
       success: true,
       message: `Admin account "${updatedAdmin.name}" updated successfully.`,
@@ -647,6 +684,15 @@ exports.deleteAdmin = async (req, res) => {
     const admin = memoryStore.users[adminIndex];
     memoryStore.users.splice(adminIndex, 1);
     saveMemoryStoreToDisk();
+
+    // MongoDB Atlas Mongoose Deletion
+    if (mongoose.connection.readyState === 1) {
+      try {
+        await User.findByIdAndDelete(id);
+      } catch (mErr) {
+        console.warn('MongoDB Atlas admin delete notice:', mErr.message);
+      }
+    }
 
     res.json({
       success: true,

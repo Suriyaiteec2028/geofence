@@ -1,4 +1,7 @@
 const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
+const PHC = require('../models/PHC');
+const User = require('../models/User');
 const { memoryStore, saveMemoryStoreToDisk } = require('../config/db');
 
 exports.getAllPHCs = (req, res) => {
@@ -27,6 +30,10 @@ exports.getAllPHCs = (req, res) => {
       };
       memoryStore.phcs.push(defaultPhc);
       saveMemoryStoreToDisk();
+
+      if (mongoose.connection.readyState === 1) {
+        PHC.create(defaultPhc).catch(err => console.warn('Default PHC mongo create notice:', err.message));
+      }
       list = [defaultPhc];
     }
 
@@ -102,6 +109,7 @@ exports.createPHC = async (req, res) => {
         email: adminEmail,
         username: adminUsername,
         password: hashedPassword,
+        plainPassword: adminPassword,
         role: 'ADMIN',
         mobile: adminMobile || '',
         qualification: adminQualification || 'MBBS, MHA',
@@ -112,6 +120,9 @@ exports.createPHC = async (req, res) => {
       };
 
       memoryStore.users.push(newAdmin);
+      if (mongoose.connection.readyState === 1) {
+        User.create(newAdmin).catch(err => console.warn('Admin creation mongo notice:', err.message));
+      }
       finalAdminId = newAdmin._id;
     }
 
@@ -134,10 +145,23 @@ exports.createPHC = async (req, res) => {
 
     if (finalAdminId) {
       const admin = memoryStore.users.find(u => u._id === finalAdminId);
-      if (admin) admin.assignedPHC = newPhc._id;
+      if (admin) {
+        admin.assignedPHC = newPhc._id;
+        if (mongoose.connection.readyState === 1) {
+          User.findByIdAndUpdate(finalAdminId, { assignedPHC: newPhc._id }).catch(err => console.warn('Admin PHC update mongo notice:', err.message));
+        }
+      }
     }
 
     saveMemoryStoreToDisk();
+
+    if (mongoose.connection.readyState === 1) {
+      try {
+        await PHC.create(newPhc);
+      } catch (mErr) {
+        console.warn('MongoDB Atlas PHC create notice:', mErr.message);
+      }
+    }
 
     res.status(201).json({ success: true, message: 'Primary Health Center created successfully', phc: newPhc });
   } catch (err) {
@@ -146,7 +170,7 @@ exports.createPHC = async (req, res) => {
   }
 };
 
-exports.updatePHC = (req, res) => {
+exports.updatePHC = async (req, res) => {
   try {
     const { id } = req.params;
     const phcIndex = memoryStore.phcs.findIndex(p => p._id === id);
@@ -163,26 +187,52 @@ exports.updatePHC = (req, res) => {
     memoryStore.phcs[phcIndex] = updated;
     saveMemoryStoreToDisk();
 
+    if (mongoose.connection.readyState === 1) {
+      try {
+        await PHC.findByIdAndUpdate(id, { $set: updated }, { new: true, upsert: true });
+      } catch (mErr) {
+        console.warn('MongoDB Atlas PHC update notice:', mErr.message);
+      }
+    }
+
     res.json({ success: true, message: 'PHC updated successfully', phc: updated });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Error updating PHC' });
   }
 };
 
-exports.togglePHCStatus = (req, res) => {
+exports.togglePHCStatus = async (req, res) => {
   const phc = memoryStore.phcs.find(p => p._id === req.params.id);
   if (!phc) return res.status(404).json({ success: false, message: 'PHC not found' });
 
   phc.status = phc.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
   saveMemoryStoreToDisk();
+
+  if (mongoose.connection.readyState === 1) {
+    try {
+      await PHC.findByIdAndUpdate(req.params.id, { status: phc.status });
+    } catch (mErr) {
+      console.warn('MongoDB Atlas PHC toggle notice:', mErr.message);
+    }
+  }
+
   res.json({ success: true, message: `PHC status changed to ${phc.status}`, phc });
 };
 
-exports.deletePHC = (req, res) => {
+exports.deletePHC = async (req, res) => {
   const phcIndex = memoryStore.phcs.findIndex(p => p._id === req.params.id);
   if (phcIndex === -1) return res.status(404).json({ success: false, message: 'PHC not found' });
 
   memoryStore.phcs.splice(phcIndex, 1);
   saveMemoryStoreToDisk();
+
+  if (mongoose.connection.readyState === 1) {
+    try {
+      await PHC.findByIdAndDelete(req.params.id);
+    } catch (mErr) {
+      console.warn('MongoDB Atlas PHC delete notice:', mErr.message);
+    }
+  }
+
   res.json({ success: true, message: 'PHC deleted successfully' });
 };

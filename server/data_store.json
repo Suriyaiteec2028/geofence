@@ -5,7 +5,7 @@
       "name": "Dr. Suriya N (Master CMO)",
       "email": "suriyachandru2006@gmail.com",
       "username": "suriyachandru2006@gmail.com",
-      "password": "$2a$10$Yk8j8VRvukZi23oxDVTbqOzbqsfb2lDUQJXcn4jBpx8GT3Th6Tnwy",
+      "password": "$2a$10$891IPXD2PAYGO/9LqXMwY.qZen2jzJAEJbYWBc07OFYvq.DjU3dK.",
       "plainPassword": "Suriya@2006",
       "role": "CMO",
       "gender": "Male",
@@ -15,14 +15,14 @@
       "assignedPHC": null,
       "workspaceId": "workspace_master_suriyachandru",
       "status": "ACTIVE",
-      "createdAt": "2026-09-18T09:44:31.897Z"
+      "createdAt": "2026-09-21T06:39:35.843Z"
     },
     {
       "_id": "cmo_demo_002",
       "name": "State Chief Medical Officer (Demo CMO)",
       "email": "cmo123@gmail.com",
       "username": "cmo123@gmail.com",
-      "password": "$2a$10$amLkkyofzEDC1nRC0rq13OJL522JzN.br4w5YuwSMu0nZwFxnZ/jG",
+      "password": "$2a$10$afdJ9Jxh6UPxrcjECqekeuZeaFiLwmhRKb1X3ArxawTZHmk9ip3aS",
       "plainPassword": "password@123",
       "role": "CMO",
       "gender": "Male",
@@ -32,14 +32,14 @@
       "assignedPHC": null,
       "workspaceId": "workspace_demo_public",
       "status": "ACTIVE",
-      "createdAt": "2026-09-18T09:44:31.898Z"
+      "createdAt": "2026-09-21T06:39:35.844Z"
     },
     {
       "_id": "admin_demo_001",
       "name": "Dr. Central PHC Administrator",
       "email": "admin.central@hospital.gov.in",
       "username": "admin.central@hospital.gov.in",
-      "password": "$2a$10$HyHekyR26GL4Pb0uXva83e2ezEzafU1UsYjtR4Bjv2kYNJIU6.pti",
+      "password": "$2a$10$mXx3Im4l55b6tTgN1NXBhefmulJYteb238Ne22fvfSnGawGUz3mji",
       "plainPassword": "password123",
       "role": "ADMIN",
       "gender": "Female",
@@ -49,14 +49,14 @@
       "assignedPHC": "phc_001",
       "workspaceId": "workspace_demo_public",
       "status": "ACTIVE",
-      "createdAt": "2026-09-18T09:44:31.898Z"
+      "createdAt": "2026-09-21T06:39:35.844Z"
     },
     {
       "_id": "doc_demo_001",
       "name": "Dr. Ranjith K (Medical Officer)",
       "email": "doctor@hospital.gov.in",
       "username": "doctor@hospital.gov.in",
-      "password": "$2a$10$qm2Oq31J6Hl.6A4W5/IJbePdzPIYw09MBx1YSmV5C0500uvsXFLXu",
+      "password": "$2a$10$SMIREzcVZeE5.C3nziRkluL7VgZseO/gvAv88WqiUgSVVhTCjVtdu",
       "plainPassword": "password123",
       "role": "DOCTOR",
       "gender": "Male",
@@ -68,22 +68,7 @@
       "shiftEnd": "04:00 AM",
       "workspaceId": "workspace_demo_public",
       "status": "ACTIVE",
-      "createdAt": "2026-09-18T09:44:31.898Z"
-    },
-    {
-      "_id": "admin_1789724962418",
-      "name": "Suriya N",
-      "email": "sms621280@gmail.com",
-      "username": "Suriya@2006",
-      "password": "$2a$10$A/xm3uY3elUG6OifyIfqQeMBqXJdYlC0NjV2sjyQGvbaZcjdlEMTy",
-      "plainPassword": "Suriya@2008",
-      "role": "ADMIN",
-      "gender": "Male",
-      "mobile": "+916369073790",
-      "assignedPHC": "phc_master_001",
-      "workspaceId": "workspace_master_suriyachandru",
-      "status": "ACTIVE",
-      "createdAt": "2026-09-18T09:49:22.418Z"
+      "createdAt": "2026-09-21T06:39:35.844Z"
     }
   ],
   "phcs": [
@@ -101,7 +86,7 @@
       "assignedAdmin": null,
       "workspaceId": "workspace_master_suriyachandru",
       "status": "ACTIVE",
-      "createdAt": "2026-09-18T09:44:31.898Z"
+      "createdAt": "2026-09-21T06:39:35.844Z"
     },
     {
       "_id": "phc_001",
@@ -117,7 +102,7 @@
       "assignedAdmin": "admin_demo_001",
       "workspaceId": "workspace_demo_public",
       "status": "ACTIVE",
-      "createdAt": "2026-09-18T09:44:31.898Z"
+      "createdAt": "2026-09-21T06:39:35.844Z"
     }
   ],
   "attendances": [],
@@ -128,26 +113,5 @@
     "requireProofForExplanation": true,
     "systemName": "Hospital Geofence Attendance System"
   },
-  "notifications": [
-    {
-      "_id": "notif_1789724985387_mimlz",
-      "recipientEmail": "suriyachandru2006@gmail.com",
-      "title": "Security Verification Notice",
-      "message": "Password Reset OTP Code: 294538. Dispatched to suriyachandru2006@gmail.com.",
-      "type": "EMAIL",
-      "read": false,
-      "isRead": false,
-      "createdAt": "2026-09-18T09:49:45.387Z"
-    },
-    {
-      "_id": "notif_1789724979689_cgw2f",
-      "recipientEmail": "sms621280@gmail.com",
-      "title": "Security Verification Notice",
-      "message": "Password Reset OTP Code: 294538. Dispatched to sms621280@gmail.com.",
-      "type": "EMAIL",
-      "read": false,
-      "isRead": false,
-      "createdAt": "2026-09-18T09:49:39.689Z"
-    }
-  ]
+  "notifications": []
 }
