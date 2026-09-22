@@ -26,7 +26,7 @@ const formatTime12h = (timeStr) => {
 
 // Calculate Haversine distance in meters between two lat/lng coordinates
 const calculateHaversineDistance = (lat1, lon1, lat2, lon2) => {
-  if (lat1 === undefined || lon1 === undefined || lat2 === undefined || lon2 === undefined) return 0;
+  if (lat1 === undefined || lon1 === undefined || lat2 === undefined || lon2 === undefined || lat1 === null || lon1 === null || lat2 === null || lon2 === null) return 0;
   const R = 6371000; // Earth radius in meters
   const dLat = (lat2 - lat1) * (Math.PI / 180);
   const dLon = (lon2 - lon1) * (Math.PI / 180);
@@ -165,10 +165,11 @@ export const DoctorDashboard = () => {
   const [countdownText, setCountdownText] = useState('00:00:00');
   const [liveState, setLiveState] = useState(null);
 
-  // Fetch My Location States
+  // Fetch My Location & Accuracy States
   const [fetchingLocation, setFetchingLocation] = useState(false);
   const [locationStatusMsg, setLocationStatusMsg] = useState(null);
   const [locationStatusType, setLocationStatusType] = useState('idle'); // 'idle', 'success', 'error'
+  const [accuracyWarning, setAccuracyWarning] = useState(null);
 
   const { addToast } = useNotification();
   const navigate = useNavigate();
@@ -237,9 +238,15 @@ export const DoctorDashboard = () => {
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+        const accuracy = pos.coords.accuracy ? Math.round(pos.coords.accuracy * 10) / 10 : null;
+        const coords = { 
+          latitude: pos.coords.latitude, 
+          longitude: pos.coords.longitude,
+          accuracy,
+          timestamp: new Date().toLocaleTimeString()
+        };
         setGpsLocation(coords);
-        addToast('GPS location updated accurately!', 'info');
+        addToast(`GPS location updated! Accuracy: ±${accuracy || 0}m`, 'info');
       },
       (err) => {
         addToast(`GPS Error: ${err.message}`, 'warning');
@@ -248,7 +255,7 @@ export const DoctorDashboard = () => {
     );
   };
 
-  // New "Fetch My Location" handler
+  // "Fetch My Location" Handler with High Accuracy & Quality Auditing
   const handleFetchMyLocation = () => {
     if (!navigator.geolocation) {
       addToast('Geolocation is not supported by your browser', 'danger');
@@ -265,7 +272,10 @@ export const DoctorDashboard = () => {
       (pos) => {
         const latitude = pos.coords.latitude;
         const longitude = pos.coords.longitude;
-        setGpsLocation({ latitude, longitude });
+        const accuracy = pos.coords.accuracy ? Math.round(pos.coords.accuracy * 10) / 10 : null;
+        const timestamp = new Date().toLocaleTimeString();
+
+        setGpsLocation({ latitude, longitude, accuracy, timestamp });
 
         const hospitalLat = phc?.latitude;
         const hospitalLng = phc?.longitude;
@@ -279,10 +289,17 @@ export const DoctorDashboard = () => {
           isInside = distance <= radius;
         }
 
+        if (accuracy && accuracy > 200) {
+          setAccuracyWarning(`Location accuracy is low (±${Math.round(accuracy)}m). Please enable high-precision GPS on your device for accurate geofence verification.`);
+          addToast(`Low Location Accuracy (±${Math.round(accuracy)}m). Turn on High-Accuracy GPS.`, 'warning');
+        } else {
+          setAccuracyWarning(null);
+        }
+
         setDistanceInfo({ distance, isInside });
         setFetchingLocation(false);
         setLocationStatusType('success');
-        setLocationStatusMsg(`Location fetched: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+        setLocationStatusMsg(`Location fetched: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} (Accuracy: ±${accuracy || 'N/A'}m)`);
         addToast(`Location updated: ${distance}m from hospital (${isInside ? 'Inside' : 'Outside'} Geofence)`, isInside ? 'success' : 'warning');
       },
       (err) => {
@@ -318,7 +335,8 @@ export const DoctorDashboard = () => {
       async (pos) => {
         const latitude = pos.coords.latitude;
         const longitude = pos.coords.longitude;
-        setGpsLocation({ latitude, longitude });
+        const accuracy = pos.coords.accuracy ? Math.round(pos.coords.accuracy * 10) / 10 : null;
+        setGpsLocation({ latitude, longitude, accuracy, timestamp: new Date().toLocaleTimeString() });
 
         try {
           const res = await axios.post('/api/attendance/mark', { latitude, longitude });
@@ -398,7 +416,7 @@ export const DoctorDashboard = () => {
           </div>
           <h2 className="text-xl font-bold text-white tracking-tight">{doctor?.name}</h2>
           <p className="text-xs text-slate-400">
-            Assigned Hospital: <strong className="text-slate-200">{phc?.name}</strong> | Shift: {formatTime12h(doctor?.shiftStart)} – {formatTime12h(doctor?.shiftEnd)}
+            Assigned Hospital: <strong className="text-slate-200">{phc?.name || 'Primary Health Center'}</strong> | Shift: {formatTime12h(doctor?.shiftStart)} – {formatTime12h(doctor?.shiftEnd)}
           </p>
         </div>
 
@@ -523,22 +541,42 @@ export const DoctorDashboard = () => {
             radius={phc?.radius}
             distance={distanceInfo?.distance || 0}
             isInside={distanceInfo?.isInside || false}
+            accuracy={gpsLocation?.accuracy}
           />
 
-          {/* Coordinates & Detailed Distance Summary */}
+          {/* Coordinates, Accuracy & Detailed Distance Summary */}
           {gpsLocation && (
-            <div className="p-3 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs space-y-1.5">
+            <div className="p-3 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs space-y-2">
               <div className="flex justify-between items-center text-slate-300">
-                <span className="text-slate-400 text-[11px]">Your Current Location:</span>
+                <span className="text-slate-400 text-[11px]">Your Detected Location:</span>
                 <span className="font-mono text-emerald-400 font-semibold text-[11px]">
                   {gpsLocation.latitude.toFixed(6)}, {gpsLocation.longitude.toFixed(6)}
                 </span>
               </div>
+
+              {gpsLocation.accuracy && (
+                <div className="flex justify-between items-center text-slate-300 pt-1 border-t border-slate-800/60">
+                  <span className="text-slate-400 text-[11px]">GPS Signal Accuracy:</span>
+                  <span className={`font-semibold text-[11px] ${gpsLocation.accuracy <= 200 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                    ±{gpsLocation.accuracy}m ({gpsLocation.accuracy <= 200 ? 'High Precision' : 'Low Precision Notice'})
+                  </span>
+                </div>
+              )}
+
+              {phc && (
+                <div className="flex justify-between items-center text-slate-300 pt-1 border-t border-slate-800/60">
+                  <span className="text-slate-400 text-[11px]">Assigned Hospital ({phc.name}):</span>
+                  <span className="font-mono text-blue-400 font-semibold text-[11px]">
+                    {Number(phc.latitude).toFixed(6)}, {Number(phc.longitude).toFixed(6)}
+                  </span>
+                </div>
+              )}
+
               {distanceInfo && (
-                <div className="flex justify-between items-center pt-1 border-t border-slate-800">
-                  <span className="text-slate-400 text-[11px]">Distance from Hospital:</span>
+                <div className="flex justify-between items-center pt-1 border-t border-slate-800/60">
+                  <span className="text-slate-400 text-[11px]">Calculated Distance:</span>
                   <span className={`font-bold ${distanceInfo.isInside ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {distanceInfo.distance}m <span className="text-slate-400 font-normal text-[11px]">(Allowed: {phc?.radius || 150}m)</span>
+                    {distanceInfo.distance}m <span className="text-slate-400 font-normal text-[11px]">(Allowed Limit: {phc?.radius || 150}m)</span>
                   </span>
                 </div>
               )}
@@ -553,6 +591,13 @@ export const DoctorDashboard = () => {
             }`}>
               <span>Status: <strong>{distanceInfo.isInside ? 'Inside Geofence' : 'Outside Geofence'}</strong></span>
               <span>{distanceInfo.isInside ? '✓ Eligible for Attendance' : '✕ Out of Radius'}</span>
+            </div>
+          )}
+
+          {accuracyWarning && (
+            <div className="p-3 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{accuracyWarning}</span>
             </div>
           )}
 

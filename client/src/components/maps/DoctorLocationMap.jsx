@@ -21,16 +21,21 @@ const hospitalCenterIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
-export const DoctorLocationMap = ({ doctorLat, doctorLng, hospitalLat, hospitalLng, radius, distance, isInside }) => {
-  const centerPos = [hospitalLat || 13.0827, hospitalLng || 80.2707];
-  const docPos = doctorLat && doctorLng ? [doctorLat, doctorLng] : null;
+export const DoctorLocationMap = ({ doctorLat, doctorLng, hospitalLat, hospitalLng, radius, distance, isInside, accuracy }) => {
+  const centerPos = hospitalLat !== undefined && hospitalLng !== undefined && hospitalLat !== null && hospitalLng !== null
+    ? [Number(hospitalLat), Number(hospitalLng)]
+    : [13.0827, 80.2707];
+
+  const docPos = doctorLat !== undefined && doctorLng !== undefined && doctorLat !== null && doctorLng !== null
+    ? [Number(doctorLat), Number(doctorLng)]
+    : null;
 
   return (
     <div className="space-y-2">
       <div className="h-64 w-full rounded-2xl overflow-hidden border border-slate-700/80 shadow-xl relative">
         <MapContainer
           center={centerPos}
-          zoom={16}
+          zoom={docPos ? 15 : 16}
           scrollWheelZoom={false}
           style={{ height: '100%', width: '100%' }}
         >
@@ -42,14 +47,14 @@ export const DoctorLocationMap = ({ doctorLat, doctorLng, hospitalLat, hospitalL
           {/* Hospital Center Marker */}
           <Marker position={centerPos} icon={hospitalCenterIcon}>
             <Popup>
-              <div className="text-xs font-bold text-slate-100">Hospital Geofence Center</div>
+              <div className="text-xs font-bold text-slate-100">Assigned Hospital Geofence Center</div>
             </Popup>
           </Marker>
 
           {/* Geofence Boundary Circle */}
           <Circle
             center={centerPos}
-            radius={Number(radius) || 100}
+            radius={Number(radius) || 150}
             pathOptions={{
               color: isInside ? '#10B981' : '#EF4444',
               fillColor: isInside ? '#10B981' : '#EF4444',
@@ -58,13 +63,14 @@ export const DoctorLocationMap = ({ doctorLat, doctorLng, hospitalLat, hospitalL
             }}
           />
 
-          {/* Doctor Marker */}
+          {/* Doctor GPS Location Marker */}
           {docPos && (
             <Marker position={docPos} icon={doctorIcon}>
               <Popup>
-                <div className="text-xs">
-                  <div className="font-bold text-slate-100">Your GPS Location</div>
-                  <div>Distance: {distance}m</div>
+                <div className="text-xs space-y-1">
+                  <div className="font-bold text-slate-100">Your Current GPS Location</div>
+                  <div>Distance: <strong className="text-emerald-400">{distance}m</strong></div>
+                  {accuracy && <div>Accuracy: <strong className="text-blue-400">±{Math.round(accuracy)}m</strong></div>}
                 </div>
               </Popup>
             </Marker>
