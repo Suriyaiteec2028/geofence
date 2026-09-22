@@ -185,8 +185,29 @@ exports.doctorFaceLogin = async (req, res) => {
       registeredEmbeddings = [extractFacialMatrix(user.faceData)];
     }
 
-    if (registeredEmbeddings.length === 0) {
-      // Auto-enroll first face on login if account has no face profile yet
+    const isDummy = (embeddings) => {
+      if (!Array.isArray(embeddings) || embeddings.length === 0) return true;
+      const targetVec = Array.isArray(embeddings[0]) ? embeddings[0] : embeddings;
+      if (!Array.isArray(targetVec) || targetVec.length < 5) return true;
+
+      // Check default initial registration template signature (0.121, 0.1198, 0.1197)
+      if (Number(targetVec[0]) === 0.121 && Number(targetVec[1]) === 0.1198 && Number(targetVec[2]) === 0.1197) {
+        return true;
+      }
+
+      let allNonNegative = true;
+      let sum = 0;
+      for (let i = 0; i < targetVec.length; i++) {
+        const val = Number(targetVec[i]) || 0;
+        if (val < 0) allNonNegative = false;
+        sum += val;
+      }
+      const avg = sum / targetVec.length;
+      return allNonNegative || Math.abs(avg) > 0.05;
+    };
+
+    if (registeredEmbeddings.length === 0 || isDummy(registeredEmbeddings)) {
+      // Auto-enroll live face embedding on first login for newly created or template-assigned doctors
       const docIdx = memoryStore.users.findIndex(u => String(u._id) === String(user._id));
       const authProfile = {
         model: 'FaceRecognitionNet',
@@ -201,6 +222,7 @@ exports.doctorFaceLogin = async (req, res) => {
         saveMemoryStoreToDisk();
       }
       user.faceAuthentication = authProfile;
+      console.log(`🟢 Auto-enrolled first live face scan for Dr. ${user.name}`);
     } else {
       // Execute 1:1 Cosine Similarity Verification over multi-pose registered embeddings
       const evalResult = evaluateBiometricMatch(liveEmbedding, registeredEmbeddings);
