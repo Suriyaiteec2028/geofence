@@ -3,13 +3,15 @@ import axios from 'axios';
 import { Breadcrumb } from '../../components/layout/Breadcrumb';
 import { DoctorStatusDoughnut } from '../../components/charts/AttendanceCharts';
 import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
-import { UserCheck, Users, Clock, AlertTriangle, MapPin, ClipboardCheck, ArrowUpRight } from 'lucide-react';
+import { UserCheck, Users, Clock, AlertTriangle, MapPin, ClipboardCheck, ArrowUpRight, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 export const AdminDashboard = () => {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [globalBiometric, setGlobalBiometric] = useState(true);
+  const [togglingBiometric, setTogglingBiometric] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,11 +24,25 @@ export const AdminDashboard = () => {
       if (res.data.success) {
         setSummary(res.data.summary);
       }
+      const settingsRes = await axios.get('/api/settings');
+      setGlobalBiometric(settingsRes.data?.settings?.globalBiometricRequired !== false);
     } catch (err) {
       console.error('Error fetching admin summary:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleToggleGlobalBiometric = async () => {
+    setTogglingBiometric(true);
+    try {
+      const newVal = !globalBiometric;
+      await axios.put('/api/settings', { globalBiometricRequired: newVal });
+      setGlobalBiometric(newVal);
+    } catch (err) {
+      console.error('Failed to toggle biometric setting:', err);
+    }
+    setTogglingBiometric(false);
   };
 
   if (loading) return <LoadingSkeleton type="card" count={4} />;
@@ -106,6 +122,33 @@ export const AdminDashboard = () => {
             Review explanations &rarr;
           </div>
         </motion.div>
+      </div>
+
+      {/* Biometric Toggle Card */}
+      <div className="mt-6 bg-gradient-to-r from-slate-800/80 to-slate-900/80 rounded-xl p-5 border border-slate-700/50">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+              <Shield className="w-4 h-4 text-blue-400" />
+              Global Biometric Authentication
+            </h3>
+            <p className="text-xs text-slate-400 mt-1">
+              {globalBiometric 
+                ? 'All doctors must complete face scan during login (unless individually disabled)'
+                : 'Biometric face scan is disabled globally — all doctors login with credentials only'}
+            </p>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={globalBiometric}
+              onChange={handleToggleGlobalBiometric}
+              disabled={togglingBiometric}
+              className="sr-only peer"
+            />
+            <div className="w-14 h-7 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-emerald-500"></div>
+          </label>
+        </div>
       </div>
 
       {/* Doughnut Chart & Quick Panel */}

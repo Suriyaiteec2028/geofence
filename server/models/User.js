@@ -24,6 +24,7 @@ const userSchema = new mongoose.Schema({
     updatedAt: { type: Date, default: Date.now }
   },
   status: { type: String, enum: ['ACTIVE', 'INACTIVE'], default: 'ACTIVE' },
+  biometricRequired: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now }
 });
 

@@ -27,7 +27,7 @@ export const Login = () => {
   // Forgot Password OTP Reset Modal State
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
 
-  const { login, doctorFaceLogin, loading } = useAuth();
+  const { login, doctorFaceLogin, doctorDirectLogin, loading } = useAuth();
   const { addToast } = useNotification();
   const navigate = useNavigate();
 
@@ -57,17 +57,27 @@ export const Login = () => {
       try {
         const res = await axios.post('/api/auth/verify-doctor', { usernameOrEmail, password });
         if (res.data && res.data.success) {
-          setDoctorName(res.data.doctorName || usernameOrEmail);
-          addToast('Credentials verified! Align face to authorize portal login.', 'info', 'Step 1 Verified');
-          setShowDoctorFaceModal(true);
+          // Check if biometric should be skipped (per-doctor or global setting)
+          if (res.data.skipBiometric) {
+            addToast('Credentials verified! Logging in...', 'info', 'Step 1 Verified');
+            const loginRes = await doctorDirectLogin(usernameOrEmail, password);
+            if (loginRes?.success) {
+              addToast(loginRes.message || 'Login successful!', 'success', 'Access Granted');
+              navigate('/doctor');
+            } else {
+              addToast(loginRes?.message || 'Login failed.', 'danger', 'Authentication Failed');
+            }
+          } else {
+            setDoctorName(res.data.doctorName || usernameOrEmail);
+            addToast('Credentials verified! Align face to authorize portal login.', 'info', 'Step 1 Verified');
+            setShowDoctorFaceModal(true);
+          }
         } else {
-          setDoctorName(usernameOrEmail);
-          setShowDoctorFaceModal(true);
+          addToast(res.data?.message || 'Invalid credentials.', 'danger', 'Authentication Failed');
         }
       } catch (err) {
-        setDoctorName(usernameOrEmail);
-        addToast('Doctor credentials accepted. Launching biometric verification frame...', 'info');
-        setShowDoctorFaceModal(true);
+        const errMsg = err.response?.data?.message || 'Unable to verify doctor credentials. Please check your username/email and password.';
+        addToast(errMsg, 'danger', 'Authentication Failed');
       } finally {
         setVerifyingCredentials(false);
       }

@@ -100,28 +100,16 @@ export const AuthProvider = ({ children }) => {
         return { success: true, role: userData.role, user: userData };
       }
     } catch (err) {
-      console.warn('Backend login endpoint failed, using fallback profile verification...');
+      console.warn('Backend login endpoint failed:', err.response?.data?.message || err.message);
+      setLoading(false);
+      return {
+        success: false,
+        message: err.response?.data?.message || 'Unable to connect to server. Please try again.'
+      };
     }
 
-    // Resilient Fallback verification
-    const cleanInput = (usernameOrEmail || '').trim().toLowerCase();
-    let matchedRole = role;
-
-    if (cleanInput.includes('admin') || role === 'ADMIN') matchedRole = 'ADMIN';
-    else if (cleanInput.includes('doc') || role === 'DOCTOR') matchedRole = 'DOCTOR';
-    else matchedRole = 'CMO';
-
-    const fallbackProfile = DEMO_PROFILES[matchedRole] || DEMO_PROFILES.CMO;
-    const fallbackToken = 'demo_token_' + matchedRole.toLowerCase() + '_' + Date.now();
-
-    setToken(fallbackToken);
-    setUser(fallbackProfile);
-    localStorage.setItem('hospital_token', fallbackToken);
-    localStorage.setItem('hospital_user', JSON.stringify(fallbackProfile));
-    axios.defaults.headers.common['Authorization'] = `Bearer ${fallbackToken}`;
     setLoading(false);
-
-    return { success: true, role: matchedRole, user: fallbackProfile };
+    return { success: false, message: 'Login failed. Please check your credentials.' };
   };
 
   const doctorFaceLogin = async (usernameOrEmail, password, liveFaceData) => {
@@ -152,17 +140,40 @@ export const AuthProvider = ({ children }) => {
       };
     }
 
-    // Resilient Doctor Fallback
-    const fallbackProfile = DEMO_PROFILES.DOCTOR;
-    const fallbackToken = 'demo_token_doctor_' + Date.now();
-    setToken(fallbackToken);
-    setUser(fallbackProfile);
-    localStorage.setItem('hospital_token', fallbackToken);
-    localStorage.setItem('hospital_user', JSON.stringify(fallbackProfile));
-    axios.defaults.headers.common['Authorization'] = `Bearer ${fallbackToken}`;
     setLoading(false);
+    return { success: false, message: 'Biometric verification failed. Please try again.' };
+  };
 
-    return { success: true, message: 'Biometric Face Scan Verified! Welcome Dr. Ranjith K', user: fallbackProfile };
+  // Doctor Direct Login (when biometric is disabled per-doctor or globally)
+  const doctorDirectLogin = async (usernameOrEmail, password) => {
+    setLoading(true);
+    try {
+      const response = await axios.post('/api/auth/doctor-direct-login', {
+        usernameOrEmail,
+        password
+      });
+
+      if (response.data && response.data.success) {
+        const { token: newToken, user: userData } = response.data;
+        setToken(newToken);
+        setUser(userData);
+        localStorage.setItem('hospital_token', newToken);
+        localStorage.setItem('hospital_user', JSON.stringify(userData));
+        axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+        setLoading(false);
+        return { success: true, message: response.data.message || 'Login successful!', user: userData };
+      }
+    } catch (err) {
+      console.warn('Doctor direct login failed:', err.response?.data?.message || err.message);
+      setLoading(false);
+      return {
+        success: false,
+        message: err.response?.data?.message || 'Login failed. Please try again.'
+      };
+    }
+
+    setLoading(false);
+    return { success: false, message: 'Login failed. Please check your credentials.' };
   };
 
   const logout = () => {
@@ -174,7 +185,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, doctorFaceLogin, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, doctorFaceLogin, doctorDirectLogin, logout }}>
       {children}
     </AuthContext.Provider>
   );

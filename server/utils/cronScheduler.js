@@ -51,6 +51,17 @@ function checkAndSendHourlyReminders() {
       const phc = memoryStore.phcs.find(p => String(p._id) === String(doctor.assignedPHC));
       const phcName = phc ? phc.name : 'Primary Health Center';
 
+      const isOnLeave = (memoryStore.leaves || []).some(leave => 
+        String(leave.doctor) === String(doctor._id) && 
+        leave.status === 'ACTIVE' && 
+        leave.startDate <= todayStr && 
+        leave.endDate >= todayStr
+      );
+
+      if (isOnLeave) {
+        continue;
+      }
+
       const shiftState = evaluateCurrentShiftState(
         doctor.shiftStart || '09:00',
         doctor.shiftEnd || '17:00',

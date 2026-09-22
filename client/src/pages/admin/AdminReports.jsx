@@ -119,17 +119,22 @@ export const AdminReports = () => {
       header: 'Attendance Status',
       key: 'status',
       sortable: true,
-      render: (row) => (
-        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-          row.status === 'PRESENT' || row.status === 'EXPLANATION_APPROVED'
-            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-            : row.status === 'PENDING_EXPLANATION'
-            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-            : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-        }`}>
-          {row.status === 'EXPLANATION_APPROVED' ? 'APPROVED (PRESENT)' : row.status}
-        </span>
-      )
+      render: (row) => {
+        if (row.status === 'OFFICIAL_LEAVE' || row.status === 'ON_LEAVE') {
+          return <span className="px-2 py-1 text-[10px] font-bold rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">OFFICIAL LEAVE</span>;
+        }
+        return (
+          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+            row.status === 'PRESENT' || row.status === 'EXPLANATION_APPROVED'
+              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+              : row.status === 'PENDING_EXPLANATION'
+              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+              : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+          }`}>
+            {row.status === 'EXPLANATION_APPROVED' ? 'APPROVED (PRESENT)' : row.status}
+          </span>
+        );
+      }
     }
   ];
 

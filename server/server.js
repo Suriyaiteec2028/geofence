@@ -26,6 +26,7 @@ app.use('/api/phcs', require('./routes/phcRoutes'));
 app.use('/api/attendance', require('./routes/attendanceRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
 app.use('/api/explanations', require('./routes/explanationRoutes'));
+app.use('/api/leaves', require('./routes/leaveRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/settings', require('./routes/settingsRoutes'));
 app.use('/api/ai', require('./routes/aiRoutes'));

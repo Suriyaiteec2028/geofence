@@ -164,6 +164,7 @@ export const DoctorDashboard = () => {
   const [distanceInfo, setDistanceInfo] = useState(null);
   const [countdownText, setCountdownText] = useState('00:00:00');
   const [liveState, setLiveState] = useState(null);
+  const [leaveInfo, setLeaveInfo] = useState(null);
 
   // Fetch My Location & Accuracy States
   const [fetchingLocation, setFetchingLocation] = useState(false);
@@ -176,6 +177,17 @@ export const DoctorDashboard = () => {
 
   useEffect(() => {
     fetchShiftStatus();
+    const fetchLeaves = async () => {
+      try {
+        const leaveRes = await axios.get('/api/leaves/my');
+        const activeLeaves = (leaveRes.data.leaves || []).filter(l => l.status === 'ACTIVE');
+        const today = new Date().toISOString().split('T')[0];
+        const currentLeave = activeLeaves.find(l => l.startDate <= today && l.endDate >= today);
+        const upcomingLeave = activeLeaves.find(l => l.startDate > today);
+        setLeaveInfo({ currentLeave, upcomingLeave, totalLeaves: activeLeaves.length });
+      } catch (err) { setLeaveInfo(null); }
+    };
+    fetchLeaves();
     const interval = setInterval(fetchShiftStatus, 10000); // Poll backend shift status
     return () => clearInterval(interval);
   }, []);
@@ -277,9 +289,13 @@ export const DoctorDashboard = () => {
 
         setGpsLocation({ latitude, longitude, accuracy, timestamp });
 
-        const hospitalLat = phc?.latitude;
-        const hospitalLng = phc?.longitude;
-        const radius = phc?.radius || 150;
+        const hospitalLat = shiftData?.phcLatitude;
+        const hospitalLng = shiftData?.phcLongitude;
+        const radius = shiftData?.phcRadius || 150;
+
+        if (shiftData?.phcCoordinatesSet === false) {
+          addToast('Hospital coordinates not configured. Contact Admin.', 'warning');
+        }
 
         let distance = 0;
         let isInside = false;
@@ -430,6 +446,34 @@ export const DoctorDashboard = () => {
         </div>
       </div>
 
+      {leaveInfo && (leaveInfo.currentLeave || leaveInfo.upcomingLeave) && (
+        <div className="mb-4 bg-gradient-to-r from-blue-900/40 to-indigo-900/40 rounded-xl p-4 border border-blue-700/30">
+          <h3 className="text-sm font-semibold text-blue-300 flex items-center gap-2 mb-2">
+            <Calendar className="w-4 h-4" />
+            Official Leave Status
+          </h3>
+          {leaveInfo.currentLeave && (
+            <div className="bg-blue-800/30 rounded-lg p-3 mb-2">
+              <span className="inline-block px-2 py-0.5 text-xs font-bold bg-blue-500 text-white rounded-full mb-1">ON LEAVE TODAY</span>
+              <p className="text-sm text-slate-200">
+                {leaveInfo.currentLeave.startDate} to {leaveInfo.currentLeave.endDate}
+              </p>
+              {leaveInfo.currentLeave.leaveNote && (
+                <p className="text-xs text-slate-400 mt-1">Note: {leaveInfo.currentLeave.leaveNote}</p>
+              )}
+            </div>
+          )}
+          {leaveInfo.upcomingLeave && !leaveInfo.currentLeave && (
+            <div className="bg-indigo-800/30 rounded-lg p-3">
+              <span className="inline-block px-2 py-0.5 text-xs font-bold bg-indigo-500 text-white rounded-full mb-1">UPCOMING LEAVE</span>
+              <p className="text-sm text-slate-200">
+                {leaveInfo.upcomingLeave.startDate} to {leaveInfo.upcomingLeave.endDate}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Main Checkpoint Status Card */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-7 p-6 rounded-3xl bg-[#1E293B] border border-slate-700/80 shadow-2xl space-y-6">
@@ -498,7 +542,7 @@ export const DoctorDashboard = () => {
             </button>
 
             <p className="text-[11px] text-slate-400 text-center">
-              Requires physical presence within hospital radius ({phc?.radius || 150}m) during scheduled 5-minute checkpoint window.
+              Requires physical presence within hospital radius ({shiftData?.phcRadius || 150}m) during scheduled 5-minute checkpoint window.
             </p>
           </div>
         </div>
@@ -536,9 +580,9 @@ export const DoctorDashboard = () => {
           <DoctorLocationMap
             doctorLat={gpsLocation?.latitude}
             doctorLng={gpsLocation?.longitude}
-            hospitalLat={phc?.latitude}
-            hospitalLng={phc?.longitude}
-            radius={phc?.radius}
+            hospitalLat={shiftData?.phcLatitude}
+            hospitalLng={shiftData?.phcLongitude}
+            radius={shiftData?.phcRadius}
             distance={distanceInfo?.distance || 0}
             isInside={distanceInfo?.isInside || false}
             accuracy={gpsLocation?.accuracy}
@@ -563,11 +607,11 @@ export const DoctorDashboard = () => {
                 </div>
               )}
 
-              {phc && (
+              {shiftData?.phcLatitude !== undefined && shiftData?.phcLongitude !== undefined && (
                 <div className="flex justify-between items-center text-slate-300 pt-1 border-t border-slate-800/60">
-                  <span className="text-slate-400 text-[11px]">Assigned Hospital ({phc.name}):</span>
+                  <span className="text-slate-400 text-[11px]">Assigned Hospital ({phc?.name}):</span>
                   <span className="font-mono text-blue-400 font-semibold text-[11px]">
-                    {Number(phc.latitude).toFixed(6)}, {Number(phc.longitude).toFixed(6)}
+                    {Number(shiftData?.phcLatitude).toFixed(6)}, {Number(shiftData?.phcLongitude).toFixed(6)}
                   </span>
                 </div>
               )}
@@ -576,7 +620,7 @@ export const DoctorDashboard = () => {
                 <div className="flex justify-between items-center pt-1 border-t border-slate-800/60">
                   <span className="text-slate-400 text-[11px]">Calculated Distance:</span>
                   <span className={`font-bold ${distanceInfo.isInside ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {distanceInfo.distance}m <span className="text-slate-400 font-normal text-[11px]">(Allowed Limit: {phc?.radius || 150}m)</span>
+                    {distanceInfo.distance}m <span className="text-slate-400 font-normal text-[11px]">(Allowed Limit: {shiftData?.phcRadius || 150}m)</span>
                   </span>
                 </div>
               )}

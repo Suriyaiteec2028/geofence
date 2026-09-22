@@ -55,6 +55,10 @@ exports.getDoctorShiftStatus = (req, res) => {
         longitude: phc.longitude,
         radius: phc.radius
       } : null,
+      phcLatitude: phc ? phc.latitude : null,
+      phcLongitude: phc ? phc.longitude : null,
+      phcRadius: phc ? phc.radius : null,
+      phcCoordinatesSet: phc ? !!(phc.latitude && phc.longitude && phc.latitude !== 13.0827) : false,
       shiftState,
       todayAttendances
     });
@@ -95,11 +99,34 @@ exports.getDoctorDateWindows = (req, res) => {
     );
 
     // Calculate Strict 3-Day Window Rule (e.g. today 26/08/2026 -> allowed range 23/08/2026 to 26/08/2026)
-    const minAllowedDateObj = new Date(nowObj);
+    let minAllowedDateObj = new Date(nowObj);
     minAllowedDateObj.setDate(nowObj.getDate() - 3);
     minAllowedDateObj.setHours(0, 0, 0, 0);
 
+    const docCreatedObj = new Date(doctor.createdAt);
+    docCreatedObj.setHours(0, 0, 0, 0);
+
+    if (docCreatedObj > minAllowedDateObj) {
+      minAllowedDateObj = docCreatedObj;
+    }
+
     const minAllowedDateStr = minAllowedDateObj.toISOString().split('T')[0];
+    const doctorActiveDateStr = docCreatedObj.toISOString().split('T')[0];
+
+    let isOnLeave = false;
+    let leaveNote = '';
+    const leaves = memoryStore.leaves || [];
+    const activeLeave = leaves.find(l => 
+      String(l.doctor) === String(doctorId) && 
+      l.status === 'ACTIVE' && 
+      l.startDate <= targetDate && 
+      l.endDate >= targetDate
+    );
+
+    if (activeLeave) {
+      isOnLeave = true;
+      leaveNote = activeLeave.leaveNote || '';
+    }
 
     const targetDateObj = new Date(targetDate + 'T00:00:00');
     const isExpired = targetDateObj < minAllowedDateObj;
@@ -165,6 +192,9 @@ exports.getDoctorDateWindows = (req, res) => {
       date: targetDate,
       minAllowedDate: minAllowedDateStr,
       maxAllowedDate: todayStr,
+      doctorActiveDate: doctorActiveDateStr,
+      isOnLeave,
+      leaveNote,
       isExpired,
       windows: windowsWithStatus
     });

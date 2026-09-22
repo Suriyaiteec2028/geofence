@@ -94,7 +94,7 @@ exports.createDoctor = async (req, res) => {
     const userWorkspace = req.user?.workspaceId || req.userDetails?.workspaceId || 'workspace_demo_public';
     const { 
       name, email, username, password, gender, mobile, qualification, 
-      specialization, assignedPHC, shiftStart, shiftEnd, faceData 
+      specialization, assignedPHC, shiftStart, shiftEnd, faceData, biometricRequired
     } = req.body;
 
     if (!name || !email || !username || !password) {
@@ -158,6 +158,7 @@ exports.createDoctor = async (req, res) => {
       profilePhoto: '',
       faceData: faceData || '',
       faceAuthentication: faceAuthenticationObj,
+      biometricRequired: biometricRequired !== undefined ? Boolean(biometricRequired) : true,
       workspaceId: userWorkspace,
       status: 'ACTIVE',
       createdAt: new Date().toISOString()

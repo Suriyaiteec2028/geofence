@@ -5,6 +5,7 @@ const settingsSchema = new mongoose.Schema({
   windowDurationMinutes: { type: Number, default: 5 },
   requireProofForExplanation: { type: Boolean, default: true },
   systemName: { type: String, default: 'Hospital Geofence Attendance System' },
+  globalBiometricRequired: { type: Boolean, default: true },
   updatedAt: { type: Date, default: Date.now }
 });
 

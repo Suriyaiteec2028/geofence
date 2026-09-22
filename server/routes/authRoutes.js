@@ -6,6 +6,7 @@ const { authenticateToken } = require('../middleware/authMiddleware');
 router.post('/login', authController.login);
 router.post('/verify-doctor', authController.verifyDoctorCredentials);
 router.post('/doctor-face-login', authController.doctorFaceLogin);
+router.post('/doctor-direct-login', authController.doctorDirectLogin);
 
 // Master CMO Registration with Live OTP Flow
 router.post('/cmo-request-otp', authController.cmoRequestOTP);

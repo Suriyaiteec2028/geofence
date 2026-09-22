@@ -1,10 +1,22 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { Breadcrumb } from '../../components/layout/Breadcrumb';
 import { User, Mail, Phone, Clock, Building2, ShieldCheck, Award } from 'lucide-react';
 
 export const DoctorProfile = () => {
   const { user } = useAuth();
+  const [leaves, setLeaves] = useState([]);
+
+  useEffect(() => {
+    const fetchLeaves = async () => {
+      try {
+        const res = await axios.get('/api/leaves/my');
+        setLeaves(res.data.leaves || []);
+      } catch (err) { setLeaves([]); }
+    };
+    fetchLeaves();
+  }, []);
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -45,6 +57,27 @@ export const DoctorProfile = () => {
             <p className="font-semibold font-mono text-sky-300">{user?.shiftStart || '11:15'} – {user?.shiftEnd || '16:15'}</p>
           </div>
         </div>
+
+        {leaves.length > 0 && (
+          <div className="mt-6 bg-slate-800/60 rounded-xl p-5 border border-slate-700/50">
+            <h3 className="text-sm font-semibold text-slate-200 mb-3">Official Leave History</h3>
+            <div className="space-y-2">
+              {leaves.map((leave, idx) => (
+                <div key={idx} className="flex items-center justify-between bg-slate-900/50 rounded-lg p-3">
+                  <div>
+                    <p className="text-sm text-slate-200">{leave.startDate} → {leave.endDate}</p>
+                    {leave.leaveNote && <p className="text-xs text-slate-400 mt-0.5">{leave.leaveNote}</p>}
+                  </div>
+                  <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${
+                    leave.status === 'ACTIVE' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-600/40 text-slate-400'
+                  }`}>
+                    {leave.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

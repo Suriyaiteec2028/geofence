@@ -25,6 +25,9 @@ export const ExplanationSubmit = () => {
   const [proofFile, setProofFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const [effectiveMinDate, setEffectiveMinDate] = useState(minDateStr);
+  const [onLeaveMessage, setOnLeaveMessage] = useState('');
+
   const { addToast } = useNotification();
   const navigate = useNavigate();
 
@@ -38,10 +41,22 @@ export const ExplanationSubmit = () => {
     try {
       const res = await axios.get(`/api/attendance/doctor-date-windows?date=${dateStr}`);
       if (res.data.success) {
-        setDateData(res.data);
+        const data = res.data;
+        setDateData(data);
+        
+        if (data.doctorActiveDate && data.doctorActiveDate > minDateStr) {
+          setEffectiveMinDate(data.doctorActiveDate);
+        }
+
+        if (data.isOnLeave) {
+          setOnLeaveMessage(`This date is covered by Official Leave. ${data.leaveNote ? 'Note: ' + data.leaveNote : ''}`); 
+        } else {
+          setOnLeaveMessage('');
+        }
+
         // Pre-select ONLY past missing windows that are selectable within the 3-day window
-        if (!res.data.isExpired && res.data.windows) {
-          const selectable = res.data.windows
+        if (!data.isExpired && data.windows) {
+          const selectable = data.windows
             .filter(w => w.isSelectable)
             .map(w => w.windowLabel);
           setSelectedWindows(selectable);
@@ -146,12 +161,18 @@ export const ExplanationSubmit = () => {
               <input
                 type="date"
                 required
-                min={minDateStr}
+                min={effectiveMinDate}
                 max={todayStr}
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
                 className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-2xl text-xs text-white focus:border-blue-500 outline-none font-semibold"
               />
+              {onLeaveMessage && (
+                <div className="mt-3 bg-blue-900/40 border border-blue-700/30 rounded-lg p-3 text-sm text-blue-300">
+                  <Calendar className="w-4 h-4 inline mr-2" />
+                  {onLeaveMessage}
+                </div>
+              )}
             </div>
 
             <div className="md:col-span-7">
@@ -319,7 +340,7 @@ export const ExplanationSubmit = () => {
             </button>
             <button
               type="submit"
-              disabled={submitting || dateData?.isExpired || selectedWindows.length === 0}
+              disabled={submitting || dateData?.isExpired || selectedWindows.length === 0 || !!onLeaveMessage}
               className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-2 shadow-glow-blue transition-all disabled:opacity-50"
             >
               <Send className="w-4 h-4" /> {submitting ? 'Submitting Explanation...' : 'Submit Explanation to Admin'}

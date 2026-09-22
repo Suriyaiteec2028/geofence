@@ -20,6 +20,7 @@ const memoryStore = {
   phcs: [],
   attendances: [],
   explanations: [],
+  leaves: [],
   settings: {},
   notifications: [],
   isInMemoryMode: true
@@ -33,6 +34,7 @@ function saveMemoryStoreToDisk() {
       phcs: memoryStore.phcs,
       attendances: memoryStore.attendances,
       explanations: memoryStore.explanations,
+      leaves: memoryStore.leaves,
       settings: memoryStore.settings,
       notifications: memoryStore.notifications
     };
@@ -97,6 +99,7 @@ async function initDb() {
         memoryStore.phcs = parsed.phcs || [];
         memoryStore.attendances = parsed.attendances || [];
         memoryStore.explanations = parsed.explanations || [];
+        memoryStore.leaves = parsed.leaves || [];
         memoryStore.settings = parsed.settings || {};
         memoryStore.notifications = parsed.notifications || [];
         loadedFromDisk = true;
@@ -114,6 +117,7 @@ async function initDb() {
     memoryStore.phcs = [...seed.phcs];
     memoryStore.attendances = [...seed.attendances];
     memoryStore.explanations = [...seed.explanations];
+    memoryStore.leaves = seed.leaves ? [...seed.leaves] : [];
     memoryStore.settings = { ...seed.settings };
     memoryStore.notifications = [...seed.notifications];
     saveMemoryStoreToDisk();

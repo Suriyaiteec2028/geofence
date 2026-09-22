@@ -11,7 +11,7 @@ import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../context/AuthContext';
 import { 
   UserPlus, Search, Edit3, Trash2, Mail, ShieldAlert, CheckCircle2, Clock, 
-  Building2, Camera, Eye, EyeOff, Lock, Send, FileSpreadsheet, KeyRound, AlertTriangle 
+  Building2, Camera, Eye, EyeOff, Lock, Send, FileSpreadsheet, KeyRound, AlertTriangle, Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -52,6 +52,17 @@ export const ManageDoctors = () => {
   const [noticeMessage, setNoticeMessage] = useState('');
   const [sendingNotice, setSendingNotice] = useState(false);
 
+  // Leave Modal State
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [leaveTarget, setLeaveTarget] = useState(null);
+  const [leaveStartDate, setLeaveStartDate] = useState('');
+  const [leaveEndDate, setLeaveEndDate] = useState('');
+  const [leaveNote, setLeaveNote] = useState('');
+  const [leaveEvidence, setLeaveEvidence] = useState(null);
+  const [grantingLeave, setGrantingLeave] = useState(false);
+  const [doctorLeaves, setDoctorLeaves] = useState([]);
+  const [loadingLeaves, setLoadingLeaves] = useState(false);
+
   const { addToast } = useNotification();
 
   const [formData, setFormData] = useState({
@@ -66,7 +77,8 @@ export const ManageDoctors = () => {
     assignedPHC: '',
     shiftStart: '11:15',
     shiftEnd: '16:15',
-    faceData: ''
+    faceData: '',
+    biometricRequired: true
   });
 
   useEffect(() => {
@@ -103,7 +115,8 @@ export const ManageDoctors = () => {
       assignedPHC: defaultPhc,
       shiftStart: '11:15',
       shiftEnd: '16:15',
-      faceData: ''
+      faceData: '',
+      biometricRequired: true
     });
     setShowModal(true);
   };
@@ -122,7 +135,8 @@ export const ManageDoctors = () => {
       assignedPHC: doc.assignedPHC || (phcs.length > 0 ? phcs[0]._id : ''),
       shiftStart: doc.shiftStart || '11:15',
       shiftEnd: doc.shiftEnd || '16:15',
-      faceData: doc.faceData || ''
+      faceData: doc.faceData || '',
+      biometricRequired: doc.biometricRequired !== false
     });
     setShowModal(true);
   };
@@ -243,6 +257,67 @@ export const ManageDoctors = () => {
     }
   };
 
+  const handleOpenLeaveModal = async (doctor) => {
+    setLeaveTarget(doctor);
+    setLeaveStartDate('');
+    setLeaveEndDate('');
+    setLeaveNote('');
+    setLeaveEvidence(null);
+    setShowLeaveModal(true);
+    setLoadingLeaves(true);
+    try {
+      const res = await axios.get(`/api/leaves/doctor/${doctor._id}`);
+      setDoctorLeaves(res.data.leaves || []);
+    } catch (err) {
+      setDoctorLeaves([]);
+    }
+    setLoadingLeaves(false);
+  };
+
+  const handleGrantLeave = async () => {
+    if (!leaveStartDate || !leaveEndDate) {
+      addToast('Please select start and end dates', 'warning');
+      return;
+    }
+    if (leaveStartDate > leaveEndDate) {
+      addToast('Start date must be before or equal to end date', 'warning');
+      return;
+    }
+    setGrantingLeave(true);
+    try {
+      const formPayload = new FormData();
+      formPayload.append('doctorId', leaveTarget._id);
+      formPayload.append('startDate', leaveStartDate);
+      formPayload.append('endDate', leaveEndDate);
+      formPayload.append('leaveNote', leaveNote);
+      if (leaveEvidence) formPayload.append('evidenceFile', leaveEvidence);
+      await axios.post('/api/leaves', formPayload);
+      addToast('Official leave granted successfully', 'success', 'Leave Granted');
+      
+      const res = await axios.get(`/api/leaves/doctor/${leaveTarget._id}`);
+      setDoctorLeaves(res.data.leaves || []);
+      setLeaveStartDate('');
+      setLeaveEndDate('');
+      setLeaveNote('');
+      setLeaveEvidence(null);
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to grant leave', 'danger');
+    }
+    setGrantingLeave(false);
+  };
+
+  const handleCancelLeave = async (leaveId) => {
+    if (!window.confirm('Cancel this official leave?')) return;
+    try {
+      await axios.patch(`/api/leaves/${leaveId}/cancel`);
+      addToast('Leave cancelled', 'info');
+      const res = await axios.get(`/api/leaves/doctor/${leaveTarget._id}`);
+      setDoctorLeaves(res.data.leaves || []);
+    } catch (err) {
+      addToast('Failed to cancel leave', 'danger');
+    }
+  };
+
   const columns = [
     {
       header: 'Doctor Name & Profile',
@@ -327,6 +402,30 @@ export const ManageDoctors = () => {
       }
     },
     {
+      header: 'Biometric Required',
+      accessor: 'biometricRequired',
+      render: (row) => (
+        <label className="relative inline-flex items-center cursor-pointer" onClick={(e) => e.stopPropagation()}>
+          <input
+            type="checkbox"
+            checked={row.biometricRequired !== false}
+            onChange={async (e) => {
+              const newValue = e.target.checked;
+              try {
+                await axios.put(`/api/doctors/${row._id}`, { biometricRequired: newValue });
+                addToast(`Biometric authentication ${newValue ? 'enabled' : 'disabled'} for Dr. ${row.name}`, 'success');
+                fetchData();
+              } catch (err) {
+                addToast('Failed to update biometric requirement', 'danger');
+              }
+            }}
+            className="sr-only peer"
+          />
+          <div className="w-11 h-6 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+        </label>
+      )
+    },
+    {
       header: 'Actions',
       accessor: 'actions',
       render: (row) => (
@@ -337,6 +436,13 @@ export const ManageDoctors = () => {
             title="Send Direct Official Email Notice"
           >
             <Send className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => handleOpenLeaveModal(row)}
+            className="p-1.5 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 transition-all"
+            title="Manage Official Leave"
+          >
+            <Calendar className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => handleOpenEdit(row)}
@@ -463,6 +569,107 @@ export const ManageDoctors = () => {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Official Leave Modal */}
+      <Modal
+        isOpen={showLeaveModal}
+        onClose={() => setShowLeaveModal(false)}
+        title={`Manage Official Leave - Dr. ${leaveTarget?.name}`}
+        maxWidth="max-w-2xl"
+      >
+        <div className="space-y-6">
+          <div className="p-3 rounded-xl bg-orange-950/40 border border-orange-500/30 text-xs text-orange-200">
+            Grant and manage official leaves for <strong className="text-white">{leaveTarget?.name}</strong>.
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-1">Start Date</label>
+              <input
+                type="date"
+                value={leaveStartDate}
+                onChange={(e) => setLeaveStartDate(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-1">End Date</label>
+              <input
+                type="date"
+                value={leaveEndDate}
+                onChange={(e) => setLeaveEndDate(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="text-xs font-semibold text-slate-300 block mb-1">Leave Note / Reason (Optional)</label>
+              <textarea
+                rows={2}
+                value={leaveNote}
+                onChange={(e) => setLeaveNote(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="text-xs font-semibold text-slate-300 block mb-1">Evidence File (Optional)</label>
+              <input
+                type="file"
+                onChange={(e) => setLeaveEvidence(e.target.files[0])}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <button
+              type="button"
+              onClick={handleGrantLeave}
+              disabled={grantingLeave}
+              className="px-5 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs shadow-glow-orange disabled:opacity-50 flex items-center gap-1.5"
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              {grantingLeave ? 'Processing...' : 'Grant Leave'}
+            </button>
+          </div>
+
+          <div className="mt-6 pt-4 border-t border-slate-800">
+            <h4 className="text-sm font-semibold text-white mb-3">Leave History</h4>
+            {loadingLeaves ? (
+              <div className="text-xs text-slate-400">Loading leave history...</div>
+            ) : doctorLeaves.length === 0 ? (
+              <div className="text-xs text-slate-400">No leaves recorded for this doctor.</div>
+            ) : (
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {doctorLeaves.map(leave => (
+                  <div key={leave._id} className="p-3 bg-slate-800/50 rounded-lg border border-slate-700 flex justify-between items-center">
+                    <div>
+                      <div className="text-xs font-semibold text-white">
+                        {new Date(leave.startDate).toLocaleDateString()} - {new Date(leave.endDate).toLocaleDateString()}
+                      </div>
+                      <div className="text-[11px] text-slate-400 mt-1">{leave.leaveNote || 'No note provided'}</div>
+                      <div className="mt-1">
+                        {leave.status === 'ACTIVE' ? (
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-medium">ACTIVE</span>
+                        ) : (
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-slate-500/20 text-slate-400 font-medium">{leave.status}</span>
+                        )}
+                      </div>
+                    </div>
+                    {leave.status === 'ACTIVE' && (
+                      <button
+                        onClick={() => handleCancelLeave(leave._id)}
+                        className="p-1.5 text-xs bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 rounded border border-rose-500/20"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </Modal>
 
       {/* Create / Edit Doctor Modal */}
@@ -644,7 +851,23 @@ export const ManageDoctors = () => {
           </div>
 
           {/* Biometric Face Capture Trigger Button */}
-          <div className="pt-2 border-t border-slate-800">
+          <div className="pt-2 border-t border-slate-800 space-y-4">
+            <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+              <div>
+                <label className="text-sm font-medium text-slate-200">Require Biometric Authentication</label>
+                <p className="text-xs text-slate-400 mt-0.5">When enabled, doctor must complete face scan during login</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.biometricRequired}
+                  onChange={(e) => setFormData(prev => ({ ...prev, biometricRequired: e.target.checked }))}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+              </label>
+            </div>
+
             <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-900 border border-slate-800">
               <div className="flex items-center gap-2">
                 <Camera className="w-4 h-4 text-purple-400" />

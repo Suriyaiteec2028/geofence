@@ -102,10 +102,15 @@ exports.verifyDoctorCredentials = async (req, res) => {
     const hasEmbeddings = user.faceAuthentication && Array.isArray(user.faceAuthentication.embeddings) && user.faceAuthentication.embeddings.length > 0;
     const requiresFaceSetup = !hasEmbeddings && !user.faceData;
 
+    const globalBiometricRequired = memoryStore.settings.globalBiometricRequired !== undefined ? memoryStore.settings.globalBiometricRequired : true;
+    const userBiometricRequired = user.biometricRequired !== undefined ? user.biometricRequired : true;
+    const skipBiometric = !globalBiometricRequired || (globalBiometricRequired && !userBiometricRequired);
+
     res.json({
       success: true,
       message: 'Doctor credentials verified! Proceed to 2-step biometric face scan.',
       requiresFaceSetup,
+      skipBiometric,
       doctorName: user.name,
       doctorId: user._id
     });
@@ -270,6 +275,97 @@ exports.doctorFaceLogin = async (req, res) => {
   } catch (err) {
     console.error('Doctor face login error:', err);
     res.status(500).json({ success: false, message: 'Server error during doctor biometric face login' });
+  }
+};
+
+// Doctor Direct Login (when biometric is skipped)
+exports.doctorDirectLogin = async (req, res) => {
+  try {
+    const { usernameOrEmail, password } = req.body;
+    if (!usernameOrEmail || !password) {
+      return res.status(400).json({ success: false, message: 'Doctor username/email and password are required.' });
+    }
+
+    const inputClean = usernameOrEmail.trim().toLowerCase();
+    const passwordClean = password.trim();
+
+    let user = memoryStore.users.find(u => 
+      (u.role === 'DOCTOR') && 
+      (
+        (u.email && u.email.toLowerCase() === inputClean) || 
+        (u.username && u.username.toLowerCase() === inputClean) ||
+        (u.username && u.username.trim() === usernameOrEmail.trim())
+      )
+    );
+
+    if (!user && !memoryStore.isInMemoryMode && mongoose.connection.readyState === 1) {
+      try {
+        const dbUser = await User.findOne({
+          role: 'DOCTOR',
+          $or: [
+            { email: new RegExp(`^${inputClean}$`, 'i') },
+            { username: new RegExp(`^${inputClean}$`, 'i') }
+          ]
+        }).lean();
+        if (dbUser) user = dbUser;
+      } catch (e) {}
+    }
+
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Doctor account not found.' });
+    }
+
+    const isMatch = await bcrypt.compare(passwordClean, user.password);
+    if (!isMatch && user.plainPassword && user.plainPassword === passwordClean) {
+      // Fallback
+    } else if (!isMatch) {
+      return res.status(401).json({ success: false, message: 'Incorrect doctor password.' });
+    }
+
+    if (user.status !== 'ACTIVE') {
+      return res.status(403).json({ success: false, message: 'Doctor account is inactive.' });
+    }
+
+    const globalBiometricRequired = memoryStore.settings.globalBiometricRequired !== undefined ? memoryStore.settings.globalBiometricRequired : true;
+    const userBiometricRequired = user.biometricRequired !== undefined ? user.biometricRequired : true;
+    const skipBiometric = !globalBiometricRequired || (globalBiometricRequired && !userBiometricRequired);
+
+    if (!skipBiometric) {
+      return res.status(403).json({ success: false, message: 'Biometric verification is required.' });
+    }
+
+    const token = jwt.sign(
+      { id: user._id, role: user.role, email: user.email, name: user.name },
+      process.env.JWT_SECRET || JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    let phcDetails = null;
+    if (user.assignedPHC) {
+      phcDetails = memoryStore.phcs.find(p => String(p._id) === String(user.assignedPHC));
+    }
+
+    res.json({
+      success: true,
+      message: `Direct Login Successful! Welcome Dr. ${user.name}`,
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+        gender: user.gender || 'Male',
+        qualification: user.qualification,
+        specialization: user.specialization,
+        assignedPHC: user.assignedPHC,
+        phcDetails
+      }
+    });
+
+  } catch (err) {
+    console.error('Doctor direct login error:', err);
+    res.status(500).json({ success: false, message: 'Server error during doctor direct login' });
   }
 };
 
