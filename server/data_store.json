@@ -385,29 +385,6 @@
       "createdAt": "2026-09-21T09:34:47.304Z"
     },
     {
-      "_id": "doc_1790098866293",
-      "name": "Suriya N",
-      "email": "sms621280@gmail.com",
-      "username": "Suriya@2000",
-      "password": "$2a$10$PEOZ4BpbX8xNtTE2gS0iyO2HjqBU3S/H60IEG6vYaR.h2SS.KGFne",
-      "plainPassword": "Suriya@2000",
-      "role": "DOCTOR",
-      "gender": "Male",
-      "mobile": "+916369073790",
-      "qualification": "MBBS, MD",
-      "specialization": "General Physician",
-      "assignedPHC": "phc_001",
-      "shiftStart": "11:15pm",
-      "shiftEnd": "4:00 Am",
-      "profilePhoto": "",
-      "faceData": "",
-      "faceAuthentication": null,
-      "biometricRequired": false,
-      "workspaceId": "workspace_demo_public",
-      "status": "ACTIVE",
-      "createdAt": "2026-09-22T17:41:06.293Z"
-    },
-    {
       "_id": "doc_1790099333198",
       "name": "Suriya N",
       "email": "suriyan182006@gmail.com",
@@ -420,8 +397,8 @@
       "qualification": "MBBS, MD",
       "specialization": "General Physician",
       "assignedPHC": "phc_1789979815269",
-      "shiftStart": "11:30 pm",
-      "shiftEnd": "10:00 Am",
+      "shiftStart": "9:55",
+      "shiftEnd": "18:55",
       "profilePhoto": "",
       "faceData": "",
       "faceAuthentication": null,
@@ -429,6 +406,29 @@
       "workspaceId": "workspace_master_suriyachandru",
       "status": "ACTIVE",
       "createdAt": "2026-09-22T17:48:53.198Z"
+    },
+    {
+      "_id": "doc_1790137031683",
+      "name": "Suriya N",
+      "email": "310624205278@eec.srmrmp.edu.in",
+      "username": "suriya@2000",
+      "password": "$2a$10$hDZ/8WVhIli692uvLcPqu.h.NmrYFHHj2ZiaixVJbxUpoBKKpQfqq",
+      "plainPassword": "Suriya@2000",
+      "role": "DOCTOR",
+      "gender": "Male",
+      "mobile": "+916369073790",
+      "qualification": "MBBS, MD",
+      "specialization": "General Physician",
+      "assignedPHC": "phc_001",
+      "shiftStart": "11:15",
+      "shiftEnd": "16:15",
+      "profilePhoto": "",
+      "faceData": "",
+      "faceAuthentication": null,
+      "biometricRequired": false,
+      "workspaceId": "workspace_demo_public",
+      "status": "ACTIVE",
+      "createdAt": "2026-09-23T04:17:11.683Z"
     }
   ],
   "phcs": [
@@ -456,8 +456,8 @@
       "district": "Thanjavur",
       "state": "Tamil Nadu",
       "pincode": "613007",
-      "latitude": 13.030326985706745,
-      "longitude": 80.17791477086816,
+      "latitude": 13.0303567,
+      "longitude": 80.1776482,
       "radius": 200,
       "assignedAdmin": "admin_demo_001",
       "workspaceId": "workspace_demo_public",
@@ -470,8 +470,8 @@
       "code": "PHC-882",
       "address": "T.palur",
       "district": "Central Metro",
-      "latitude": 13.0827,
-      "longitude": 80.2707,
+      "latitude": 13.030179,
+      "longitude": 80.177734,
       "radius": 150,
       "assignedAdmin": "",
       "workspaceId": "workspace_master_suriyachandru",
@@ -514,6 +514,18 @@
       "grantedBy": "admin_demo_001",
       "status": "CANCELLED",
       "createdAt": "2026-09-22T17:32:51.064Z"
+    },
+    {
+      "_id": "leave_1790136907172",
+      "doctor": "doc_1790098866293",
+      "phc": "phc_001",
+      "startDate": "2026-09-23",
+      "endDate": "2026-09-23",
+      "leaveNote": "",
+      "evidenceUrl": "",
+      "grantedBy": "admin_demo_001",
+      "status": "ACTIVE",
+      "createdAt": "2026-09-23T04:15:07.172Z"
     }
   ],
   "settings": {
@@ -525,13 +537,33 @@
   },
   "notifications": [
     {
+      "_id": "notif_1790137036948_7boa7",
+      "recipientEmail": "310624205278@eec.srmrmp.edu.in",
+      "title": "Account Registration Notice",
+      "message": "Welcome Dr. Suriya N! Your medical doctor account was registered at City Care Hospital & Central PHC. Your assigned duty shift is 11:15 AM - 04:15 PM. Account credentials: Username=suriya@2000, Password=Suriya@2000",
+      "type": "EMAIL",
+      "read": true,
+      "isRead": true,
+      "createdAt": "2026-09-23T04:17:16.948Z"
+    },
+    {
+      "_id": "notif_1790135510169_1nsh5",
+      "recipientEmail": "suriyan182006@gmail.com",
+      "title": "Duty Shift Schedule Updated",
+      "message": "Dr. Suriya N, your shift timings were updated to 09:55 AM - 06:55 PM.",
+      "type": "EMAIL",
+      "read": true,
+      "isRead": true,
+      "createdAt": "2026-09-23T03:51:50.170Z"
+    },
+    {
       "_id": "notif_1790099337935_3zhng",
       "recipientEmail": "suriyan182006@gmail.com",
       "title": "Account Registration Notice",
       "message": "Welcome Dr. Suriya N! Your medical doctor account was registered at primary phc. Your assigned duty shift is 11:30 AM - 10:00 AM. Account credentials: Username=Suriya@0000, Password=Suriya@0000",
       "type": "EMAIL",
-      "read": false,
-      "isRead": false,
+      "read": true,
+      "isRead": true,
       "createdAt": "2026-09-22T17:48:57.935Z"
     },
     {
@@ -718,6 +750,15 @@
       "isRead": true,
       "createdAt": "2026-09-22T17:32:51.064Z",
       "read": true
+    },
+    {
+      "_id": "notif_1790136907172",
+      "user": "doc_1790098866293",
+      "type": "LEAVE_GRANTED",
+      "title": "Official Leave Granted",
+      "message": "You have been granted official leave from 2026-09-23 to 2026-09-23.",
+      "isRead": false,
+      "createdAt": "2026-09-23T04:15:07.172Z"
     }
   ]
 }
