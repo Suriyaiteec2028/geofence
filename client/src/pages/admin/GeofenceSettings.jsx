@@ -3,12 +3,16 @@ import axios from 'axios';
 import { Breadcrumb } from '../../components/layout/Breadcrumb';
 import { GeofenceMap } from '../../components/maps/GeofenceMap';
 import { useNotification } from '../../context/NotificationContext';
-import { MapPin, Save, Sliders, ShieldCheck } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { MapPin, Save, Sliders, ShieldCheck, Navigation, Loader } from 'lucide-react';
 
 export const GeofenceSettings = () => {
   const [phc, setPhc] = useState(null);
+  const [allPhcs, setAllPhcs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchingLocation, setFetchingLocation] = useState(false);
   const { addToast } = useNotification();
+  const { user } = useAuth();
 
   const [formData, setFormData] = useState({
     latitude: 13.0827,
@@ -24,12 +28,20 @@ export const GeofenceSettings = () => {
     try {
       const res = await axios.get('/api/phcs');
       if (res.data.success && res.data.phcs.length > 0) {
-        const first = res.data.phcs[0];
-        setPhc(first);
+        setAllPhcs(res.data.phcs);
+
+        // Find the PHC assigned to this admin, not just the first one
+        let adminPhc = null;
+        if (user && user.assignedPHC) {
+          adminPhc = res.data.phcs.find(p => p._id === user.assignedPHC);
+        }
+        // Fallback to first if no assigned PHC found
+        const selected = adminPhc || res.data.phcs[0];
+        setPhc(selected);
         setFormData({
-          latitude: first.latitude,
-          longitude: first.longitude,
-          radius: first.radius
+          latitude: selected.latitude,
+          longitude: selected.longitude,
+          radius: selected.radius
         });
       }
     } catch (err) {
@@ -37,6 +49,39 @@ export const GeofenceSettings = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // ── Use My Current GPS Location as PHC Center ──────────────────────────────
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) {
+      addToast('Geolocation is not supported by this browser.', 'danger');
+      return;
+    }
+    setFetchingLocation(true);
+    addToast('Detecting your current GPS location...', 'info', 'GPS Locating');
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude, accuracy } = position.coords;
+        setFormData(prev => ({ ...prev, latitude, longitude }));
+        setFetchingLocation(false);
+        addToast(
+          `Location captured! Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)} (±${Math.round(accuracy)}m accuracy). Click "Save Geofence Parameters" to apply.`,
+          'success',
+          '📍 Location Set'
+        );
+      },
+      (error) => {
+        setFetchingLocation(false);
+        const messages = {
+          1: 'Location permission denied. Please allow location access in browser settings.',
+          2: 'GPS signal unavailable. Please try again outdoors or enable device GPS.',
+          3: 'Location request timed out. Please try again.'
+        };
+        addToast(messages[error.code] || 'Failed to get location.', 'danger', 'GPS Error');
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
   };
 
   const handleSave = async (e) => {
@@ -60,7 +105,10 @@ export const GeofenceSettings = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-white tracking-tight">Geofence Boundary Configuration</h2>
-          <p className="text-xs text-slate-400">Set hospital center point and allowed physical radius in meters.</p>
+          <p className="text-xs text-slate-400">
+            Set hospital center point and allowed physical radius in meters.
+            {phc && <span className="ml-1 text-blue-400 font-medium">Configuring: {phc.name}</span>}
+          </p>
         </div>
         <button
           onClick={handleSave}
@@ -88,6 +136,22 @@ export const GeofenceSettings = () => {
           </div>
 
           <div className="space-y-4">
+
+            {/* ── Use My Current Location button ── */}
+            <button
+              type="button"
+              onClick={handleUseMyLocation}
+              disabled={fetchingLocation}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-400 text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {fetchingLocation
+                ? <><Loader className="w-4 h-4 animate-spin" /> Detecting GPS...</>
+                : <><Navigation className="w-4 h-4" /> 📍 Use My Current Location as PHC Center</>}
+            </button>
+            <p className="text-[11px] text-slate-500 -mt-2">
+              Stand at the hospital entrance and click above to pin the exact GPS coordinates.
+            </p>
+
             <div>
               <label className="text-xs font-semibold text-slate-300 block mb-1">Center Latitude</label>
               <input
@@ -129,6 +193,14 @@ export const GeofenceSettings = () => {
                 <span>250m</span>
                 <span>500 meters</span>
               </div>
+            </div>
+
+            {/* Current coordinates display */}
+            <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-700/40 text-[11px] font-mono text-slate-300 space-y-1">
+              <div className="text-slate-500 text-[10px] uppercase tracking-wider mb-1">Current PHC Coordinates</div>
+              <div>Lat: <span className="text-emerald-400">{formData.latitude.toFixed ? formData.latitude.toFixed(6) : formData.latitude}</span></div>
+              <div>Lng: <span className="text-emerald-400">{formData.longitude.toFixed ? formData.longitude.toFixed(6) : formData.longitude}</span></div>
+              <div>Radius: <span className="text-blue-400">{formData.radius}m</span></div>
             </div>
 
             <div className="p-4 rounded-2xl bg-blue-950/40 border border-blue-500/20 text-xs text-slate-300 space-y-1">
