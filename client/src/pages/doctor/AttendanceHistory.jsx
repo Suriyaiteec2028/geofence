@@ -1,32 +1,44 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { Breadcrumb } from '../../components/layout/Breadcrumb';
 import { Table } from '../../components/common/Table';
 import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
 import { useNotification } from '../../context/NotificationContext';
-import { FileText, Calendar, Clock, MapPin } from 'lucide-react';
+import { FileText, Calendar, Clock, MapPin, RefreshCw } from 'lucide-react';
 
 export const AttendanceHistory = () => {
   const [attendances, setAttendances] = useState([]);
   const [loading, setLoading] = useState(true);
   const { addToast } = useNotification();
+  const isMounted = useRef(true);
 
-  useEffect(() => {
-    fetchHistory();
-  }, []);
-
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async (showToast = false) => {
     try {
       const res = await axios.get('/api/attendance/history');
-      if (res.data.success) {
+      if (res.data.success && isMounted.current) {
         setAttendances(res.data.attendances);
+        if (showToast) addToast('Attendance history refreshed', 'info');
       }
     } catch (err) {
-      addToast('Error fetching attendance history', 'danger');
+      if (isMounted.current) addToast('Error fetching attendance history', 'danger');
     } finally {
-      setLoading(false);
+      if (isMounted.current) setLoading(false);
     }
-  };
+  }, [addToast]);
+
+  useEffect(() => {
+    isMounted.current = true;
+    fetchHistory();
+
+    // Auto-refresh when attendance is marked from the MarkAttendance page
+    const onAttendanceMarked = () => fetchHistory(false);
+    window.addEventListener('attendance-marked', onAttendanceMarked);
+
+    return () => {
+      isMounted.current = false;
+      window.removeEventListener('attendance-marked', onAttendanceMarked);
+    };
+  }, [fetchHistory]);
 
   const columns = [
     {
@@ -83,9 +95,18 @@ export const AttendanceHistory = () => {
     <div className="space-y-6">
       <Breadcrumb />
 
-      <div>
-        <h2 className="text-xl font-bold text-white tracking-tight">My Attendance Log</h2>
-        <p className="text-xs text-slate-400">Complete historical record of duty shift check-ins.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-white tracking-tight">My Attendance Log</h2>
+          <p className="text-xs text-slate-400">Complete historical record of duty shift check-ins.</p>
+        </div>
+        <button
+          onClick={() => fetchHistory(true)}
+          className="p-2 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 transition-all"
+          title="Refresh"
+        >
+          <RefreshCw className="w-4 h-4" />
+        </button>
       </div>
 
       {loading ? (

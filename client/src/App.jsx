@@ -23,6 +23,7 @@ import { AdminReports } from './pages/admin/AdminReports';
 
 // Doctor Pages
 import { DoctorDashboard } from './pages/doctor/DoctorDashboard';
+import { MarkAttendance } from './pages/doctor/MarkAttendance';
 import { ExplanationSubmit } from './pages/doctor/ExplanationSubmit';
 import { AttendanceHistory } from './pages/doctor/AttendanceHistory';
 import { DoctorProfile } from './pages/doctor/DoctorProfile';
@@ -64,7 +65,7 @@ function ProtectedLayout({ allowedRoles }) {
 
             {/* Doctor Routes */}
             <Route path="/doctor" element={<DoctorDashboard />} />
-            <Route path="/doctor/mark" element={<DoctorDashboard />} />
+            <Route path="/doctor/mark" element={<MarkAttendance />} />
             <Route path="/doctor/explanation" element={<ExplanationSubmit />} />
             <Route path="/doctor/history" element={<AttendanceHistory />} />
             <Route path="/doctor/profile" element={<DoctorProfile />} />
