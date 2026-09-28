@@ -2,8 +2,8 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 
-export const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-xl' }) => {
-  if (!isOpen) return null;
+export const Modal = ({ isOpen = true, onClose, title, children, maxWidth = 'max-w-xl' }) => {
+  if (isOpen === false) return null;
 
   return (
     <AnimatePresence>

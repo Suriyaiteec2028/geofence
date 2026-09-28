@@ -1,6 +1,7 @@
 const { memoryStore, saveMemoryStoreToDisk } = require('../config/db');
 const { evaluateCurrentShiftState, getISTDate, getISTDateString, minutesToFormattedTime } = require('./shiftEngine');
 const { sendHourlyCheckpointReminderEmail } = require('./emailService');
+const { logAuditEvent } = require('./auditLogger');
 
 // In-Memory map to track sent reminders for today: "doctor_id:date:checkpointTime" -> true
 const sentRemindersMap = new Map();
@@ -166,6 +167,22 @@ function checkAndSendHourlyReminders() {
             };
             memoryStore.attendances.push(autoAbsent);
             saveMemoryStoreToDisk();
+
+            logAuditEvent({
+              userId: doctor._id,
+              userRole: 'DOCTOR',
+              userName: doctor.name,
+              action: 'ATTENDANCE_WINDOW_MISSED',
+              recordType: 'Attendance',
+              recordId: autoAbsent._id,
+              details: {
+                date: todayStr,
+                checkpointTime: win.windowStartFormatted,
+                windowLabel: win.windowLabel,
+                status: 'ABSENT'
+              }
+            });
+
             console.log(`❌ Immediate Auto-Absent Recorded: Dr. ${doctor.name} missed checkpoint ${win.windowLabel}`);
           }
         }
@@ -256,14 +273,101 @@ async function triggerImmediateReminderTest(doctorId = null) {
   return results;
 }
 
+function reconcileMissedAttendanceOnStartup() {
+  try {
+    const istNow = getISTDate();
+    const todayStr = getISTDateString(istNow);
+    const intervalMins = memoryStore.settings?.checkpointIntervalMinutes || 60;
+    const windowMins = memoryStore.settings?.windowDurationMinutes || 5;
+
+    const doctors = (memoryStore.users || []).filter(u => u.role === 'DOCTOR' && u.status === 'ACTIVE');
+    let reconciledCount = 0;
+
+    for (const doctor of doctors) {
+      const isOnLeave = (memoryStore.leaves || []).some(leave => 
+        String(leave.doctor) === String(doctor._id) && 
+        leave.status === 'ACTIVE' && 
+        leave.startDate <= todayStr && 
+        leave.endDate >= todayStr
+      );
+      if (isOnLeave) continue;
+
+      const shiftState = evaluateCurrentShiftState(
+        doctor.shiftStart || '09:00',
+        doctor.shiftEnd || '17:00',
+        intervalMins,
+        windowMins,
+        istNow
+      );
+
+      for (const win of shiftState.windows) {
+        const windowEndObj = new Date(win.windowEndISO);
+        const docCreatedAt = doctor.createdAt ? new Date(doctor.createdAt) : null;
+        if (docCreatedAt && docCreatedAt > windowEndObj) continue;
+
+        if (istNow > windowEndObj) {
+          const existingAtt = (memoryStore.attendances || []).find(a => 
+            String(a.doctor) === String(doctor._id) && 
+            a.date === todayStr && 
+            (a.checkpointTime === win.windowStartFormatted || a.windowLabel === win.windowLabel)
+          );
+
+          if (!existingAtt) {
+            const autoAbsent = {
+              _id: 'att_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+              doctor: doctor._id,
+              phc: doctor.assignedPHC,
+              date: todayStr,
+              checkpointTime: win.windowStartFormatted,
+              windowLabel: win.windowLabel,
+              markedAt: null,
+              status: 'ABSENT',
+              withinGeofence: false,
+              createdAt: new Date().toISOString()
+            };
+            memoryStore.attendances.push(autoAbsent);
+            reconciledCount++;
+
+            logAuditEvent({
+              userId: doctor._id,
+              userRole: 'DOCTOR',
+              userName: doctor.name,
+              action: 'ATTENDANCE_WINDOW_MISSED',
+              recordType: 'Attendance',
+              recordId: autoAbsent._id,
+              details: {
+                date: todayStr,
+                checkpointTime: win.windowStartFormatted,
+                windowLabel: win.windowLabel,
+                status: 'ABSENT',
+                source: 'StartupReconciliation'
+              }
+            });
+          }
+        }
+      }
+    }
+
+    if (reconciledCount > 0) {
+      saveMemoryStoreToDisk();
+      console.log(`[ATTENDANCE-RECONCILIATION] Reconciled ${reconciledCount} missed attendance window(s) on server startup.`);
+    }
+  } catch (err) {
+    console.error('[ATTENDANCE-RECONCILIATION] Error during startup reconciliation:', err.message);
+  }
+}
+
 function initCronScheduler() {
   console.log('⏰ Starting Automated Server-Side Duty Checkpoint & 5-Minute Reminder Engine...');
+  // Reconcile any past closed windows immediately upon server start (Section 6.1)
+  reconcileMissedAttendanceOnStartup();
   // Run background check every 60 seconds on server
   setInterval(checkAndSendHourlyReminders, 60000);
 }
 
 module.exports = {
   initCronScheduler,
+  reconcileMissedAttendanceOnStartup,
   checkAndSendHourlyReminders,
   triggerImmediateReminderTest,
   clearRemindersForDoctor

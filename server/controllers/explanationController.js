@@ -1,4 +1,17 @@
 const { memoryStore, saveMemoryStoreToDisk } = require('../config/db');
+const { logAuditEvent } = require('../utils/auditLogger');
+
+function getExplanationDeadline(missedDateStr) {
+  const [y, m, d] = missedDateStr.split('-').map(Number);
+  return new Date(y, m - 1, d + 3, 0, 0, 0, 0);
+}
+
+function formatDeadlineString(dateObj) {
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  const month = dateObj.toLocaleString('en-IN', { month: 'short' });
+  const year = dateObj.getFullYear();
+  return `${day} ${month} ${year}, 12:00 AM (Midnight)`;
+}
 
 exports.submitExplanation = (req, res) => {
   try {
@@ -26,16 +39,16 @@ exports.submitExplanation = (req, res) => {
         return res.status(400).json({ success: false, message: 'No checkpoints selected.' });
       }
 
-      // Backend 3-day rule validation
-      const nowIST = new Date();
-      const minAllowed = new Date(nowIST);
-      minAllowed.setDate(nowIST.getDate() - 3);
-      minAllowed.setHours(0, 0, 0, 0);
-      const targetDateObj = new Date(date + 'T00:00:00');
-      if (targetDateObj < minAllowed) {
-        return res.status(400).json({ success: false, message: 'Explanation deadline expired. Explanations can only be submitted within 3 days of the missed attendance date.' });
+      // Backend 3-day rule validation: must be before 12:00 AM on the 3rd calendar day after missed date
+      const now = new Date();
+      const deadline = getExplanationDeadline(date);
+      if (now.getTime() >= deadline.getTime()) {
+        return res.status(400).json({
+          success: false,
+          message: `Explanation deadline expired! Explanations for ${date} had to be submitted before ${formatDeadlineString(deadline)}.`
+        });
       }
-      if (date > nowIST.toISOString().split('T')[0]) {
+      if (date > now.toISOString().split('T')[0]) {
         return res.status(400).json({ success: false, message: 'Cannot submit explanation for a future date.' });
       }
 
@@ -143,6 +156,23 @@ exports.submitExplanation = (req, res) => {
       });
 
       saveMemoryStoreToDisk();
+
+      // Section 7 Audit Log
+      logAuditEvent({
+        userId: doctor._id,
+        userRole: 'DOCTOR',
+        userName: doctor.name,
+        action: 'EXPLANATION_SUBMITTED',
+        recordType: 'Explanation',
+        recordId: createdExplanations.map(e => e._id).join(','),
+        details: {
+          date,
+          checkpointsCount: createdExplanations.length,
+          reason,
+          status: 'PENDING'
+        }
+      });
+
       return res.status(201).json({
         success: true,
         message: `${createdExplanations.length} explanation(s) submitted. Pending Admin review.`,
@@ -300,6 +330,23 @@ exports.reviewExplanation = (req, res) => {
     }
 
     saveMemoryStoreToDisk();
+
+    // Section 7 Audit Log
+    logAuditEvent({
+      userId: req.user.id,
+      userRole: req.user.role || 'ADMIN',
+      userName: req.user.name || 'Admin',
+      action: action === 'APPROVE' ? 'EXPLANATION_APPROVED' : 'EXPLANATION_REJECTED',
+      recordType: 'Explanation',
+      recordId: explanation._id,
+      details: {
+        attendanceId: attendance?._id,
+        doctorId: explanation.doctor,
+        decision: action,
+        adminRemarks: adminRemarks || '',
+        updatedAttendanceStatus: attendance?.status
+      }
+    });
 
     // Send in-app notification to Doctor (No passwords or OTPs)
     memoryStore.notifications.unshift({

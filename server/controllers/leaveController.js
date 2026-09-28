@@ -1,4 +1,5 @@
 const { memoryStore, saveMemoryStoreToDisk } = require('../config/db');
+const { logAuditEvent } = require('../utils/auditLogger');
 
 exports.grantOfficialLeave = (req, res) => {
   const { doctorId, startDate, endDate, leaveNote } = req.body;
@@ -72,6 +73,24 @@ exports.grantOfficialLeave = (req, res) => {
 
   saveMemoryStoreToDisk();
 
+  // Section 7 Audit Log
+  logAuditEvent({
+    userId: req.user.id,
+    userRole: req.user.role || 'ADMIN',
+    userName: req.user.name || 'Admin',
+    action: 'LEAVE_GRANTED',
+    recordType: 'OfficialLeave',
+    recordId: newLeave._id,
+    details: {
+      doctorId,
+      doctorName: doctor.name,
+      startDate,
+      endDate,
+      reconciledAbsencesCount: affectedAttendances.length,
+      leaveNote: leaveNote || ''
+    }
+  });
+
   res.status(201).json({ success: true, message: 'Official leave granted successfully', leave: newLeave });
 };
 
@@ -100,6 +119,22 @@ exports.cancelOfficialLeave = (req, res) => {
   });
 
   saveMemoryStoreToDisk();
+
+  // Section 7 Audit Log
+  logAuditEvent({
+    userId: req.user.id,
+    userRole: req.user.role || 'ADMIN',
+    userName: req.user.name || 'Admin',
+    action: 'LEAVE_REVOKED',
+    recordType: 'OfficialLeave',
+    recordId: leave._id,
+    details: {
+      doctorId: leave.doctor,
+      revertedAbsencesCount: affected.length,
+      action: 'CANCELLED'
+    }
+  });
+
   res.json({ success: true, message: 'Leave cancelled successfully', data: leave });
 };
 
@@ -231,6 +266,24 @@ exports.applyForLeave = (req, res) => {
     });
 
     saveMemoryStoreToDisk();
+
+    // Section 7 Audit Log
+    logAuditEvent({
+      userId: doctorId,
+      userRole: 'DOCTOR',
+      userName: doctor.name,
+      action: 'LEAVE_APPLIED',
+      recordType: 'LeaveApplication',
+      recordId: newApp._id,
+      details: {
+        startDate,
+        endDate,
+        leaveType,
+        reason,
+        status: 'PENDING'
+      }
+    });
+
     res.status(201).json({ success: true, message: 'Leave application submitted. Pending Admin approval.', application: newApp });
   } catch (err) {
     console.error('applyForLeave error:', err);
@@ -358,6 +411,23 @@ exports.reviewLeaveApplication = (req, res) => {
     });
 
     saveMemoryStoreToDisk();
+
+    // Section 7 Audit Log
+    logAuditEvent({
+      userId: req.user.id,
+      userRole: req.user.role || 'ADMIN',
+      userName: req.user.name || 'Admin',
+      action: action === 'APPROVE' ? 'LEAVE_APPROVED' : 'LEAVE_REJECTED',
+      recordType: 'LeaveApplication',
+      recordId: app._id,
+      details: {
+        doctorId: app.doctor,
+        decision: action,
+        adminNote: adminNote || '',
+        approvedLeaveId: approvedLeave ? approvedLeave._id : null
+      }
+    });
+
     res.json({
       success: true,
       message: action === 'APPROVE' ? 'Leave application approved. Official leave created.' : 'Leave application rejected.',
@@ -412,6 +482,23 @@ exports.editGrantedLeave = (req, res) => {
     }
 
     saveMemoryStoreToDisk();
+
+    // Section 7 Audit Log
+    logAuditEvent({
+      userId: req.user.id,
+      userRole: req.user.role || 'ADMIN',
+      userName: req.user.name || 'Admin',
+      action: action === 'REVOKE' ? 'LEAVE_REVOKED' : 'LEAVE_MODIFIED',
+      recordType: 'OfficialLeave',
+      recordId: leave._id,
+      details: {
+        action,
+        doctorId: leave.doctor,
+        startDate: leave.startDate,
+        endDate: leave.endDate
+      }
+    });
+
     res.json({ success: true, message: `Leave ${action === 'REVOKE' ? 'revoked' : 'updated'} successfully.`, leave });
   } catch (err) {
     console.error('editGrantedLeave error:', err);

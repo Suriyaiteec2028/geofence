@@ -10,7 +10,7 @@ import {
 import { Doughnut, Bar } from 'react-chartjs-2';
 import {
   CheckCircle2, XCircle, Calendar, BarChart2, TrendingUp,
-  Navigation, ShieldCheck, AlertCircle, RefreshCw, Clock
+  Navigation, ShieldCheck, AlertCircle, RefreshCw, Clock, CalendarDays
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -47,26 +47,67 @@ const computeStats = (records, rangeStart, rangeEnd, activeLeaves = []) => {
     return activeLeaves.some(l => l.status === 'ACTIVE' && l.startDate <= dateStr && l.endDate >= dateStr);
   };
 
-  // Present = any checkpoint with PRESENT or EXPLANATION_APPROVED on that date
-  const presentDates = new Set(
+  // Distinct working dates (excluding official leave dates and not-applicable windows)
+  const workingDates = new Set(
     filtered
-      .filter(r => (r.status === 'PRESENT' || r.status === 'EXPLANATION_APPROVED') && !isDateOnLeave(r.date))
+      .filter(r => !isDateOnLeave(r.date) && r.status !== 'OFFICIAL_LEAVE' && r.status !== 'NOT_APPLICABLE')
       .map(r => r.date)
   );
 
-  // Absent = dates with ABSENT or PENDING_EXPLANATION that have NO present checkpoint and are NOT on leave
-  const absentDates = new Set(
-    filtered
-      .filter(r => (r.status === 'ABSENT' || r.status === 'PENDING_EXPLANATION' || r.status === 'EXPLANATION_REJECTED') && !presentDates.has(r.date) && !isDateOnLeave(r.date))
-      .map(r => r.date)
-  );
+  // 1. Total eligible working days
+  const totalWorkingDays = workingDates.size;
 
-  // Requirement 3.3: Exclude approved leave dates from working days total
-  const totalWorkingDays = presentDates.size + absentDates.size;
-  const present = presentDates.size;
-  const absent = absentDates.size;
-  const pct = totalWorkingDays > 0 ? Math.round((present / totalWorkingDays) * 1000) / 10 : 0;
-  return { totalWorkingDays, present, absent, pct, filtered };
+  // Window-level counts (Section 5.3)
+  // Eligible windows = all windows within working days excluding official leave
+  const eligibleWindows = filtered.filter(r => !isDateOnLeave(r.date) && r.status !== 'OFFICIAL_LEAVE' && r.status !== 'NOT_APPLICABLE');
+  const totalRequiredWindows = eligibleWindows.length;
+
+  // Present windows: PRESENT or EXPLANATION_APPROVED / PRESENT_APPROVED
+  const presentWindows = eligibleWindows.filter(r => r.status === 'PRESENT' || r.status === 'EXPLANATION_APPROVED' || r.status === 'PRESENT_APPROVED').length;
+
+  // Absent windows: ABSENT or EXPLANATION_REJECTED
+  const absentWindows = eligibleWindows.filter(r => r.status === 'ABSENT' || r.status === 'EXPLANATION_REJECTED').length;
+
+  // Pending explanation windows: PENDING_EXPLANATION / EXPLANATION_PENDING
+  const pendingExplanationWindows = eligibleWindows.filter(r => r.status === 'PENDING_EXPLANATION' || r.status === 'EXPLANATION_PENDING').length;
+
+  // Approved explanation windows: EXPLANATION_APPROVED / PRESENT_APPROVED
+  const approvedExplanationWindows = eligibleWindows.filter(r => r.status === 'EXPLANATION_APPROVED' || r.status === 'PRESENT_APPROVED').length;
+
+  // Official leave days
+  const leaveDays = new Set(
+    activeLeaves
+      .filter(l => l.status === 'ACTIVE' && !(l.endDate < rangeStart || l.startDate > rangeEnd))
+      .flatMap(l => {
+        const dates = [];
+        const curr = new Date(Math.max(new Date(l.startDate), new Date(rangeStart)));
+        const end = new Date(Math.min(new Date(l.endDate), new Date(rangeEnd)));
+        while (curr <= end) {
+          dates.push(curr.toISOString().split('T')[0]);
+          curr.setDate(curr.getDate() + 1);
+        }
+        return dates;
+      })
+  ).size;
+
+  // Attendance percentage (Section 5.3):
+  // Formula: Present Windows / Total Required Eligible Windows * 100
+  // Note: Pending explanations are in the denominator and not counted as Present until approved
+  const pct = totalRequiredWindows > 0
+    ? Math.round((presentWindows / totalRequiredWindows) * 1000) / 10
+    : 0;
+
+  return {
+    totalWorkingDays,
+    totalRequiredWindows,
+    presentWindows,
+    absentWindows,
+    pendingExplanationWindows,
+    approvedExplanationWindows,
+    officialLeaveDays: leaveDays,
+    pct,
+    filtered
+  };
 };
 
 const getLast14DaysTrend = (records, activeLeaves = []) => {
@@ -191,11 +232,11 @@ export const DoctorDashboard = () => {
 
   // ── Chart data ─────────────────────────────────────────────────────────
   const donutData = {
-    labels: ['Present', 'Absent'],
+    labels: ['Present', 'Absent', 'Pending Explanation'],
     datasets: [{
-      data: [stats.present, stats.absent],
-      backgroundColor: ['rgba(16,185,129,0.8)', 'rgba(239,68,68,0.7)'],
-      borderColor: ['rgba(16,185,129,1)', 'rgba(239,68,68,1)'],
+      data: [stats.presentWindows, stats.absentWindows, stats.pendingExplanationWindows],
+      backgroundColor: ['rgba(16,185,129,0.8)', 'rgba(239,68,68,0.7)', 'rgba(245,158,11,0.7)'],
+      borderColor: ['rgba(16,185,129,1)', 'rgba(239,68,68,1)', 'rgba(245,158,11,1)'],
       borderWidth: 2,
       hoverOffset: 6
     }]
@@ -206,7 +247,7 @@ export const DoctorDashboard = () => {
     cutout: '72%',
     plugins: {
       legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 }, padding: 16 } },
-      tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.parsed} day${ctx.parsed !== 1 ? 's' : ''}` } }
+      tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.parsed} window${ctx.parsed !== 1 ? 's' : ''}` } }
     }
   };
 
@@ -242,10 +283,15 @@ export const DoctorDashboard = () => {
     }
   };
 
+  // Section 5.3: 8 Metrics
   const statCards = [
     { label: 'Total Working Days', value: stats.totalWorkingDays, icon: Calendar, color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' },
-    { label: 'Present Days', value: stats.present, icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
-    { label: 'Absent Days', value: stats.absent, icon: XCircle, color: 'text-rose-400', bg: 'bg-rose-500/10 border-rose-500/20' },
+    { label: 'Required Windows', value: stats.totalRequiredWindows, icon: Clock, color: 'text-indigo-400', bg: 'bg-indigo-500/10 border-indigo-500/20' },
+    { label: 'Present Windows', value: stats.presentWindows, icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
+    { label: 'Absent Windows', value: stats.absentWindows, icon: XCircle, color: 'text-rose-400', bg: 'bg-rose-500/10 border-rose-500/20' },
+    { label: 'Pending Explanations', value: stats.pendingExplanationWindows, icon: AlertCircle, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20' },
+    { label: 'Approved Explanations', value: stats.approvedExplanationWindows, icon: ShieldCheck, color: 'text-teal-400', bg: 'bg-teal-500/10 border-teal-500/20' },
+    { label: 'Official Leave Days', value: stats.officialLeaveDays, icon: CalendarDays, color: 'text-sky-400', bg: 'bg-sky-500/10 border-sky-500/20' },
     { label: 'Attendance %', value: `${stats.pct}%`, icon: TrendingUp, color: stats.pct >= 75 ? 'text-emerald-400' : 'text-amber-400', bg: stats.pct >= 75 ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-amber-500/10 border-amber-500/20' }
   ];
 
@@ -269,23 +315,38 @@ export const DoctorDashboard = () => {
             Assigned Hospital: <strong className="text-slate-200">{phc?.name || 'Primary Health Center'}</strong> | Shift: {formatTime12h(doctor?.shiftStart)} – {formatTime12h(doctor?.shiftEnd)}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={() => navigate('/doctor/mark')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg transition-all ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg transition-all ${
               leaveInfo?.currentLeave
                 ? 'bg-blue-600/30 text-blue-300 border border-blue-500/30'
                 : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
             }`}
           >
-            <Navigation className="w-4 h-4" />
+            <Navigation className="w-3.5 h-3.5" />
             {leaveInfo?.currentLeave ? '🌴 On Leave Today' : 'Mark Attendance'}
           </button>
           <button
-            onClick={() => navigate('/doctor/explanation')}
-            className="px-3.5 py-2 rounded-xl bg-amber-600/20 text-amber-300 hover:bg-amber-600/30 border border-amber-500/30 text-xs font-semibold flex items-center gap-1.5"
+            onClick={() => navigate('/doctor/history')}
+            className="px-3.5 py-2 rounded-xl bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700 text-xs font-semibold flex items-center gap-1.5"
           >
-            Submit Absence Explanation
+            <Clock className="w-3.5 h-3.5 text-blue-400" />
+            Attendance History
+          </button>
+          <button
+            onClick={() => navigate('/doctor/explanation')}
+            className="px-3 py-2 rounded-xl bg-amber-600/20 text-amber-300 hover:bg-amber-600/30 border border-amber-500/30 text-xs font-semibold flex items-center gap-1.5"
+          >
+            <AlertCircle className="w-3.5 h-3.5" />
+            Explain Attendance
+          </button>
+          <button
+            onClick={() => navigate('/doctor/leave')}
+            className="px-3 py-2 rounded-xl bg-blue-600/20 text-blue-300 hover:bg-blue-600/30 border border-blue-500/30 text-xs font-semibold flex items-center gap-1.5"
+          >
+            <CalendarDays className="w-3.5 h-3.5" />
+            Apply for Leave
           </button>
         </div>
       </div>
@@ -374,16 +435,21 @@ export const DoctorDashboard = () => {
       {histLoading ? (
         <LoadingSkeleton type="card" count={4} />
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {statCards.map((card) => (
-            <div key={card.label} className={`p-5 rounded-2xl bg-[#1E293B] border ${card.bg} flex flex-col gap-3`}>
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{card.label}</span>
-                <card.icon className={`w-4 h-4 ${card.color}`} />
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {statCards.map((card) => (
+              <div key={card.label} className={`p-5 rounded-2xl bg-[#1E293B] border ${card.bg} flex flex-col gap-3`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{card.label}</span>
+                  <card.icon className={`w-4 h-4 ${card.color}`} />
+                </div>
+                <div className={`text-3xl font-extrabold ${card.color}`}>{card.value}</div>
               </div>
-              <div className={`text-3xl font-extrabold ${card.color}`}>{card.value}</div>
-            </div>
-          ))}
+            ))}
+          </div>
+          <p className="text-[11px] text-slate-400 italic px-1">
+            * Attendance % = Present Windows / Total Required Windows (excluding official leave). Pending explanations are included in the denominator and count as Present once approved by Admin.
+          </p>
         </div>
       )}
 

@@ -1,6 +1,20 @@
 const { memoryStore, saveMemoryStoreToDisk } = require('../config/db');
 const { calculateHaversineDistance } = require('../utils/haversine');
 const { evaluateCurrentShiftState } = require('../utils/shiftEngine');
+const { logAuditEvent } = require('../utils/auditLogger');
+
+// Calculates deadline as the start of the third calendar day after the missed attendance date (12:00 AM)
+function getExplanationDeadline(missedDateStr) {
+  const [y, m, d] = missedDateStr.split('-').map(Number);
+  return new Date(y, m - 1, d + 3, 0, 0, 0, 0);
+}
+
+function formatDeadlineString(dateObj) {
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  const month = dateObj.toLocaleString('en-IN', { month: 'short' });
+  const year = dateObj.getFullYear();
+  return `${day} ${month} ${year}, 12:00 AM (Midnight)`;
+}
 
 exports.getDoctorShiftStatus = (req, res) => {
   try {
@@ -98,38 +112,18 @@ exports.getDoctorDateWindows = (req, res) => {
       String(a.doctor) === String(doctorId) && a.date === targetDate
     );
 
-    // Calculate Strict 3-Day Window Rule (e.g. today 26/08/2026 -> allowed range 23/08/2026 to 26/08/2026)
-    let minAllowedDateObj = new Date(nowObj);
-    minAllowedDateObj.setDate(nowObj.getDate() - 3);
-    minAllowedDateObj.setHours(0, 0, 0, 0);
-
+    const deadlineObj = getExplanationDeadline(targetDate);
+    const isDeadlinePassed = nowObj.getTime() >= deadlineObj.getTime();
     const docCreatedObj = new Date(doctor.createdAt);
-    docCreatedObj.setHours(0, 0, 0, 0);
-
-    if (docCreatedObj > minAllowedDateObj) {
-      minAllowedDateObj = docCreatedObj;
-    }
-
-    const minAllowedDateStr = minAllowedDateObj.toISOString().split('T')[0];
     const doctorActiveDateStr = docCreatedObj.toISOString().split('T')[0];
+    const isBeforeAccountCreation = targetDate < doctorActiveDateStr;
+    const isExpired = isDeadlinePassed || isBeforeAccountCreation;
 
-    let isOnLeave = false;
-    let leaveNote = '';
-    const leaves = memoryStore.leaves || [];
-    const activeLeave = leaves.find(l => 
-      String(l.doctor) === String(doctorId) && 
-      l.status === 'ACTIVE' && 
-      l.startDate <= targetDate && 
-      l.endDate >= targetDate
-    );
-
-    if (activeLeave) {
-      isOnLeave = true;
-      leaveNote = activeLeave.leaveNote || '';
-    }
-
-    const targetDateObj = new Date(targetDate + 'T00:00:00');
-    const isExpired = targetDateObj < minAllowedDateObj;
+    // Minimum allowed date is 2 days before today (since 3 days before expired at 12:00 AM)
+    const minAllowedDateObj = new Date(nowObj);
+    minAllowedDateObj.setDate(nowObj.getDate() - 2);
+    minAllowedDateObj.setHours(0, 0, 0, 0);
+    const minAllowedDateStr = (docCreatedObj > minAllowedDateObj ? docCreatedObj : minAllowedDateObj).toISOString().split('T')[0];
 
     // RULE 2.3: System must never display attendance windows from before doctor's account was created
     if (targetDate < doctorActiveDateStr) {
@@ -139,6 +133,8 @@ exports.getDoctorDateWindows = (req, res) => {
         minAllowedDate: minAllowedDateStr,
         maxAllowedDate: todayStr,
         doctorActiveDate: doctorActiveDateStr,
+        explanationDeadlineISO: deadlineObj.toISOString(),
+        explanationDeadlineFormatted: formatDeadlineString(deadlineObj),
         isOnLeave,
         leaveNote,
         isExpired: true,
@@ -215,6 +211,8 @@ exports.getDoctorDateWindows = (req, res) => {
       minAllowedDate: minAllowedDateStr,
       maxAllowedDate: todayStr,
       doctorActiveDate: doctorActiveDateStr,
+      explanationDeadlineISO: deadlineObj.toISOString(),
+      explanationDeadlineFormatted: formatDeadlineString(deadlineObj),
       isOnLeave,
       leaveNote,
       isExpired,
@@ -341,6 +339,25 @@ exports.markAttendance = (req, res) => {
 
     saveMemoryStoreToDisk();
 
+    // Section 7 Audit Log
+    logAuditEvent({
+      userId: doctor._id,
+      userRole: 'DOCTOR',
+      userName: doctor.name,
+      action: 'ATTENDANCE_MARKED',
+      recordType: 'Attendance',
+      recordId: attRecord._id,
+      details: {
+        date: todayStr,
+        checkpointTime: activeWin.windowStartFormatted,
+        windowLabel: activeWin.windowLabel,
+        distanceMeters,
+        allowedRadius: phc.radius,
+        withinGeofence: true,
+        status: 'PRESENT'
+      }
+    });
+
     res.json({
       success: true,
       message: `Attendance marked successfully for window (${activeWin.windowLabel})!`,
@@ -361,15 +378,40 @@ exports.getDoctorAttendanceLogs = (req, res) => {
       .map(a => {
         const phc = memoryStore.phcs.find(p => String(p._id) === String(a.phc));
         const docUser = memoryStore.users.find(u => String(u._id) === String(a.doctor));
+        const explanation = (memoryStore.explanations || []).find(e => 
+          String(e.attendance) === String(a._id) ||
+          (String(e.doctor) === String(a.doctor) && e.date === a.date && e.windowLabel === a.windowLabel)
+        );
+        const leave = (memoryStore.leaves || []).find(l => 
+          String(l.doctor) === String(a.doctor) && 
+          l.status === 'ACTIVE' && 
+          l.startDate <= a.date && 
+          l.endDate >= a.date
+        );
+
         return {
           ...a,
           phcName: phc ? phc.name : 'Primary Health Center',
           doctorName: docUser ? docUser.name : 'Medical Doctor',
-          doctorSpecialization: docUser ? docUser.specialization : 'Medical Officer'
+          doctorSpecialization: docUser ? docUser.specialization : 'Medical Officer',
+          explanation: explanation ? {
+            _id: explanation._id,
+            status: explanation.status,
+            reason: explanation.reason,
+            remarks: explanation.remarks,
+            adminRemarks: explanation.adminRemarks,
+            createdAt: explanation.createdAt
+          } : null,
+          leave: leave ? {
+            _id: leave._id,
+            leaveType: leave.leaveType || 'Official Leave',
+            leaveNote: leave.leaveNote
+          } : null
         };
-      });
+      })
+      .sort((a, b) => (b.date === a.date ? (b.checkpointTime || '').localeCompare(a.checkpointTime || '') : b.date.localeCompare(a.date)));
 
-    res.json({ success: true, attendances: logs });
+    res.json({ success: true, count: logs.length, attendances: logs });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Error fetching doctor attendance logs' });
   }
@@ -380,16 +422,40 @@ exports.getAllAttendanceRecords = (req, res) => {
     const logs = memoryStore.attendances.map(a => {
       const phc = memoryStore.phcs.find(p => String(p._id) === String(a.phc));
       const docUser = memoryStore.users.find(u => String(u._id) === String(a.doctor));
+      const explanation = (memoryStore.explanations || []).find(e => 
+        String(e.attendance) === String(a._id) ||
+        (String(e.doctor) === String(a.doctor) && e.date === a.date && e.windowLabel === a.windowLabel)
+      );
+      const leave = (memoryStore.leaves || []).find(l => 
+        String(l.doctor) === String(a.doctor) && 
+        l.status === 'ACTIVE' && 
+        l.startDate <= a.date && 
+        l.endDate >= a.date
+      );
+
       return {
         ...a,
         phcName: phc ? phc.name : 'Primary Health Center',
         doctorName: docUser ? docUser.name : 'Medical Doctor',
         doctorSpecialization: docUser ? docUser.specialization : 'Medical Officer',
-        gender: docUser ? docUser.gender : 'Male'
+        gender: docUser ? docUser.gender : 'Male',
+        explanation: explanation ? {
+          _id: explanation._id,
+          status: explanation.status,
+          reason: explanation.reason,
+          remarks: explanation.remarks,
+          adminRemarks: explanation.adminRemarks,
+          createdAt: explanation.createdAt
+        } : null,
+        leave: leave ? {
+          _id: leave._id,
+          leaveType: leave.leaveType || 'Official Leave',
+          leaveNote: leave.leaveNote
+        } : null
       };
-    });
+    }).sort((a, b) => (b.date === a.date ? (b.checkpointTime || '').localeCompare(a.checkpointTime || '') : b.date.localeCompare(a.date)));
 
-    res.json({ success: true, attendances: logs });
+    res.json({ success: true, count: logs.length, attendances: logs });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Error fetching all attendance records' });
   }

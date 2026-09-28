@@ -30,6 +30,7 @@ app.use('/api/leaves', require('./routes/leaveRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/settings', require('./routes/settingsRoutes'));
 app.use('/api/ai', require('./routes/aiRoutes'));
+app.use('/api/audit-logs', require('./routes/auditRoutes'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
