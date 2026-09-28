@@ -255,33 +255,54 @@ export const MarkAttendance = () => {
   };
 
   const handleMarkAttendance = async () => {
-    if (!navigator.geolocation) { addToast('Geolocation capability required.', 'danger'); return; }
     setMarking(true);
-    addToast('Acquiring high-precision GPS coordinates...', 'info');
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const latitude = pos.coords.latitude;
-        const longitude = pos.coords.longitude;
-        const accuracy = pos.coords.accuracy ? Math.round(pos.coords.accuracy * 10) / 10 : null;
-        setGpsLocation({ latitude, longitude, accuracy, timestamp: new Date().toLocaleTimeString() });
-        try {
-          const res = await axios.post('/api/attendance/mark', { latitude, longitude });
-          if (res.data.success) {
-            addToast(res.data.message, 'success', 'Attendance Marked!');
-            setDistanceInfo({ distance: res.data.attendance.distanceMeters, isInside: true });
-            fetchShiftStatus();
-            // Broadcast event → Dashboard & History will auto-refresh
-            window.dispatchEvent(new CustomEvent('attendance-marked'));
+
+    const submitCoords = async (latitude, longitude) => {
+      try {
+        const res = await axios.post('/api/attendance/mark', { latitude, longitude });
+        if (res.data.success) {
+          addToast(res.data.message, 'success', 'Attendance Marked!');
+          setDistanceInfo({ distance: res.data.attendance.distanceMeters, isInside: true });
+          fetchShiftStatus();
+          // Broadcast event → Dashboard & History will auto-refresh
+          window.dispatchEvent(new CustomEvent('attendance-marked'));
+        }
+      } catch (err) {
+        const errData = err.response?.data;
+        addToast(errData?.message || 'Attendance mark failed', 'danger', 'Rejection Alert');
+        if (errData?.distanceMeters !== undefined) setDistanceInfo({ distance: errData.distanceMeters, isInside: false });
+      } finally {
+        setMarking(false);
+      }
+    };
+
+    if (navigator.geolocation) {
+      addToast('Acquiring high-precision GPS coordinates...', 'info');
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const latitude = pos.coords.latitude;
+          const longitude = pos.coords.longitude;
+          const accuracy = pos.coords.accuracy ? Math.round(pos.coords.accuracy * 10) / 10 : null;
+          setGpsLocation({ latitude, longitude, accuracy, timestamp: new Date().toLocaleTimeString() });
+          await submitCoords(latitude, longitude);
+        },
+        async (err) => {
+          if (gpsLocation?.latitude && gpsLocation?.longitude) {
+            addToast(`Using previously detected GPS location (${err.message})`, 'info');
+            await submitCoords(gpsLocation.latitude, gpsLocation.longitude);
+          } else {
+            setMarking(false);
+            addToast(`GPS location failed: ${err.message}. Please click 'Fetch My Location' first.`, 'danger');
           }
-        } catch (err) {
-          const errData = err.response?.data;
-          addToast(errData?.message || 'Attendance mark failed', 'danger', 'Rejection Alert');
-          if (errData?.distanceMeters !== undefined) setDistanceInfo({ distance: errData.distanceMeters, isInside: false });
-        } finally { setMarking(false); }
-      },
-      (err) => { setMarking(false); addToast(`GPS location failed: ${err.message}`, 'danger'); },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+      );
+    } else if (gpsLocation?.latitude && gpsLocation?.longitude) {
+      await submitCoords(gpsLocation.latitude, gpsLocation.longitude);
+    } else {
+      setMarking(false);
+      addToast('Geolocation capability required. Please enable location permissions.', 'danger');
+    }
   };
 
   if (loading) return <LoadingSkeleton type="card" count={3} />;
@@ -312,12 +333,19 @@ export const MarkAttendance = () => {
   const doctor = shiftData?.doctor;
   const phc = shiftData?.phc;
   const shiftState = shiftData?.shiftState;
+
+  // Safely derive active checkpoint window and shift states
+  const activeWin = liveState?.activeWindow || shiftState?.activeWindow || null;
+  const nextWin = liveState?.nextWindow || shiftState?.nextWindow || null;
+  const isWindowOpen = Boolean(liveState?.isWindowOpen ?? shiftState?.isWindowOpen);
+  const isShiftCompleted = Boolean(liveState?.isShiftCompleted ?? shiftState?.isShiftCompleted);
+
   const currentWindowAttendance = shiftData?.todayAttendances?.find(
     a => activeWin && (a.checkpointTime === activeWin.windowStartFormatted || a.windowLabel === activeWin.windowLabel)
   );
   const isAlreadyMarkedPresent = currentWindowAttendance?.status === 'PRESENT' || currentWindowAttendance?.status === 'EXPLANATION_APPROVED';
-  const isOutsideGeofence = distanceInfo && !distanceInfo.isInside;
-  const isMarkDisabled = !isWindowOpen || marking || isAlreadyMarkedPresent || !!leaveInfo?.currentLeave || isOutsideGeofence;
+  const isOutsideGeofence = Boolean(distanceInfo && !distanceInfo.isInside);
+  const isMarkDisabled = !isWindowOpen || marking || isAlreadyMarkedPresent || Boolean(leaveInfo?.currentLeave) || isOutsideGeofence;
 
   return (
     <div className="space-y-6">
