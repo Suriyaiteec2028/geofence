@@ -21,6 +21,7 @@ const memoryStore = {
   attendances: [],
   explanations: [],
   leaves: [],
+  leaveApplications: [],
   settings: {},
   notifications: [],
   isInMemoryMode: true
@@ -35,6 +36,7 @@ function saveMemoryStoreToDisk() {
       attendances: memoryStore.attendances,
       explanations: memoryStore.explanations,
       leaves: memoryStore.leaves,
+      leaveApplications: memoryStore.leaveApplications,
       settings: memoryStore.settings,
       notifications: memoryStore.notifications
     };
@@ -100,6 +102,7 @@ async function initDb() {
         memoryStore.attendances = parsed.attendances || [];
         memoryStore.explanations = parsed.explanations || [];
         memoryStore.leaves = parsed.leaves || [];
+        memoryStore.leaveApplications = parsed.leaveApplications || [];
         memoryStore.settings = parsed.settings || {};
         memoryStore.notifications = parsed.notifications || [];
         loadedFromDisk = true;

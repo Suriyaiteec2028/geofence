@@ -131,6 +131,21 @@ exports.getDoctorDateWindows = (req, res) => {
     const targetDateObj = new Date(targetDate + 'T00:00:00');
     const isExpired = targetDateObj < minAllowedDateObj;
 
+    // RULE 2.3: System must never display attendance windows from before doctor's account was created
+    if (targetDate < doctorActiveDateStr) {
+      return res.json({
+        success: true,
+        date: targetDate,
+        minAllowedDate: minAllowedDateStr,
+        maxAllowedDate: todayStr,
+        doctorActiveDate: doctorActiveDateStr,
+        isOnLeave,
+        leaveNote,
+        isExpired: true,
+        windows: []
+      });
+    }
+
     const isPastDate = targetDate < todayStr;
     const isTodayDate = targetDate === todayStr;
     const isFutureDate = targetDate > todayStr;
@@ -158,6 +173,9 @@ exports.getDoctorDateWindows = (req, res) => {
         }
       }
 
+      // Check if window occurred before doctor account creation (middle-of-day onboarding rule)
+      const isBeforeCreation = docCreatedObj && (new Date(doctor.createdAt) > windowEndObj);
+
       const att = dateAttendances.find(a => 
         a.checkpointTime === w.windowStartFormatted || a.windowLabel === w.windowLabel
       );
@@ -165,6 +183,8 @@ exports.getDoctorDateWindows = (req, res) => {
       let status = 'FUTURE';
       if (att) {
         status = att.status;
+      } else if (isBeforeCreation) {
+        status = 'NOT_APPLICABLE';
       } else if (isPastWindow) {
         status = 'ABSENT';
       } else if (isOpenWindow) {
@@ -174,7 +194,8 @@ exports.getDoctorDateWindows = (req, res) => {
       }
 
       // STRICT RULE: ONLY PAST CLOSED MISSED WINDOWS WITHIN 3 DAYS ARE SELECTABLE!
-      const isSelectable = !isExpired && isPastWindow && (status === 'ABSENT' || status === 'PENDING_EXPLANATION');
+      // Cannot select windows before account creation or already present/on-leave
+      const isSelectable = !isExpired && !isBeforeCreation && !isOnLeave && isPastWindow && (status === 'ABSENT' || status === 'PENDING_EXPLANATION');
 
       return {
         ...w,
@@ -182,6 +203,7 @@ exports.getDoctorDateWindows = (req, res) => {
         isPastWindow,
         isOpenWindow,
         isFutureWindow,
+        isBeforeCreation,
         attendanceId: att ? att._id : null,
         isSelectable
       };
@@ -224,6 +246,21 @@ exports.markAttendance = (req, res) => {
     const phc = memoryStore.phcs.find(p => String(p._id) === String(doctor.assignedPHC));
     if (!phc) {
       return res.status(400).json({ success: false, message: 'No hospital/PHC assigned to doctor.' });
+    }
+
+    // Check if doctor is on official leave today
+    const todayCheckStr = new Date().toISOString().split('T')[0];
+    const isOnLeaveToday = (memoryStore.leaves || []).some(l =>
+      String(l.doctor) === String(doctor._id) &&
+      l.status === 'ACTIVE' &&
+      l.startDate <= todayCheckStr &&
+      l.endDate >= todayCheckStr
+    );
+    if (isOnLeaveToday) {
+      return res.status(400).json({
+        success: false,
+        message: 'You are on Official Leave today. Attendance marking is not required on leave days.'
+      });
     }
 
     const intervalMins = memoryStore.settings.checkpointIntervalMinutes || 60;

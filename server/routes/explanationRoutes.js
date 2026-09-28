@@ -10,4 +10,6 @@ router.post('/submit', requireRole(['DOCTOR']), upload.single('proofFile'), expl
 router.get('/pending', requireRole(['CMO', 'ADMIN']), explanationController.getPendingExplanations);
 router.patch('/:id/review', requireRole(['CMO', 'ADMIN']), explanationController.reviewExplanation);
 
+router.get('/my', requireRole(['DOCTOR']), explanationController.getDoctorExplanations);
+
 module.exports = router;

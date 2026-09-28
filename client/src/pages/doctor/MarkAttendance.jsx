@@ -312,10 +312,12 @@ export const MarkAttendance = () => {
   const doctor = shiftData?.doctor;
   const phc = shiftData?.phc;
   const shiftState = shiftData?.shiftState;
-  const activeWin = liveState ? liveState.activeWindow : shiftState?.activeWindow;
-  const nextWin = liveState ? liveState.nextWindow : shiftState?.nextWindow;
-  const isWindowOpen = liveState ? liveState.isWindowOpen : shiftState?.isWindowOpen;
-  const isShiftCompleted = liveState ? liveState.isShiftCompleted : shiftState?.isShiftCompleted;
+  const currentWindowAttendance = shiftData?.todayAttendances?.find(
+    a => activeWin && (a.checkpointTime === activeWin.windowStartFormatted || a.windowLabel === activeWin.windowLabel)
+  );
+  const isAlreadyMarkedPresent = currentWindowAttendance?.status === 'PRESENT' || currentWindowAttendance?.status === 'EXPLANATION_APPROVED';
+  const isOutsideGeofence = distanceInfo && !distanceInfo.isInside;
+  const isMarkDisabled = !isWindowOpen || marking || isAlreadyMarkedPresent || !!leaveInfo?.currentLeave || isOutsideGeofence;
 
   return (
     <div className="space-y-6">
@@ -350,21 +352,48 @@ export const MarkAttendance = () => {
 
       {/* Leave notice */}
       {leaveInfo && (leaveInfo.currentLeave || leaveInfo.upcomingLeave) && (
-        <div className="mb-4 bg-gradient-to-r from-blue-900/40 to-indigo-900/40 rounded-xl p-4 border border-blue-700/30">
-          <h3 className="text-sm font-semibold text-blue-300 flex items-center gap-2 mb-2">
+        <div className="mb-4 bg-gradient-to-r from-blue-900/50 via-indigo-900/40 to-slate-900 rounded-3xl p-6 border border-blue-500/30 shadow-2xl space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-blue-300 uppercase tracking-wider">
             <Calendar className="w-4 h-4" /> Official Leave Status
-          </h3>
+          </div>
           {leaveInfo.currentLeave && (
-            <div className="bg-blue-800/30 rounded-lg p-3 mb-2">
-              <span className="inline-block px-2 py-0.5 text-xs font-bold bg-blue-500 text-white rounded-full mb-1">ON LEAVE TODAY</span>
-              <p className="text-sm text-slate-200">{leaveInfo.currentLeave.startDate} to {leaveInfo.currentLeave.endDate}</p>
-              {leaveInfo.currentLeave.leaveNote && <p className="text-xs text-slate-400 mt-1">Note: {leaveInfo.currentLeave.leaveNote}</p>}
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="px-3 py-1 text-xs font-extrabold bg-blue-500 text-white rounded-full flex items-center gap-1 shadow-lg shadow-blue-500/30">
+                  🌴 You are on Official Leave Today
+                </span>
+                <span className="px-2.5 py-0.5 text-[11px] font-bold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  Status: Approved
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1 text-xs text-slate-300">
+                <div className="p-3 rounded-xl bg-slate-900/70 border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold">Leave Period</span>
+                  <span className="text-white font-semibold">{leaveInfo.currentLeave.startDate} to {leaveInfo.currentLeave.endDate}</span>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-900/70 border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold">Leave Type</span>
+                  <span className="text-white font-semibold">{leaveInfo.currentLeave.leaveType || 'Official Leave'}</span>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-900/70 border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold">Admin Note</span>
+                  <span className="text-slate-300">{leaveInfo.currentLeave.leaveNote || 'Approved by Administration'}</span>
+                </div>
+              </div>
+              <p className="text-[11px] text-blue-300/80">
+                Attendance requirements are excused for today. Attendance windows are not required on approved leave days.
+              </p>
             </div>
           )}
           {leaveInfo.upcomingLeave && !leaveInfo.currentLeave && (
-            <div className="bg-indigo-800/30 rounded-lg p-3">
-              <span className="inline-block px-2 py-0.5 text-xs font-bold bg-indigo-500 text-white rounded-full mb-1">UPCOMING LEAVE</span>
-              <p className="text-sm text-slate-200">{leaveInfo.upcomingLeave.startDate} to {leaveInfo.upcomingLeave.endDate}</p>
+            <div className="bg-indigo-800/30 rounded-2xl p-4 border border-indigo-700/30">
+              <span className="inline-block px-2.5 py-0.5 text-xs font-bold bg-indigo-500 text-white rounded-full mb-1">
+                Upcoming Approved Leave
+              </span>
+              <p className="text-sm text-slate-200 mt-1">
+                {leaveInfo.upcomingLeave.startDate} to {leaveInfo.upcomingLeave.endDate}
+                {leaveInfo.upcomingLeave.leaveNote && ` · Note: ${leaveInfo.upcomingLeave.leaveNote}`}
+              </p>
             </div>
           )}
         </div>
@@ -383,9 +412,15 @@ export const MarkAttendance = () => {
                 {isWindowOpen ? activeWin?.windowLabel : nextWin ? nextWin.windowLabel : isShiftCompleted ? 'Duty Completed for Today' : 'Window Currently Closed'}
               </h3>
             </div>
-            <div className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border ${isWindowOpen ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 animate-pulse' : 'bg-rose-500/20 text-rose-300 border-rose-500/40'}`}>
-              {isWindowOpen ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-              {isWindowOpen ? 'ATTENDANCE WINDOW OPEN' : 'ATTENDANCE CLOSED'}
+            <div className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border ${
+              isAlreadyMarkedPresent
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                : isWindowOpen
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 animate-pulse'
+                : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+            }`}>
+              {isAlreadyMarkedPresent ? <CheckCircle2 className="w-4 h-4" /> : isWindowOpen ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+              {isAlreadyMarkedPresent ? 'ATTENDANCE RECORDED: PRESENT' : isWindowOpen ? 'ATTENDANCE WINDOW OPEN' : 'ATTENDANCE CLOSED'}
             </div>
           </div>
 
@@ -407,14 +442,40 @@ export const MarkAttendance = () => {
           <div className="space-y-3">
             <button
               onClick={handleMarkAttendance}
-              disabled={!isWindowOpen || marking}
-              className={`w-full py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-2xl ${isWindowOpen ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30 animate-pulse' : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'}`}
+              disabled={isMarkDisabled}
+              className={`w-full py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-2xl ${
+                leaveInfo?.currentLeave
+                  ? 'bg-blue-600/30 text-blue-300 border border-blue-500/30 cursor-not-allowed'
+                  : isAlreadyMarkedPresent
+                  ? 'bg-emerald-700/40 text-emerald-300 border border-emerald-500/30 cursor-not-allowed'
+                  : isOutsideGeofence
+                  ? 'bg-rose-950/40 text-rose-300 border border-rose-500/40 cursor-not-allowed'
+                  : isWindowOpen
+                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30 animate-pulse'
+                  : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+              }`}
             >
               <Navigation className="w-5 h-5" />
-              {marking ? 'Verifying Geofence & Marking...' : isWindowOpen ? 'MARK ATTENDANCE NOW' : 'Attendance Window Closed'}
+              {marking
+                ? 'Verifying Geofence & Marking...'
+                : leaveInfo?.currentLeave
+                ? '🌴 You are on Official Leave Today — Attendance Not Required'
+                : isAlreadyMarkedPresent
+                ? '✓ Attendance Already Marked (Present)'
+                : isOutsideGeofence
+                ? '✕ Outside Geofence — Attendance Cannot Be Marked'
+                : isWindowOpen
+                ? 'MARK PRESENT NOW'
+                : 'Attendance Window Closed'}
             </button>
             <p className="text-[11px] text-slate-400 text-center">
-              Requires physical presence within hospital radius ({shiftData?.phcRadius || 150}m) during scheduled 5-minute checkpoint window.
+              {leaveInfo?.currentLeave
+                ? 'Official leave active today. Checkpoints are excused.'
+                : isAlreadyMarkedPresent
+                ? 'Attendance for this checkpoint hour is recorded and verified in database.'
+                : isOutsideGeofence
+                ? `You must be within ${shiftData?.phcRadius || 150}m of the hospital to mark attendance.`
+                : `Requires physical presence within hospital radius (${shiftData?.phcRadius || 150}m) during scheduled 5-minute checkpoint window.`}
             </p>
           </div>
         </div>
@@ -490,9 +551,22 @@ export const MarkAttendance = () => {
           )}
 
           {distanceInfo && (
-            <div className={`p-3 rounded-xl text-xs font-semibold flex items-center justify-between ${distanceInfo.isInside ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'}`}>
-              <span>Status: <strong>{distanceInfo.isInside ? 'Inside Geofence' : 'Outside Geofence'}</strong></span>
-              <span>{distanceInfo.isInside ? '✓ Eligible for Attendance' : '✕ Out of Radius'}</span>
+            <div className={`p-3.5 rounded-xl text-xs font-semibold flex items-center justify-between border ${
+              distanceInfo.isInside
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+            }`}>
+              <div className="flex items-center gap-2">
+                <span className={`w-2.5 h-2.5 rounded-full ${distanceInfo.isInside ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
+                <span>
+                  {distanceInfo.isInside
+                    ? 'You are inside the hospital geofence'
+                    : 'You are outside the hospital geofence. Attendance cannot be marked.'}
+                </span>
+              </div>
+              <span className="font-mono text-[11px] font-bold">
+                {distanceInfo.isInside ? '✓ Eligible' : `${distanceInfo.distance}m (Max: ${shiftData?.phcRadius || 150}m)`}
+              </span>
             </div>
           )}
 

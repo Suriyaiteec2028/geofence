@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { 
   LayoutDashboard, Building2, Users, MapPin, ClipboardCheck, 
-  FileText, Cpu, Clock, CheckSquare, UserCheck, ChevronLeft, ChevronRight, Hospital 
+  FileText, Cpu, Clock, CheckSquare, UserCheck, ChevronLeft, ChevronRight, Hospital, CalendarDays
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -25,6 +25,7 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
     { path: '/admin/doctors', label: 'Doctor Accounts', icon: UserCheck },
     { path: '/admin/geofence', label: 'Geofence Settings', icon: MapPin },
     { path: '/admin/explanations', label: 'Explanation Review', icon: ClipboardCheck },
+    { path: '/admin/leave-applications', label: 'Leave Applications', icon: CalendarDays },
     { path: '/admin/reports', label: 'Attendance Reports', icon: FileText }
   ];
 
@@ -33,6 +34,7 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
     { path: '/doctor/mark', label: 'Mark Attendance', icon: CheckSquare },
     { path: '/doctor/explanation', label: 'Absence Explanation', icon: ClipboardCheck },
     { path: '/doctor/history', label: 'Attendance History', icon: FileText },
+    { path: '/doctor/leave', label: 'Apply for Leave', icon: CalendarDays },
     { path: '/doctor/profile', label: 'Doctor Profile', icon: Users }
   ];
 

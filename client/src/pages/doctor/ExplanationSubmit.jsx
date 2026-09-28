@@ -27,13 +27,40 @@ export const ExplanationSubmit = () => {
 
   const [effectiveMinDate, setEffectiveMinDate] = useState(minDateStr);
   const [onLeaveMessage, setOnLeaveMessage] = useState('');
+  const [myExplanations, setMyExplanations] = useState([]);
+  const [loadingExplanations, setLoadingExplanations] = useState(true);
 
   const { addToast } = useNotification();
   const navigate = useNavigate();
 
+  const getDeadlineText = (dateStr) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + 3);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = d.toLocaleString('en-IN', { month: 'short' });
+    const year = d.getFullYear();
+    return `${day} ${month} ${year}, 11:59:59 PM`;
+  };
+
   useEffect(() => {
     fetchDateWindows(selectedDate);
+    fetchMyExplanations();
   }, [selectedDate]);
+
+  const fetchMyExplanations = async () => {
+    setLoadingExplanations(true);
+    try {
+      const res = await axios.get('/api/explanations/my');
+      if (res.data.success) {
+        setMyExplanations(res.data.explanations || []);
+      }
+    } catch {
+      setMyExplanations([]);
+    } finally {
+      setLoadingExplanations(false);
+    }
+  };
 
   const fetchDateWindows = async (dateStr) => {
     setLoadingWindows(true);
@@ -111,7 +138,7 @@ export const ExplanationSubmit = () => {
       const formData = new FormData();
       formData.append('date', selectedDate);
       formData.append('selectedCheckpoints', JSON.stringify(selectedWindows));
-      formData.append('reason', reason);
+      formData.append('reason', reason === 'Other' ? (remarks || 'Other') : reason);
       formData.append('remarks', remarks);
       if (proofFile) formData.append('proofFile', proofFile);
 
@@ -133,8 +160,8 @@ export const ExplanationSubmit = () => {
     return `${parts[2]}/${parts[1]}/${parts[0]}`;
   };
 
-  // Filter windows to display ONLY past missing/absent windows (Not future, not active open, not already present)
-  const pastMissingWindows = dateData?.windows?.filter(w => w.isPastWindow && w.status !== 'PRESENT' && w.status !== 'EXPLANATION_APPROVED') || [];
+  // Filter windows to display ONLY past missing/absent windows (Not future, not active open, not already present, not before onboarding)
+  const pastMissingWindows = dateData?.windows?.filter(w => w.isPastWindow && w.status !== 'PRESENT' && w.status !== 'EXPLANATION_APPROVED' && w.status !== 'NOT_APPLICABLE') || [];
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -193,14 +220,14 @@ export const ExplanationSubmit = () => {
                   <span className="text-[11px] opacity-90 block">
                     {dateData?.isExpired
                       ? `Selected date is older than 3 days. Absence remains PERMANENT and cannot be converted to present.`
-                      : `Allowed Range: ${formatDateDisplay(minDateStr)} to ${formatDateDisplay(todayStr)}. Submitting converts ABSENT ➔ PENDING ➔ PRESENT (on Admin approval).`}
+                      : `Allowed Range: ${formatDateDisplay(minDateStr)} to ${formatDateDisplay(todayStr)}. Deadline: ${getDeadlineText(selectedDate)}`}
                   </span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Step 2: Past Missing Absent Windows Grid (Future and Active Open Windows Excluded) */}
+          {/* Step 2: Past Missing Absent Windows Grid */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
@@ -270,7 +297,7 @@ export const ExplanationSubmit = () => {
                         {isPending
                           ? 'Submitted - Awaiting Admin Review'
                           : isSelectable
-                          ? 'Click to select past missed hour'
+                          ? `Deadline: ${getDeadlineText(selectedDate)}`
                           : 'Deadline Expired'}
                       </div>
                     </button>
@@ -282,34 +309,55 @@ export const ExplanationSubmit = () => {
 
           {/* Step 3: Enter Reason & Attach Proof */}
           <div className="space-y-4 pt-2">
-            <div>
-              <label className="text-xs font-bold text-slate-300 block mb-1.5">
-                Reason for Absence / Window Miss *
-              </label>
-              <textarea
-                rows={3}
-                required
-                disabled={dateData?.isExpired || pastMissingWindows.length === 0}
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder="Detailed reason (e.g. Attending emergency trauma stabilization in Ward B, VIP consultation, OPD overflow...)"
-                className="w-full px-4 py-3 bg-slate-900/80 border border-slate-700 rounded-2xl text-xs text-white placeholder-slate-500 focus:border-blue-500 outline-none disabled:opacity-50"
-              />
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-bold text-slate-300 block mb-1.5">
+                  Reason for Absence *
+                </label>
+                <select
+                  required
+                  disabled={dateData?.isExpired || pastMissingWindows.length === 0}
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-900/80 border border-slate-700 rounded-2xl text-xs text-white focus:border-blue-500 outline-none disabled:opacity-50"
+                >
+                  <option value="">Select reason...</option>
+                  <option value="Emergency">Emergency</option>
+                  <option value="Medical Issue">Medical Issue</option>
+                  <option value="GPS / Location Issue">GPS / Location Issue</option>
+                  <option value="Network Connectivity Issue">Network Connectivity Issue</option>
+                  <option value="Official Duty Outside Hospital">Official Duty Outside Hospital</option>
+                  <option value="Other">Other (specify below)</option>
+                </select>
+              </div>
+              {reason === 'Other' && (
+                <input
+                  type="text"
+                  required
+                  disabled={dateData?.isExpired || pastMissingWindows.length === 0}
+                  value={remarks}
+                  onChange={(e) => setRemarks(e.target.value)}
+                  placeholder="Please specify your reason..."
+                  className="w-full px-4 py-2.5 bg-slate-900/80 border border-amber-500/40 rounded-xl text-xs text-white placeholder-slate-500 focus:border-amber-500 outline-none disabled:opacity-50"
+                />
+              )}
             </div>
 
-            <div>
-              <label className="text-xs font-bold text-slate-300 block mb-1.5">
-                Additional Remarks (Optional)
-              </label>
-              <input
-                type="text"
-                disabled={dateData?.isExpired || pastMissingWindows.length === 0}
-                value={remarks}
-                onChange={(e) => setRemarks(e.target.value)}
-                placeholder="e.g. Emergency OT Room 3, Consultation Record #491"
-                className="w-full px-4 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-xs text-white disabled:opacity-50"
-              />
-            </div>
+            {reason !== 'Other' && (
+              <div>
+                <label className="text-xs font-bold text-slate-300 block mb-1.5">
+                  Additional Remarks (Optional)
+                </label>
+                <input
+                  type="text"
+                  disabled={dateData?.isExpired || pastMissingWindows.length === 0}
+                  value={remarks}
+                  onChange={(e) => setRemarks(e.target.value)}
+                  placeholder="e.g. Emergency OT Room 3, Consultation Record #491"
+                  className="w-full px-4 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-xs text-white disabled:opacity-50"
+                />
+              </div>
+            )}
 
             <div>
               <label className="text-xs font-bold text-slate-300 block mb-1.5">
@@ -347,6 +395,52 @@ export const ExplanationSubmit = () => {
             </button>
           </div>
         </form>
+      </div>
+
+      {/* ── My Absence Explanations & Status Section (Requirements 2.1 & 2.4) ── */}
+      <div className="p-6 rounded-3xl bg-[#1E293B] border border-slate-700/80 shadow-xl space-y-4">
+        <h3 className="text-sm font-bold text-white flex items-center gap-2">
+          <ClipboardCheck className="w-4 h-4 text-blue-400" /> My Submitted Explanations & Admin Review Status
+        </h3>
+        {loadingExplanations ? (
+          <div className="text-center py-6 text-xs text-slate-400">Loading explanations...</div>
+        ) : myExplanations.length === 0 ? (
+          <div className="text-center py-6 text-xs text-slate-500">No explanations submitted yet.</div>
+        ) : (
+          <div className="space-y-3">
+            {myExplanations.map((exp, idx) => (
+              <div key={exp._id || idx} className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-white">📅 {exp.date}</span>
+                    <span className="text-xs text-slate-400 font-mono">({exp.windowLabel || exp.checkpointTime})</span>
+                  </div>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                    exp.status === 'APPROVED'
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                      : exp.status === 'REJECTED'
+                      ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                      : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                  }`}>
+                    {exp.status === 'APPROVED' ? 'Approved — Present' : exp.status === 'REJECTED' ? 'Rejected' : 'Pending Admin Approval'}
+                  </span>
+                </div>
+                <div className="text-xs text-slate-300">
+                  <strong className="text-slate-400">Reason:</strong> {exp.reason}
+                  {exp.remarks && <span className="ml-2 text-slate-400">({exp.remarks})</span>}
+                </div>
+                {exp.adminRemarks && (
+                  <div className="text-xs text-amber-300 bg-amber-950/20 border border-amber-500/20 p-2 rounded-xl">
+                    <strong>Admin Note:</strong> {exp.adminRemarks}
+                  </div>
+                )}
+                <div className="text-[10px] text-slate-500">
+                  Submitted: {new Date(exp.createdAt).toLocaleString('en-IN')}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

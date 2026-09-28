@@ -39,32 +39,37 @@ const getMonthRange = (offset = 0) => {
   return { start: fmt(start), end: fmt(end), label: start.toLocaleString('default', { month: 'long', year: 'numeric' }) };
 };
 
-const computeStats = (records, rangeStart, rangeEnd) => {
+const computeStats = (records, rangeStart, rangeEnd, activeLeaves = []) => {
   const filtered = records.filter(r => r.date >= rangeStart && r.date <= rangeEnd);
 
-  // Unique working dates
-  const uniqueDates = [...new Set(filtered.map(r => r.date))];
-  const totalWorkingDays = uniqueDates.length;
+  // Helper to check if a date falls in an active official leave
+  const isDateOnLeave = (dateStr) => {
+    return activeLeaves.some(l => l.status === 'ACTIVE' && l.startDate <= dateStr && l.endDate >= dateStr);
+  };
 
   // Present = any checkpoint with PRESENT or EXPLANATION_APPROVED on that date
   const presentDates = new Set(
     filtered
-      .filter(r => r.status === 'PRESENT' || r.status === 'EXPLANATION_APPROVED')
+      .filter(r => (r.status === 'PRESENT' || r.status === 'EXPLANATION_APPROVED') && !isDateOnLeave(r.date))
       .map(r => r.date)
   );
 
-  // Absent = dates with PENDING_EXPLANATION or ABSENT that have NO present checkpoint
+  // Absent = dates with ABSENT or PENDING_EXPLANATION that have NO present checkpoint and are NOT on leave
   const absentDates = new Set(
-    uniqueDates.filter(d => !presentDates.has(d))
+    filtered
+      .filter(r => (r.status === 'ABSENT' || r.status === 'PENDING_EXPLANATION' || r.status === 'EXPLANATION_REJECTED') && !presentDates.has(r.date) && !isDateOnLeave(r.date))
+      .map(r => r.date)
   );
 
+  // Requirement 3.3: Exclude approved leave dates from working days total
+  const totalWorkingDays = presentDates.size + absentDates.size;
   const present = presentDates.size;
   const absent = absentDates.size;
   const pct = totalWorkingDays > 0 ? Math.round((present / totalWorkingDays) * 1000) / 10 : 0;
   return { totalWorkingDays, present, absent, pct, filtered };
 };
 
-const getLast14DaysTrend = (records) => {
+const getLast14DaysTrend = (records, activeLeaves = []) => {
   const today = new Date();
   const days = [];
   for (let i = 13; i >= 0; i--) {
@@ -72,10 +77,11 @@ const getLast14DaysTrend = (records) => {
     d.setDate(today.getDate() - i);
     const dateStr = d.toISOString().split('T')[0];
     const label = d.toLocaleDateString('default', { month: 'short', day: 'numeric' });
+    const isLeave = activeLeaves.some(l => l.status === 'ACTIVE' && l.startDate <= dateStr && l.endDate >= dateStr);
     const dayRecords = records.filter(r => r.date === dateStr);
     const hasPresent = dayRecords.some(r => r.status === 'PRESENT' || r.status === 'EXPLANATION_APPROVED');
-    const hasAbsent = dayRecords.length > 0 && !hasPresent;
-    days.push({ dateStr, label, hasPresent, hasAbsent, count: dayRecords.length });
+    const hasAbsent = !isLeave && dayRecords.length > 0 && !hasPresent && !dayRecords.every(r => r.status === 'OFFICIAL_LEAVE');
+    days.push({ dateStr, label, hasPresent, hasAbsent, isLeave, count: dayRecords.length });
   }
   return days;
 };
@@ -125,7 +131,8 @@ export const DoctorDashboard = () => {
       if (isMounted.current)
         setLeaveInfo({
           currentLeave: active.find(l => l.startDate <= today && l.endDate >= today),
-          upcomingLeave: active.find(l => l.startDate > today)
+          upcomingLeave: active.find(l => l.startDate > today),
+          activeLeaves: active
         });
     } catch { if (isMounted.current) setLeaveInfo(null); }
   }, []);
@@ -179,8 +186,8 @@ export const DoctorDashboard = () => {
   const thisMonth = getMonthRange(0);
   const lastMonth = getMonthRange(-1);
   const range = period === 'this' ? thisMonth : lastMonth;
-  const stats = computeStats(attendances, range.start, range.end);
-  const trend = getLast14DaysTrend(attendances);
+  const stats = computeStats(attendances, range.start, range.end, leaveInfo?.activeLeaves || []);
+  const trend = getLast14DaysTrend(attendances, leaveInfo?.activeLeaves || []);
 
   // ── Chart data ─────────────────────────────────────────────────────────
   const donutData = {
@@ -265,9 +272,14 @@ export const DoctorDashboard = () => {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/doctor/mark')}
-            className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-600/20"
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg transition-all ${
+              leaveInfo?.currentLeave
+                ? 'bg-blue-600/30 text-blue-300 border border-blue-500/30'
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
+            }`}
           >
-            <Navigation className="w-4 h-4" /> Mark Attendance
+            <Navigation className="w-4 h-4" />
+            {leaveInfo?.currentLeave ? '🌴 On Leave Today' : 'Mark Attendance'}
           </button>
           <button
             onClick={() => navigate('/doctor/explanation')}
@@ -278,23 +290,50 @@ export const DoctorDashboard = () => {
         </div>
       </div>
 
-      {/* Leave notice */}
+      {/* ── Official Leave Notice (Requirement 3.2) ── */}
       {leaveInfo && (leaveInfo.currentLeave || leaveInfo.upcomingLeave) && (
-        <div className="bg-gradient-to-r from-blue-900/40 to-indigo-900/40 rounded-xl p-4 border border-blue-700/30">
-          <h3 className="text-sm font-semibold text-blue-300 flex items-center gap-2 mb-2">
+        <div className="bg-gradient-to-r from-blue-900/50 via-indigo-900/40 to-slate-900 rounded-3xl p-6 border border-blue-500/30 shadow-2xl space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-blue-300 uppercase tracking-wider">
             <Calendar className="w-4 h-4" /> Official Leave Status
-          </h3>
+          </div>
           {leaveInfo.currentLeave && (
-            <div className="bg-blue-800/30 rounded-lg p-3 mb-2">
-              <span className="inline-block px-2 py-0.5 text-xs font-bold bg-blue-500 text-white rounded-full mb-1">ON LEAVE TODAY</span>
-              <p className="text-sm text-slate-200">{leaveInfo.currentLeave.startDate} to {leaveInfo.currentLeave.endDate}</p>
-              {leaveInfo.currentLeave.leaveNote && <p className="text-xs text-slate-400 mt-1">Note: {leaveInfo.currentLeave.leaveNote}</p>}
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="px-3 py-1 text-xs font-extrabold bg-blue-500 text-white rounded-full flex items-center gap-1 shadow-lg shadow-blue-500/30">
+                  🌴 You are on Official Leave Today
+                </span>
+                <span className="px-2.5 py-0.5 text-[11px] font-bold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  Status: Approved
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1 text-xs text-slate-300">
+                <div className="p-3 rounded-xl bg-slate-900/70 border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold">Leave Period</span>
+                  <span className="text-white font-semibold">{leaveInfo.currentLeave.startDate} to {leaveInfo.currentLeave.endDate}</span>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-900/70 border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold">Leave Type</span>
+                  <span className="text-white font-semibold">{leaveInfo.currentLeave.leaveType || 'Official Leave'}</span>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-900/70 border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold">Admin Note</span>
+                  <span className="text-slate-300">{leaveInfo.currentLeave.leaveNote || 'Approved by Administration'}</span>
+                </div>
+              </div>
+              <p className="text-[11px] text-blue-300/80">
+                Attendance requirements are excused for today. Attendance windows are not required on approved leave days.
+              </p>
             </div>
           )}
           {leaveInfo.upcomingLeave && !leaveInfo.currentLeave && (
-            <div className="bg-indigo-800/30 rounded-lg p-3">
-              <span className="inline-block px-2 py-0.5 text-xs font-bold bg-indigo-500 text-white rounded-full mb-1">UPCOMING LEAVE</span>
-              <p className="text-sm text-slate-200">{leaveInfo.upcomingLeave.startDate} to {leaveInfo.upcomingLeave.endDate}</p>
+            <div className="bg-indigo-800/30 rounded-2xl p-4 border border-indigo-700/30">
+              <span className="inline-block px-2.5 py-0.5 text-xs font-bold bg-indigo-500 text-white rounded-full mb-1">
+                Upcoming Approved Leave
+              </span>
+              <p className="text-sm text-slate-200 mt-1">
+                {leaveInfo.upcomingLeave.startDate} to {leaveInfo.upcomingLeave.endDate}
+                {leaveInfo.upcomingLeave.leaveNote && ` · Note: ${leaveInfo.upcomingLeave.leaveNote}`}
+              </p>
             </div>
           )}
         </div>

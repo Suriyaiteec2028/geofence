@@ -27,6 +27,8 @@ import { MarkAttendance } from './pages/doctor/MarkAttendance';
 import { ExplanationSubmit } from './pages/doctor/ExplanationSubmit';
 import { AttendanceHistory } from './pages/doctor/AttendanceHistory';
 import { DoctorProfile } from './pages/doctor/DoctorProfile';
+import { DoctorLeaveApply } from './pages/doctor/DoctorLeaveApply';
+import { LeaveApplications } from './pages/admin/LeaveApplications';
 
 function ProtectedLayout({ allowedRoles }) {
   const { user, token } = useAuth();
@@ -61,6 +63,7 @@ function ProtectedLayout({ allowedRoles }) {
             <Route path="/admin/doctors" element={<ManageDoctors />} />
             <Route path="/admin/geofence" element={<GeofenceSettings />} />
             <Route path="/admin/explanations" element={<ExplanationReview />} />
+            <Route path="/admin/leave-applications" element={<LeaveApplications />} />
             <Route path="/admin/reports" element={<AdminReports />} />
 
             {/* Doctor Routes */}
@@ -69,6 +72,7 @@ function ProtectedLayout({ allowedRoles }) {
             <Route path="/doctor/explanation" element={<ExplanationSubmit />} />
             <Route path="/doctor/history" element={<AttendanceHistory />} />
             <Route path="/doctor/profile" element={<DoctorProfile />} />
+            <Route path="/doctor/leave" element={<DoctorLeaveApply />} />
           </Routes>
         </main>
       </div>

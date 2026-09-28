@@ -551,6 +551,33 @@
   },
   "notifications": [
     {
+      "_id": "notif_1790599780697_w4udx",
+      "recipientEmail": "310624205278@eec.srmrmp.edu.in",
+      "title": "Duty Checkpoint Reminder: 06:15 PM",
+      "message": "Dr. N Suriya, your hourly duty checkpoint at 06:15 PM opens in 5 minutes (Reminder sent at 06:10 PM).",
+      "type": "EMAIL",
+      "read": false,
+      "isRead": false,
+      "createdAt": "2026-09-28T12:49:40.697Z"
+    },
+    {
+      "_id": "notif_rem_1790599774762_tyotk",
+      "user": "doc_1789983287304",
+      "recipientEmail": "310624205278@eec.srmrmp.edu.in",
+      "targetRole": "DOCTOR",
+      "title": "Duty Checkpoint Reminder: 06:15 PM ⏰",
+      "message": "Your duty checkpoint opens in 5 minutes at 06:15 PM. Please complete biometric face scan & geofence verification at primary phc.",
+      "type": "DUTY_REMINDER",
+      "checkpointTime": "06:15 PM",
+      "reminderTime": "06:10 PM",
+      "dutyDate": "2026-09-28",
+      "status": "SENT",
+      "sentAt": "2026-09-28T12:49:34.762Z",
+      "read": false,
+      "isRead": false,
+      "createdAt": "2026-09-28T12:49:34.762Z"
+    },
+    {
       "_id": "notif_rem_1790350857068_lliqk",
       "user": "doc_1789983287304",
       "recipientEmail": "310624205278@eec.srmrmp.edu.in",

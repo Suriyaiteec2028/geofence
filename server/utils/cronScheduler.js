@@ -138,6 +138,12 @@ function checkAndSendHourlyReminders() {
       // 2. Immediate Auto-Absent Record for Closed Checkpoint Windows
       for (const win of shiftState.windows) {
         const windowEndObj = new Date(win.windowEndISO);
+        // Do not auto-absent for windows before doctor was registered
+        const docCreatedAt = doctor.createdAt ? new Date(doctor.createdAt) : null;
+        if (docCreatedAt && docCreatedAt > windowEndObj) {
+          continue;
+        }
+
         if (istNow > windowEndObj) {
           const existingAtt = memoryStore.attendances.find(a => 
             String(a.doctor) === String(doctor._id) && 
