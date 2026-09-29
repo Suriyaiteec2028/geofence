@@ -184,10 +184,10 @@ export const AdminReports = () => {
     if (status === 'OFFICIAL_LEAVE' || status === 'ON_LEAVE') {
       return <span className="px-2.5 py-1 text-[10px] font-bold rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">OFFICIAL LEAVE</span>;
     }
-    if (status === 'PRESENT' || status === 'EXPLANATION_APPROVED' || status === 'PRESENT_APPROVED') {
+    if (status === 'PRESENT' || status === 'EXPLANATION_APPROVED' || status === 'PRESENT_APPROVED' || status === 'PRESENT_APPROVED_EXPLANATION') {
       return (
         <span className="px-2.5 py-1 text-[10px] font-bold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-          {status === 'EXPLANATION_APPROVED' || status === 'PRESENT_APPROVED' ? 'APPROVED (PRESENT)' : 'PRESENT'}
+          {status === 'PRESENT' ? 'PRESENT' : 'APPROVED (PRESENT)'}
         </span>
       );
     }

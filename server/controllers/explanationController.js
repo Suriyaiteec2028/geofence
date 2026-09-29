@@ -1,5 +1,6 @@
 const { memoryStore, saveMemoryStoreToDisk } = require('../config/db');
 const { logAuditEvent } = require('../utils/auditLogger');
+const { getISTDate, getISTDateString, evaluateCurrentShiftState } = require('../utils/shiftEngine');
 
 function getExplanationDeadline(missedDateStr) {
   const [y, m, d] = missedDateStr.split('-').map(Number);
@@ -113,23 +114,27 @@ exports.submitExplanation = (req, res) => {
           continue;
         }
 
-        // Create attendance record if missing
+        // Create attendance record if missing — underlying status strictly remains ABSENT
         if (!attendance) {
           attendance = {
             _id: 'att_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
             doctor: doctorId,
             phc: doctor.assignedPHC,
             date,
+            shiftDutyDate: date,
             checkpointTime: windowLabel.split(' –')[0].trim(),
             windowLabel,
             markedAt: null,
-            status: 'PENDING_EXPLANATION',
+            status: 'ABSENT',
+            explanationStatus: 'PENDING',
             withinGeofence: false,
             createdAt: new Date().toISOString()
           };
           memoryStore.attendances.push(attendance);
         } else {
-          attendance.status = 'PENDING_EXPLANATION';
+          // Strictly preserve underlying attendance status as ABSENT per Section 2
+          attendance.status = 'ABSENT';
+          attendance.explanationStatus = 'PENDING';
         }
 
         const exp = {
@@ -207,22 +212,25 @@ exports.submitExplanation = (req, res) => {
     }
 
     if (!attendance) {
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = getISTDateString();
       attendance = {
         _id: 'att_' + Date.now(),
         doctor: doctorId,
         phc: doctor ? doctor.assignedPHC : null,
         date: todayStr,
+        shiftDutyDate: todayStr,
         checkpointTime: 'Scheduled Checkpoint',
         windowLabel: 'Missed Window',
         markedAt: null,
-        status: 'PENDING_EXPLANATION',
+        status: 'ABSENT',
+        explanationStatus: 'PENDING',
         withinGeofence: false,
         createdAt: new Date().toISOString()
       };
       memoryStore.attendances.push(attendance);
     } else {
-      attendance.status = 'PENDING_EXPLANATION';
+      attendance.status = 'ABSENT';
+      attendance.explanationStatus = 'PENDING';
     }
 
     const newExplanation = {
@@ -324,20 +332,23 @@ exports.reviewExplanation = (req, res) => {
     explanation.adminRemarks = adminRemarks ? adminRemarks.trim() : '';
     explanation.reviewedAt = new Date().toISOString();
 
-    const targetStatus = action === 'APPROVE' ? 'PRESENT_APPROVED_EXPLANATION' : 'EXPLANATION_REJECTED';
+    const targetStatus = action === 'APPROVE' ? 'PRESENT_APPROVED_EXPLANATION' : 'ABSENT';
+    const explanationStatus = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
 
-    // Immediately update attendance status to PRESENT_APPROVED_EXPLANATION (Counted as Present) or EXPLANATION_REJECTED (Absent)
+    // Strictly update: PRESENT_APPROVED_EXPLANATION on approve, ABSENT on reject
     if (!attendance) {
-      const dateStr = explanation.date || (explanation.createdAt ? explanation.createdAt.split('T')[0] : new Date().toISOString().split('T')[0]);
+      const dateStr = explanation.date || (explanation.createdAt ? explanation.createdAt.split('T')[0] : getISTDateString());
       attendance = {
         _id: 'att_' + Date.now(),
         doctor: explanation.doctor,
         phc: explanation.phc,
         date: dateStr,
+        shiftDutyDate: dateStr,
         checkpointTime: explanation.checkpointTime || 'Approved Exemption',
         windowLabel: explanation.windowLabel || 'Exemption Window',
-        markedAt: new Date().toISOString(),
+        markedAt: action === 'APPROVE' ? new Date().toISOString() : null,
         status: targetStatus,
+        explanationStatus,
         withinGeofence: action === 'APPROVE',
         createdAt: new Date().toISOString()
       };
@@ -345,8 +356,10 @@ exports.reviewExplanation = (req, res) => {
       explanation.attendance = attendance._id;
     } else {
       attendance.status = targetStatus;
+      attendance.explanationStatus = explanationStatus;
       if (action === 'APPROVE') {
         attendance.withinGeofence = true;
+        attendance.markedAt = new Date().toISOString();
       }
     }
 
@@ -416,3 +429,145 @@ exports.getDoctorExplanations = (req, res) => {
     res.status(500).json({ success: false, message: 'Error fetching doctor explanations.' });
   }
 };
+
+exports.getEligibleMissedWindows = (req, res) => {
+  try {
+    const doctorId = req.user.id;
+    const doctor = memoryStore.users.find(u => String(u._id) === String(doctorId));
+    if (!doctor || doctor.role !== 'DOCTOR') {
+      return res.status(404).json({ success: false, message: 'Doctor not found.' });
+    }
+
+    const nowIST = getISTDate();
+    const docCreatedObj = new Date(doctor.createdAt);
+    const doctorActiveDateStr = docCreatedObj ? getISTDateString(docCreatedObj) : '2000-01-01';
+
+    const intervalMins = memoryStore.settings?.checkpointIntervalMinutes || 60;
+    const windowMins = memoryStore.settings?.windowDurationMinutes || 5;
+
+    const resultWindows = [];
+
+    // Loop through past 3 days and today (e.g. offset 3, 2, 1, 0)
+    for (let offset = 3; offset >= 0; offset--) {
+      const targetDateObj = new Date(nowIST);
+      targetDateObj.setDate(nowIST.getDate() - offset);
+      const targetDateStr = getISTDateString(targetDateObj);
+
+      // Section 3: Never display or create eligible missed windows for dates before account creation
+      if (targetDateStr < doctorActiveDateStr) continue;
+
+      // Section 6: Skip dates covered by ACTIVE official leave
+      const isOnLeave = (memoryStore.leaves || []).some(leave =>
+        String(leave.doctor) === String(doctorId) &&
+        leave.status === 'ACTIVE' &&
+        leave.startDate <= targetDateStr &&
+        leave.endDate >= targetDateStr
+      );
+      if (isOnLeave) continue;
+
+      const { deadlineObj, deadlineISO, deadlineFormatted } = getExplanationDeadline(targetDateStr);
+      const isExpired = nowIST.getTime() >= deadlineObj.getTime();
+
+      const shiftState = evaluateCurrentShiftState(
+        doctor.shiftStart || '09:00',
+        doctor.shiftEnd || '17:00',
+        intervalMins,
+        windowMins,
+        targetDateObj
+      );
+
+      for (const win of shiftState.windows) {
+        const windowEndObj = new Date(win.windowEndISO);
+        // Middle-of-day onboarding: skip windows that ended before doctor account creation
+        if (docCreatedObj && docCreatedObj > windowEndObj) continue;
+
+        // Only windows that have closed (ended) can be missed
+        const isPastWindow = nowIST > windowEndObj;
+        if (!isPastWindow) continue;
+
+        const winDateStr = win.shiftDutyDate || targetDateStr;
+
+        // Skip if window's duty start date is covered by active leave
+        const winOnLeave = (memoryStore.leaves || []).some(leave =>
+          String(leave.doctor) === String(doctorId) &&
+          leave.status === 'ACTIVE' &&
+          leave.startDate <= winDateStr &&
+          leave.endDate >= winDateStr
+        );
+        if (winOnLeave) continue;
+
+        // Look for attendance record
+        const att = (memoryStore.attendances || []).find(a =>
+          String(a.doctor) === String(doctorId) &&
+          (a.date === winDateStr || a.shiftDutyDate === winDateStr) &&
+          (a.checkpointTime === win.windowStartFormatted || a.windowLabel === win.windowLabel)
+        );
+
+        // If attendance is PRESENT or already approved explanation, not missed!
+        if (att && (att.status === 'PRESENT' || att.status === 'PRESENT_APPROVED_EXPLANATION' || att.status === 'OFFICIAL_LEAVE')) {
+          continue;
+        }
+
+        // Look for linked explanation
+        const explanation = (memoryStore.explanations || []).find(e =>
+          String(e.doctor) === String(doctorId) &&
+          (String(e.attendance) === String(att?._id) || (e.date === winDateStr && (e.windowLabel === win.windowLabel || e.checkpointTime === win.windowStartFormatted)))
+        );
+
+        const explanationStatus = explanation ? explanation.status : 'NOT_SUBMITTED';
+
+        // An attendance window is eligible for explanation submission if:
+        // 1. Deadline has not expired
+        // 2. Explanation is NOT currently PENDING or APPROVED
+        const isEligible = !isExpired && explanationStatus !== 'PENDING' && explanationStatus !== 'APPROVED';
+
+        let attendanceDisplayStatus = 'Absent';
+        if (explanationStatus === 'PENDING') {
+          attendanceDisplayStatus = 'Absent — Explanation Pending';
+        } else if (explanationStatus === 'APPROVED') {
+          attendanceDisplayStatus = 'Present — Approved Explanation';
+        }
+
+        resultWindows.push({
+          attendanceId: att ? att._id : null,
+          attendanceDate: winDateStr,
+          dutyDate: winDateStr,
+          dutyWindow: win.windowLabel,
+          windowLabel: win.windowLabel,
+          checkpointTime: win.windowStartFormatted,
+          windowEndFormatted: win.windowEndFormatted,
+          attendanceStatus: attendanceDisplayStatus,
+          underlyingAttendanceStatus: att?.status || 'ABSENT',
+          explanationDeadline: deadlineFormatted,
+          explanationDeadlineISO: deadlineISO,
+          isExpired,
+          isEligible,
+          explanationStatus,
+          explanation: explanation ? {
+            _id: explanation._id,
+            reason: explanation.reason,
+            remarks: explanation.remarks,
+            status: explanation.status,
+            adminRemarks: explanation.adminRemarks,
+            createdAt: explanation.createdAt,
+            reviewedAt: explanation.reviewedAt
+          } : null
+        });
+      }
+    }
+
+    // Sort by date descending, then checkpoint time
+    resultWindows.sort((a, b) => b.attendanceDate.localeCompare(a.attendanceDate) || b.checkpointTime.localeCompare(a.checkpointTime));
+
+    res.json({
+      success: true,
+      count: resultWindows.length,
+      windows: resultWindows,
+      doctorActiveDate: doctorActiveDateStr
+    });
+  } catch (err) {
+    console.error('Error fetching eligible missed windows:', err);
+    res.status(500).json({ success: false, message: 'Error fetching eligible missed windows' });
+  }
+};
+

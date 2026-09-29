@@ -52,16 +52,13 @@ function checkAndSendHourlyReminders() {
       const phc = memoryStore.phcs.find(p => String(p._id) === String(doctor.assignedPHC));
       const phcName = phc ? phc.name : 'Primary Health Center';
 
-      const isOnLeave = (memoryStore.leaves || []).some(leave => 
+      // Top-level leave check against today's calendar date (used only for reminder emails below)
+      const isOnLeaveToday = (memoryStore.leaves || []).some(leave => 
         String(leave.doctor) === String(doctor._id) && 
         leave.status === 'ACTIVE' && 
         leave.startDate <= todayStr && 
         leave.endDate >= todayStr
       );
-
-      if (isOnLeave) {
-        continue;
-      }
 
       const shiftState = evaluateCurrentShiftState(
         doctor.shiftStart || '09:00',
@@ -72,83 +69,100 @@ function checkAndSendHourlyReminders() {
       );
 
       // 1. Check Every Hourly Checkpoint Window for 5-Minute Pre-Reminder Time
-      for (const win of shiftState.windows) {
-        // Reminder trigger condition: current time has reached or passed reminderMins (checkpoint - 5 min)
-        // AND current time is still before or inside the checkpoint window (effectiveNowMins < windowEndMins)
-        const isReminderTimeWindow = currentTotalMins >= win.reminderMins && currentTotalMins < win.windowEndMins;
+      // Skip entirely if doctor is on leave today (calendar date is sufficient for reminders)
+      if (!isOnLeaveToday) {
+        for (const win of shiftState.windows) {
+          // Reminder trigger condition: current time has reached or passed reminderMins (checkpoint - 5 min)
+          // AND current time is still before or inside the checkpoint window (effectiveNowMins < windowEndMins)
+          const isReminderTimeWindow = currentTotalMins >= win.reminderMins && currentTotalMins < win.windowEndMins;
 
-        if (isReminderTimeWindow) {
-          const reminderKey = `${doctor._id}:${todayStr}:${win.checkpointFormatted}`;
+          if (isReminderTimeWindow) {
+            const reminderKey = `${doctor._id}:${todayStr}:${win.checkpointFormatted}`;
 
-          // Check if reminder was already recorded in memory map OR database store
-          const alreadyInDb = (memoryStore.notifications || []).some(n => 
-            String(n.user) === String(doctor._id) && 
-            n.type === 'DUTY_REMINDER' && 
-            n.checkpointTime === win.checkpointFormatted && 
-            n.dutyDate === todayStr
-          );
+            // Check if reminder was already recorded in memory map OR database store
+            const alreadyInDb = (memoryStore.notifications || []).some(n => 
+              String(n.user) === String(doctor._id) && 
+              n.type === 'DUTY_REMINDER' && 
+              n.checkpointTime === win.checkpointFormatted && 
+              n.dutyDate === todayStr
+            );
 
-          if (!sentRemindersMap.has(reminderKey) && !alreadyInDb) {
-            sentRemindersMap.set(reminderKey, true);
+            if (!sentRemindersMap.has(reminderKey) && !alreadyInDb) {
+              sentRemindersMap.set(reminderKey, true);
 
-            console.log(`[DOCTOR-DUTY-REMINDER] Current IST time: ${nowFormatted}`);
-            console.log(`[DOCTOR-DUTY-REMINDER] Active Doctor: Dr. ${doctor.name} (${doctor.email})`);
-            console.log(`[DOCTOR-DUTY-REMINDER] Duty Schedule: ${doctor.shiftStart} - ${doctor.shiftEnd}`);
-            console.log(`[DOCTOR-DUTY-REMINDER] Upcoming Checkpoint: ${win.checkpointFormatted}`);
-            console.log(`[DOCTOR-DUTY-REMINDER] Scheduled Reminder Time: ${win.reminderFormatted}`);
-            console.log(`[DOCTOR-DUTY-REMINDER] Sending 5-minute pre-checkpoint reminder email to ${doctor.email}...`);
+              console.log(`[DOCTOR-DUTY-REMINDER] Current IST time: ${nowFormatted}`);
+              console.log(`[DOCTOR-DUTY-REMINDER] Active Doctor: Dr. ${doctor.name} (${doctor.email})`);
+              console.log(`[DOCTOR-DUTY-REMINDER] Duty Schedule: ${doctor.shiftStart} - ${doctor.shiftEnd}`);
+              console.log(`[DOCTOR-DUTY-REMINDER] Upcoming Checkpoint: ${win.checkpointFormatted}`);
+              console.log(`[DOCTOR-DUTY-REMINDER] Scheduled Reminder Time: ${win.reminderFormatted}`);
+              console.log(`[DOCTOR-DUTY-REMINDER] Sending 5-minute pre-checkpoint reminder email to ${doctor.email}...`);
 
-            // Dispatch Email to Doctor's Registered Email Address
-            sendHourlyCheckpointReminderEmail({
-              name: doctor.name,
-              email: doctor.email,
-              checkpointTime: win.checkpointFormatted,
-              reminderTime: win.reminderFormatted,
-              dutyDate: todayStr,
-              shiftLabel: `${doctor.shiftStart} – ${doctor.shiftEnd}`,
-              phcName
-            });
+              // Dispatch Email to Doctor's Registered Email Address
+              sendHourlyCheckpointReminderEmail({
+                name: doctor.name,
+                email: doctor.email,
+                checkpointTime: win.checkpointFormatted,
+                reminderTime: win.reminderFormatted,
+                dutyDate: todayStr,
+                shiftLabel: `${doctor.shiftStart} – ${doctor.shiftEnd}`,
+                phcName
+              });
 
-            // Store Idempotent Reminder Record in Database Store
-            const reminderNotif = {
-              _id: 'notif_rem_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-              user: doctor._id,
-              recipientEmail: doctor.email,
-              targetRole: 'DOCTOR',
-              title: `Duty Checkpoint Reminder: ${win.checkpointFormatted} ⏰`,
-              message: `Your duty checkpoint opens in 5 minutes at ${win.checkpointFormatted}. Please complete biometric face scan & geofence verification at ${phcName}.`,
-              type: 'DUTY_REMINDER',
-              checkpointTime: win.checkpointFormatted,
-              reminderTime: win.reminderFormatted,
-              dutyDate: todayStr,
-              status: 'SENT',
-              sentAt: new Date().toISOString(),
-              read: false,
-              isRead: false,
-              createdAt: new Date().toISOString()
-            };
+              // Store Idempotent Reminder Record in Database Store
+              const reminderNotif = {
+                _id: 'notif_rem_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+                user: doctor._id,
+                recipientEmail: doctor.email,
+                targetRole: 'DOCTOR',
+                title: `Duty Checkpoint Reminder: ${win.checkpointFormatted} ⏰`,
+                message: `Your duty checkpoint opens in 5 minutes at ${win.checkpointFormatted}. Please complete biometric face scan & geofence verification at ${phcName}.`,
+                type: 'DUTY_REMINDER',
+                checkpointTime: win.checkpointFormatted,
+                reminderTime: win.reminderFormatted,
+                dutyDate: todayStr,
+                status: 'SENT',
+                sentAt: new Date().toISOString(),
+                read: false,
+                isRead: false,
+                createdAt: new Date().toISOString()
+              };
 
-            memoryStore.notifications.unshift(reminderNotif);
-            saveMemoryStoreToDisk();
+              memoryStore.notifications.unshift(reminderNotif);
+              saveMemoryStoreToDisk();
 
-            console.log(`[DOCTOR-DUTY-REMINDER] Duty reminder sent successfully to ${doctor.email}`);
+              console.log(`[DOCTOR-DUTY-REMINDER] Duty reminder sent successfully to ${doctor.email}`);
+            }
           }
         }
       }
 
       // 2. Immediate Auto-Absent Record for Closed Checkpoint Windows
+      // Per-window leave check uses the window's shift-start date so overnight shifts
+      // (e.g. 10 PM–5 AM) are filed under the duty START date, not today's calendar date.
       for (const win of shiftState.windows) {
         const windowEndObj = new Date(win.windowEndISO);
+        const windowStartObj = new Date(win.windowStartISO);
+        // Use the window's shift-start date for attendance records (overnight shifts file under the duty START date)
+        const winDateStr = getISTDateString(windowStartObj);
         // Do not auto-absent for windows before doctor was registered
         const docCreatedAt = doctor.createdAt ? new Date(doctor.createdAt) : null;
         if (docCreatedAt && docCreatedAt > windowEndObj) {
           continue;
         }
 
+        // Leave check based on shift-start date (not calendar today)
+        const winIsOnLeave = (memoryStore.leaves || []).some(leave =>
+          String(leave.doctor) === String(doctor._id) &&
+          leave.status === 'ACTIVE' &&
+          leave.startDate <= winDateStr &&
+          leave.endDate >= winDateStr
+        );
+        if (winIsOnLeave) continue;
+
         if (istNow > windowEndObj) {
           const existingAtt = memoryStore.attendances.find(a => 
             String(a.doctor) === String(doctor._id) && 
-            a.date === todayStr && 
+            a.date === winDateStr && 
             (a.checkpointTime === win.windowStartFormatted || a.windowLabel === win.windowLabel)
           );
 
@@ -157,7 +171,9 @@ function checkAndSendHourlyReminders() {
               _id: 'att_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
               doctor: doctor._id,
               phc: doctor.assignedPHC,
-              date: todayStr,
+              date: winDateStr,
+              shiftDutyDate: winDateStr,
+              shiftId: `${doctor._id}_${winDateStr}_${doctor.shiftStart || '09:00'}-${doctor.shiftEnd || '17:00'}`,
               checkpointTime: win.windowStartFormatted,
               windowLabel: win.windowLabel,
               markedAt: null,
@@ -176,14 +192,14 @@ function checkAndSendHourlyReminders() {
               recordType: 'Attendance',
               recordId: autoAbsent._id,
               details: {
-                date: todayStr,
+                date: winDateStr,
                 checkpointTime: win.windowStartFormatted,
                 windowLabel: win.windowLabel,
                 status: 'ABSENT'
               }
             });
 
-            console.log(`❌ Immediate Auto-Absent Recorded: Dr. ${doctor.name} missed checkpoint ${win.windowLabel}`);
+            console.log(`❌ Immediate Auto-Absent Recorded: Dr. ${doctor.name} missed checkpoint ${win.windowLabel} (shift date: ${winDateStr})`);
           }
         }
       }
@@ -295,15 +311,6 @@ function reconcileMissedAttendanceOnStartup() {
         // Never reconcile attendance before doctor account creation (Rule 4)
         if (targetDateStr < doctorActiveDateStr) continue;
 
-        // Skip if doctor is on active official leave on target date (Rule 8)
-        const isOnLeave = (memoryStore.leaves || []).some(leave => 
-          String(leave.doctor) === String(doctor._id) && 
-          leave.status === 'ACTIVE' && 
-          leave.startDate <= targetDateStr && 
-          leave.endDate >= targetDateStr
-        );
-        if (isOnLeave) continue;
-
         const shiftState = evaluateCurrentShiftState(
           doctor.shiftStart || '09:00',
           doctor.shiftEnd || '17:00',
@@ -314,14 +321,26 @@ function reconcileMissedAttendanceOnStartup() {
 
         for (const win of shiftState.windows) {
           const windowEndObj = new Date(win.windowEndISO);
+          const windowStartObj = new Date(win.windowStartISO);
+          const winDateStr = win.shiftDutyDate || getISTDateString(windowStartObj);
+
           // Check middle-of-day onboarding rule: window ended before account was created
           if (docCreatedAt && docCreatedAt > windowEndObj) continue;
+
+          // Skip if doctor is on active official leave on the shift's duty start date (Section 5.4)
+          const winIsOnLeave = (memoryStore.leaves || []).some(leave => 
+            String(leave.doctor) === String(doctor._id) && 
+            leave.status === 'ACTIVE' && 
+            leave.startDate <= winDateStr && 
+            leave.endDate >= winDateStr
+          );
+          if (winIsOnLeave) continue;
 
           // Only reconcile windows that have already closed
           if (istNow > windowEndObj) {
             const existingAtt = (memoryStore.attendances || []).find(a => 
               String(a.doctor) === String(doctor._id) && 
-              a.date === targetDateStr && 
+              a.date === winDateStr && 
               (a.checkpointTime === win.windowStartFormatted || a.windowLabel === win.windowLabel)
             );
 
@@ -330,7 +349,9 @@ function reconcileMissedAttendanceOnStartup() {
                 _id: 'att_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
                 doctor: doctor._id,
                 phc: doctor.assignedPHC,
-                date: targetDateStr,
+                date: winDateStr,
+                shiftDutyDate: winDateStr,
+                shiftId: `${doctor._id}_${winDateStr}_${doctor.shiftStart || '09:00'}-${doctor.shiftEnd || '17:00'}`,
                 checkpointTime: win.windowStartFormatted,
                 windowLabel: win.windowLabel,
                 markedAt: null,
@@ -349,7 +370,7 @@ function reconcileMissedAttendanceOnStartup() {
                 recordType: 'Attendance',
                 recordId: autoAbsent._id,
                 details: {
-                  date: targetDateStr,
+                  date: winDateStr,
                   checkpointTime: win.windowStartFormatted,
                   windowLabel: win.windowLabel,
                   status: 'ABSENT',

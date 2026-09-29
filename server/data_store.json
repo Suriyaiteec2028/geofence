@@ -1195,10 +1195,12 @@
       "date": "2026-09-28",
       "checkpointTime": "12:00 AM",
       "windowLabel": "12:00 AM – 12:05 AM",
-      "markedAt": null,
-      "status": "ABSENT",
-      "withinGeofence": false,
-      "createdAt": "2026-09-29T04:38:47.446Z"
+      "markedAt": "2026-09-29T06:52:15.087Z",
+      "status": "PRESENT_APPROVED_EXPLANATION",
+      "withinGeofence": true,
+      "createdAt": "2026-09-29T04:38:47.446Z",
+      "explanationStatus": "APPROVED",
+      "explanation": "exp_1790664734545_1rqh"
     },
     {
       "_id": "att_1790656727447_5p6b",
@@ -1547,6 +1549,54 @@
       "status": "ABSENT",
       "withinGeofence": false,
       "createdAt": "2026-09-29T04:38:47.493Z"
+    },
+    {
+      "_id": "att_1790659826798_03re",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-29",
+      "checkpointTime": "10:55 AM",
+      "windowLabel": "10:55 AM – 11:00 AM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T05:30:26.798Z"
+    },
+    {
+      "_id": "att_1790661026973_406h",
+      "doctor": "doc_1790137031683",
+      "phc": "phc_001",
+      "date": "2026-09-29",
+      "checkpointTime": "11:15 AM",
+      "windowLabel": "11:15 AM – 11:20 AM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T05:50:26.973Z"
+    },
+    {
+      "_id": "att_1790663427291_ycol",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-29",
+      "checkpointTime": "11:55 AM",
+      "windowLabel": "11:55 AM – 12:00 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T06:30:27.301Z"
+    },
+    {
+      "_id": "att_1790664627450_amhs",
+      "doctor": "doc_1790137031683",
+      "phc": "phc_001",
+      "date": "2026-09-29",
+      "checkpointTime": "12:15 PM",
+      "windowLabel": "12:15 PM – 12:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T06:50:27.450Z"
     }
   ],
   "explanations": [
@@ -1565,6 +1615,22 @@
       "adminRemarks": "Trauma duty verified by CMO",
       "reviewedAt": "2026-09-29T04:40:43.971Z",
       "createdAt": "2026-09-29T04:39:45.650Z"
+    },
+    {
+      "_id": "exp_1790664734545_1rqh",
+      "attendance": "att_1790656727446_eizt",
+      "doctor": "doc_demo_001",
+      "phc": "phc_001",
+      "date": "2026-09-28",
+      "windowLabel": "12:00 AM – 12:05 AM",
+      "reason": "Medical Emergency",
+      "remarks": "Automated test clinical stabilization",
+      "proofUrl": "",
+      "status": "APPROVED",
+      "reviewedBy": "admin_001",
+      "adminRemarks": "Verified by Medical Superintendent.",
+      "reviewedAt": "2026-09-29T06:52:15.087Z",
+      "createdAt": "2026-09-29T06:52:14.545Z"
     }
   ],
   "leaves": [
@@ -1605,8 +1671,173 @@
       "createdAt": "2026-09-23T04:15:07.172Z"
     }
   ],
-  "leaveApplications": [],
+  "leaveApplications": [
+    {
+      "_id": "leaveapp_1790664751889_aat1",
+      "doctor": "doc_demo_001",
+      "phc": "phc_001",
+      "startDate": "2026-10-05",
+      "endDate": "2026-10-05",
+      "leaveType": "Casual Leave",
+      "reason": "Family function attendance",
+      "note": "Will resume duty next day",
+      "proofUrl": "",
+      "status": "REJECTED",
+      "submittedAt": "2026-09-29T06:52:31.889Z",
+      "reviewedBy": "admin_001",
+      "reviewedAt": "2026-09-29T06:52:31.911Z",
+      "adminNote": "Hospital staffing shortage on Oct 5. Please follow your assigned duty schedule.",
+      "approvedLeaveId": null
+    }
+  ],
   "auditLogs": [
+    {
+      "_id": "audit_1790664751918_3q8xt",
+      "userId": "admin_001",
+      "userRole": "ADMIN",
+      "userName": "Admin",
+      "action": "LEAVE_REJECTED",
+      "recordType": "LeaveApplication",
+      "recordId": "leaveapp_1790664751889_aat1",
+      "details": {
+        "doctorId": "doc_demo_001",
+        "decision": "REJECT",
+        "adminNote": "Hospital staffing shortage on Oct 5. Please follow your assigned duty schedule.",
+        "approvedLeaveId": null
+      },
+      "timestamp": "2026-09-29T06:52:31.918Z"
+    },
+    {
+      "_id": "audit_1790664751891_j4kaw",
+      "userId": "doc_demo_001",
+      "userRole": "DOCTOR",
+      "userName": "Dr. Ranjith K (Medical Officer)",
+      "action": "LEAVE_APPLIED",
+      "recordType": "LeaveApplication",
+      "recordId": "leaveapp_1790664751889_aat1",
+      "details": {
+        "startDate": "2026-10-05",
+        "endDate": "2026-10-05",
+        "leaveType": "Casual Leave",
+        "reason": "Family function attendance",
+        "status": "PENDING"
+      },
+      "timestamp": "2026-09-29T06:52:31.891Z"
+    },
+    {
+      "_id": "audit_1790664735090_9q2hr",
+      "userId": "admin_001",
+      "userRole": "ADMIN",
+      "userName": "Admin",
+      "action": "EXPLANATION_APPROVED",
+      "recordType": "Explanation",
+      "recordId": "exp_1790664734545_1rqh",
+      "details": {
+        "attendanceId": "att_1790656727446_eizt",
+        "doctorId": "doc_demo_001",
+        "decision": "APPROVE",
+        "adminRemarks": "Verified by Medical Superintendent.",
+        "updatedAttendanceStatus": "PRESENT_APPROVED_EXPLANATION"
+      },
+      "timestamp": "2026-09-29T06:52:15.090Z"
+    },
+    {
+      "_id": "audit_1790664735072_xi0w8",
+      "userId": "admin_001",
+      "userRole": "ADMIN",
+      "userName": "Admin",
+      "action": "EXPLANATION_REJECTED",
+      "recordType": "Explanation",
+      "recordId": "exp_1790664734545_1rqh",
+      "details": {
+        "attendanceId": "att_1790656727446_eizt",
+        "doctorId": "doc_demo_001",
+        "decision": "REJECT",
+        "adminRemarks": "Proof insufficient, please provide trauma discharge summary.",
+        "updatedAttendanceStatus": "ABSENT"
+      },
+      "timestamp": "2026-09-29T06:52:15.072Z"
+    },
+    {
+      "_id": "audit_1790664734550_6ihkq",
+      "userId": "doc_demo_001",
+      "userRole": "DOCTOR",
+      "userName": "Dr. Ranjith K (Medical Officer)",
+      "action": "EXPLANATION_SUBMITTED",
+      "recordType": "Explanation",
+      "recordId": "exp_1790664734545_1rqh",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointsCount": 1,
+        "reason": "Medical Emergency",
+        "status": "PENDING"
+      },
+      "timestamp": "2026-09-29T06:52:14.550Z"
+    },
+    {
+      "_id": "audit_1790664627453_v0qzx",
+      "userId": "doc_1790137031683",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790664627450_amhs",
+      "details": {
+        "date": "2026-09-29",
+        "checkpointTime": "12:15 PM",
+        "windowLabel": "12:15 PM – 12:20 PM",
+        "status": "ABSENT"
+      },
+      "timestamp": "2026-09-29T06:50:27.453Z"
+    },
+    {
+      "_id": "audit_1790663427305_mh5yo",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790663427291_ycol",
+      "details": {
+        "date": "2026-09-29",
+        "checkpointTime": "11:55 AM",
+        "windowLabel": "11:55 AM – 12:00 PM",
+        "status": "ABSENT"
+      },
+      "timestamp": "2026-09-29T06:30:27.305Z"
+    },
+    {
+      "_id": "audit_1790661026976_u6m9y",
+      "userId": "doc_1790137031683",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790661026973_406h",
+      "details": {
+        "date": "2026-09-29",
+        "checkpointTime": "11:15 AM",
+        "windowLabel": "11:15 AM – 11:20 AM",
+        "status": "ABSENT"
+      },
+      "timestamp": "2026-09-29T05:50:26.976Z"
+    },
+    {
+      "_id": "audit_1790659826804_64syi",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790659826798_03re",
+      "details": {
+        "date": "2026-09-29",
+        "checkpointTime": "10:55 AM",
+        "windowLabel": "10:55 AM – 11:00 AM",
+        "status": "ABSENT"
+      },
+      "timestamp": "2026-09-29T05:30:26.804Z"
+    },
     {
       "_id": "audit_1790656843973_h5ujl",
       "userId": "admin_demo_001",
@@ -3130,6 +3361,182 @@
     "globalBiometricRequired": true
   },
   "notifications": [
+    {
+      "_id": "notif_1790664751911",
+      "user": "doc_demo_001",
+      "targetRole": "DOCTOR",
+      "title": "Leave Application Rejected ❌",
+      "message": "Your Casual Leave leave application was rejected. Admin note: Hospital staffing shortage on Oct 5. Please follow your assigned duty schedule.",
+      "type": "DANGER",
+      "read": false,
+      "isRead": false,
+      "createdAt": "2026-09-29T06:52:31.911Z"
+    },
+    {
+      "_id": "notif_1790664751889",
+      "targetRole": "ADMIN",
+      "title": "New Leave Application",
+      "message": "Dr. Dr. Ranjith K (Medical Officer) has applied for Casual Leave leave from 2026-10-05 to 2026-10-05. Reason: Family function attendance",
+      "type": "INFO",
+      "read": false,
+      "isRead": false,
+      "createdAt": "2026-09-29T06:52:31.889Z"
+    },
+    {
+      "_id": "notif_1790664735094_svsr6",
+      "user": "doc_demo_001",
+      "recipientEmail": "doctor@hospital.gov.in",
+      "targetRole": "DOCTOR",
+      "title": "Absence Explanation Approved ✅",
+      "message": "Your absence explanation for Medical Emergency was APPROVED by Admin. Your attendance for that hour has been immediately updated to PRESENT. Remarks: Verified by Medical Superintendent.",
+      "type": "SUCCESS",
+      "read": false,
+      "isRead": false,
+      "createdAt": "2026-09-29T06:52:15.094Z"
+    },
+    {
+      "_id": "notif_1790664735075_wzzsc",
+      "user": "doc_demo_001",
+      "recipientEmail": "doctor@hospital.gov.in",
+      "targetRole": "DOCTOR",
+      "title": "Absence Explanation Rejected ❌",
+      "message": "Your absence explanation for Medical Emergency was REJECTED by Admin. Remarks: Proof insufficient, please provide trauma discharge summary.",
+      "type": "DANGER",
+      "read": false,
+      "isRead": false,
+      "createdAt": "2026-09-29T06:52:15.075Z"
+    },
+    {
+      "_id": "notif_1790664734547",
+      "user": null,
+      "targetRole": "ADMIN",
+      "title": "New Absence Explanation Submitted",
+      "message": "Dr. Dr. Ranjith K (Medical Officer) submitted 1 absence explanation(s) for 2026-09-28 (Reason: Medical Emergency).",
+      "type": "WARNING",
+      "read": false,
+      "isRead": false,
+      "createdAt": "2026-09-29T06:52:14.547Z"
+    },
+    {
+      "_id": "notif_1790664032773_d59fh",
+      "recipientEmail": "310624205278@eec.srmrmp.edu.in",
+      "title": "Duty Checkpoint Reminder: 12:15 PM",
+      "message": "Dr. Suriya N, your hourly duty checkpoint at 12:15 PM opens in 5 minutes (Reminder sent at 12:10 PM).",
+      "type": "EMAIL",
+      "read": false,
+      "isRead": false,
+      "createdAt": "2026-09-29T06:40:32.773Z"
+    },
+    {
+      "_id": "notif_rem_1790664027370_ffvef",
+      "user": "doc_1790137031683",
+      "recipientEmail": "310624205278@eec.srmrmp.edu.in",
+      "targetRole": "DOCTOR",
+      "title": "Duty Checkpoint Reminder: 12:15 PM ⏰",
+      "message": "Your duty checkpoint opens in 5 minutes at 12:15 PM. Please complete biometric face scan & geofence verification at City Care Hospital & Central PHC.",
+      "type": "DUTY_REMINDER",
+      "checkpointTime": "12:15 PM",
+      "reminderTime": "12:10 PM",
+      "dutyDate": "2026-09-29",
+      "status": "SENT",
+      "sentAt": "2026-09-29T06:40:27.370Z",
+      "read": false,
+      "isRead": false,
+      "createdAt": "2026-09-29T06:40:27.370Z"
+    },
+    {
+      "_id": "notif_1790662830848_wkqdh",
+      "recipientEmail": "suriyan182006@gmail.com",
+      "title": "Duty Checkpoint Reminder: 11:55 AM",
+      "message": "Dr. Suriya N, your hourly duty checkpoint at 11:55 AM opens in 5 minutes (Reminder sent at 11:50 AM).",
+      "type": "EMAIL",
+      "read": false,
+      "isRead": false,
+      "createdAt": "2026-09-29T06:20:30.848Z"
+    },
+    {
+      "_id": "notif_rem_1790662827214_jx46v",
+      "user": "doc_1790099333198",
+      "recipientEmail": "suriyan182006@gmail.com",
+      "targetRole": "DOCTOR",
+      "title": "Duty Checkpoint Reminder: 11:55 AM ⏰",
+      "message": "Your duty checkpoint opens in 5 minutes at 11:55 AM. Please complete biometric face scan & geofence verification at primary phc.",
+      "type": "DUTY_REMINDER",
+      "checkpointTime": "11:55 AM",
+      "reminderTime": "11:50 AM",
+      "dutyDate": "2026-09-29",
+      "status": "SENT",
+      "sentAt": "2026-09-29T06:20:27.214Z",
+      "read": false,
+      "isRead": false,
+      "createdAt": "2026-09-29T06:20:27.214Z"
+    },
+    {
+      "_id": "notif_1790660451604_s0dz7",
+      "recipientEmail": "310624205278@eec.srmrmp.edu.in",
+      "title": "Duty Checkpoint Reminder: 11:15 AM",
+      "message": "Dr. Suriya N, your hourly duty checkpoint at 11:15 AM opens in 5 minutes (Reminder sent at 11:10 AM).",
+      "type": "EMAIL",
+      "read": false,
+      "isRead": false,
+      "createdAt": "2026-09-29T05:40:51.604Z"
+    },
+    {
+      "_id": "notif_rem_1790660426889_eypwb",
+      "user": "doc_1790137031683",
+      "recipientEmail": "310624205278@eec.srmrmp.edu.in",
+      "targetRole": "DOCTOR",
+      "title": "Duty Checkpoint Reminder: 11:15 AM ⏰",
+      "message": "Your duty checkpoint opens in 5 minutes at 11:15 AM. Please complete biometric face scan & geofence verification at City Care Hospital & Central PHC.",
+      "type": "DUTY_REMINDER",
+      "checkpointTime": "11:15 AM",
+      "reminderTime": "11:10 AM",
+      "dutyDate": "2026-09-29",
+      "status": "SENT",
+      "sentAt": "2026-09-29T05:40:26.889Z",
+      "read": false,
+      "isRead": false,
+      "createdAt": "2026-09-29T05:40:26.889Z"
+    },
+    {
+      "_id": "notif_1790659230769_kzvuh",
+      "recipientEmail": "suriyan182006@gmail.com",
+      "title": "Duty Checkpoint Reminder: 10:55 AM",
+      "message": "Dr. Suriya N, your hourly duty checkpoint at 10:55 AM opens in 5 minutes (Reminder sent at 10:50 AM).",
+      "type": "EMAIL",
+      "read": false,
+      "isRead": false,
+      "createdAt": "2026-09-29T05:20:30.769Z"
+    },
+    {
+      "_id": "notif_rem_1790659226728_huk49",
+      "user": "doc_1790099333198",
+      "recipientEmail": "suriyan182006@gmail.com",
+      "targetRole": "DOCTOR",
+      "title": "Duty Checkpoint Reminder: 10:55 AM ⏰",
+      "message": "Your duty checkpoint opens in 5 minutes at 10:55 AM. Please complete biometric face scan & geofence verification at primary phc.",
+      "type": "DUTY_REMINDER",
+      "checkpointTime": "10:55 AM",
+      "reminderTime": "10:50 AM",
+      "dutyDate": "2026-09-29",
+      "status": "SENT",
+      "sentAt": "2026-09-29T05:20:26.728Z",
+      "read": false,
+      "isRead": false,
+      "createdAt": "2026-09-29T05:20:26.728Z"
+    },
+    {
+      "_id": "notif_1790656843975_1vsa9",
+      "user": "doc_demo_001",
+      "recipientEmail": "doctor@hospital.gov.in",
+      "targetRole": "DOCTOR",
+      "title": "Absence Explanation Approved ✅",
+      "message": "Your absence explanation for Medical Emergency was APPROVED by Admin. Your attendance for that hour has been immediately updated to PRESENT. Remarks: Trauma duty verified by CMO",
+      "type": "SUCCESS",
+      "read": false,
+      "isRead": false,
+      "createdAt": "2026-09-29T04:40:43.975Z"
+    },
     {
       "_id": "notif_1790656785651",
       "user": null,

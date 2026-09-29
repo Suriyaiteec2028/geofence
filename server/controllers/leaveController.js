@@ -49,8 +49,8 @@ exports.grantOfficialLeave = (req, res) => {
   // Reconcile any existing auto-absent records within the granted leave date range
   const affectedAttendances = (memoryStore.attendances || []).filter(a =>
     String(a.doctor) === String(doctorId) &&
-    a.date >= startDate &&
-    a.date <= endDate &&
+    ((a.shiftDutyDate && a.shiftDutyDate >= startDate && a.shiftDutyDate <= endDate) ||
+     (a.date >= startDate && a.date <= endDate)) &&
     (a.status === 'ABSENT' || a.status === 'PENDING_EXPLANATION')
   );
   affectedAttendances.forEach(a => {
@@ -107,8 +107,8 @@ exports.cancelOfficialLeave = (req, res) => {
   // Reconcile: revert OFFICIAL_LEAVE attendance records associated with this leave back to ABSENT
   const affected = (memoryStore.attendances || []).filter(a =>
     String(a.doctor) === String(leave.doctor) &&
-    a.date >= leave.startDate &&
-    a.date <= leave.endDate &&
+    ((a.shiftDutyDate && a.shiftDutyDate >= leave.startDate && a.shiftDutyDate <= leave.endDate) ||
+     (a.date >= leave.startDate && a.date <= leave.endDate)) &&
     a.status === 'OFFICIAL_LEAVE' &&
     String(a.leaveId) === String(leave._id)
   );
@@ -142,12 +142,12 @@ exports.getDoctorLeaves = (req, res) => {
   const doctorId = req.params.doctorId || req.user.id;
   memoryStore.leaves = memoryStore.leaves || [];
   
-  let doctorLeaves = memoryStore.leaves.filter(l => l.doctor === doctorId);
+  let doctorLeaves = memoryStore.leaves.filter(l => String(l.doctor) === String(doctorId));
   
   // Enrich
   doctorLeaves = doctorLeaves.map(leave => {
-    const doc = memoryStore.users.find(u => u._id === leave.doctor);
-    const phc = memoryStore.phcs.find(p => p._id === leave.phc);
+    const doc = memoryStore.users.find(u => String(u._id) === String(leave.doctor));
+    const phc = memoryStore.phcs.find(p => String(p._id) === String(leave.phc));
     return {
       ...leave,
       doctorName: doc ? doc.name : 'Unknown',
@@ -165,13 +165,13 @@ exports.getAllLeaves = (req, res) => {
   let allLeaves = [...memoryStore.leaves];
 
   if (req.user.role === 'ADMIN' && req.userDetails && req.userDetails.assignedPHC) {
-    allLeaves = allLeaves.filter(l => l.phc === req.userDetails.assignedPHC);
+    allLeaves = allLeaves.filter(l => String(l.phc) === String(req.userDetails.assignedPHC));
   }
 
   // Enrich
   allLeaves = allLeaves.map(leave => {
-    const doc = memoryStore.users.find(u => u._id === leave.doctor);
-    const phc = memoryStore.phcs.find(p => p._id === leave.phc);
+    const doc = memoryStore.users.find(u => String(u._id) === String(leave.doctor));
+    const phc = memoryStore.phcs.find(p => String(p._id) === String(leave.phc));
     return {
       ...leave,
       doctorName: doc ? doc.name : 'Unknown',
@@ -382,8 +382,8 @@ exports.reviewLeaveApplication = (req, res) => {
       const doctor = memoryStore.users.find(u => String(u._id) === String(app.doctor));
       const affectedAttendances = memoryStore.attendances.filter(a =>
         String(a.doctor) === String(app.doctor) &&
-        a.date >= app.startDate &&
-        a.date <= app.endDate &&
+        ((a.shiftDutyDate && a.shiftDutyDate >= app.startDate && a.shiftDutyDate <= app.endDate) ||
+         (a.date >= app.startDate && a.date <= app.endDate)) &&
         (a.status === 'ABSENT' || a.status === 'PENDING_EXPLANATION')
       );
       affectedAttendances.forEach(a => {
@@ -461,10 +461,10 @@ exports.editGrantedLeave = (req, res) => {
       }
 
       // Reconcile: OFFICIAL_LEAVE attendance records revert to ABSENT
-      const affected = memoryStore.attendances.filter(a =>
+      const affected = (memoryStore.attendances || []).filter(a =>
         String(a.doctor) === String(leave.doctor) &&
-        a.date >= leave.startDate &&
-        a.date <= leave.endDate &&
+        ((a.shiftDutyDate && a.shiftDutyDate >= leave.startDate && a.shiftDutyDate <= leave.endDate) ||
+         (a.date >= leave.startDate && a.date <= leave.endDate)) &&
         a.status === 'OFFICIAL_LEAVE' &&
         String(a.leaveId) === String(leave._id)
       );

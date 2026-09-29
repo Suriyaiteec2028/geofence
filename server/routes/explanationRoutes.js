@@ -11,5 +11,6 @@ router.get('/pending', requireRole(['CMO', 'ADMIN']), explanationController.getP
 router.patch('/:id/review', requireRole(['CMO', 'ADMIN']), explanationController.reviewExplanation);
 
 router.get('/my', requireRole(['DOCTOR']), explanationController.getDoctorExplanations);
+router.get('/eligible-windows', requireRole(['DOCTOR']), explanationController.getEligibleMissedWindows);
 
 module.exports = router;

@@ -1,6 +1,6 @@
 const { memoryStore, saveMemoryStoreToDisk } = require('../config/db');
 const { calculateHaversineDistance } = require('../utils/haversine');
-const { evaluateCurrentShiftState } = require('../utils/shiftEngine');
+const { evaluateCurrentShiftState, getISTDateString } = require('../utils/shiftEngine');
 const { logAuditEvent } = require('../utils/auditLogger');
 
 // Calculates deadline as 12:00 AM at the beginning of the third calendar day after the missed attendance date in IST (+05:30)
@@ -62,9 +62,21 @@ exports.getDoctorShiftStatus = (req, res) => {
       new Date()
     );
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getISTDateString();
+    const currentShiftDutyDate = shiftState.shiftDutyDate || todayStr;
+
+    // Check if doctor is on active official leave for the current shift (Section 5.2)
+    const activeLeaveForShift = (memoryStore.leaves || []).find(l =>
+      String(l.doctor) === String(doctor._id) &&
+      l.status === 'ACTIVE' &&
+      l.startDate <= currentShiftDutyDate &&
+      l.endDate >= currentShiftDutyDate
+    );
+    const isOnLeave = !!activeLeaveForShift;
+    const leaveNote = activeLeaveForShift?.leaveNote || '';
+
     const todayAttendances = memoryStore.attendances.filter(a => 
-      String(a.doctor) === String(doctor._id) && a.date === todayStr
+      String(a.doctor) === String(doctor._id) && (a.date === currentShiftDutyDate || a.date === todayStr)
     );
 
     res.json({
@@ -90,6 +102,9 @@ exports.getDoctorShiftStatus = (req, res) => {
       phcLongitude: phc ? phc.longitude : null,
       phcRadius: phc ? phc.radius : null,
       phcCoordinatesSet: phc ? !!(phc.latitude && phc.longitude && phc.latitude !== 13.0827) : false,
+      shiftDutyDate: currentShiftDutyDate,
+      isOnLeave,
+      leaveNote,
       shiftState,
       todayAttendances
     });
@@ -273,21 +288,6 @@ exports.markAttendance = (req, res) => {
       return res.status(400).json({ success: false, message: 'No hospital/PHC assigned to doctor.' });
     }
 
-    // Check if doctor is on official leave today
-    const todayCheckStr = new Date().toISOString().split('T')[0];
-    const isOnLeaveToday = (memoryStore.leaves || []).some(l =>
-      String(l.doctor) === String(doctor._id) &&
-      l.status === 'ACTIVE' &&
-      l.startDate <= todayCheckStr &&
-      l.endDate >= todayCheckStr
-    );
-    if (isOnLeaveToday) {
-      return res.status(400).json({
-        success: false,
-        message: 'You are on Official Leave today. Attendance marking is not required on leave days.'
-      });
-    }
-
     const intervalMins = memoryStore.settings.checkpointIntervalMinutes || 60;
     const windowMins = memoryStore.settings.windowDurationMinutes || 5;
 
@@ -298,6 +298,23 @@ exports.markAttendance = (req, res) => {
       windowMins,
       new Date()
     );
+
+    const activeWin = shiftState.activeWindow;
+    const currentShiftDutyDate = (activeWin && activeWin.shiftDutyDate) || shiftState.shiftDutyDate || getISTDateString();
+
+    // Check if doctor is on official leave for this duty shift (Section 5.4)
+    const isOnLeaveShift = (memoryStore.leaves || []).some(l =>
+      String(l.doctor) === String(doctor._id) &&
+      l.status === 'ACTIVE' &&
+      l.startDate <= currentShiftDutyDate &&
+      l.endDate >= currentShiftDutyDate
+    );
+    if (isOnLeaveShift) {
+      return res.status(400).json({
+        success: false,
+        message: 'You are on Official Leave for this shift. Attendance marking is not required on leave days.'
+      });
+    }
 
     // Validate if window is open
     if (!shiftState.isWindowOpen || !shiftState.activeWindow) {
@@ -317,8 +334,7 @@ exports.markAttendance = (req, res) => {
     );
 
     const isWithinGeofence = distanceMeters <= phc.radius;
-    const activeWin = shiftState.activeWindow;
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = currentShiftDutyDate;
 
     let attRecord = memoryStore.attendances.find(a => 
       String(a.doctor) === String(doctor._id) && 
@@ -348,6 +364,8 @@ exports.markAttendance = (req, res) => {
         doctor: doctor._id,
         phc: phc._id,
         date: todayStr,
+        shiftDutyDate: todayStr,
+        shiftId: `${doctor._id}_${todayStr}_${doctor.shiftStart || '09:00'}-${doctor.shiftEnd || '17:00'}`,
         checkpointTime: activeWin.windowStartFormatted,
         windowLabel: activeWin.windowLabel,
         markedAt: new Date().toISOString(),
@@ -362,6 +380,7 @@ exports.markAttendance = (req, res) => {
       attRecord.withinGeofence = true;
       attRecord.distanceMeters = distanceMeters;
       attRecord.markedAt = new Date().toISOString();
+      attRecord.shiftDutyDate = todayStr;
     }
 
     saveMemoryStoreToDisk();

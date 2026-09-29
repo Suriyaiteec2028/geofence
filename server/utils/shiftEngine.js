@@ -118,6 +118,8 @@ function generateShiftWindows(shiftStart = '09:00', shiftEnd = '17:00', interval
       checkpointIndex: windows.length + 1,
       checkpointTime24: minutesTo24h(currentCheckpointMins),
       checkpointFormatted: startFormatted,
+      shiftDutyDate: dateStr,
+      dutyDate: dateStr,
       windowStartMins,
       windowEndMins,
       windowStartISO: new Date(windowStartEpochMs).toISOString(),
@@ -207,6 +209,9 @@ function evaluateCurrentShiftState(shiftStart = '09:00', shiftEnd = '17:00', int
   return {
     istNowFormatted: minutesToFormattedTime(nowMins),
     istDateStr: getISTDateString(nowInput),
+    shiftDutyDate: getISTDateString(shiftRefDate),
+    dutyDate: getISTDateString(shiftRefDate),
+    shiftLabel: `${shiftStart} – ${shiftEnd}`,
     windows,
     activeWindow,
     nextWindow,

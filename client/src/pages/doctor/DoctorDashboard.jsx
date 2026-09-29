@@ -62,8 +62,13 @@ const computeStats = (records, rangeStart, rangeEnd, activeLeaves = []) => {
   const eligibleWindows = filtered.filter(r => !isDateOnLeave(r.date) && r.status !== 'OFFICIAL_LEAVE' && r.status !== 'NOT_APPLICABLE');
   const totalRequiredWindows = eligibleWindows.length;
 
-  // Present windows: PRESENT or EXPLANATION_APPROVED / PRESENT_APPROVED
-  const presentWindows = eligibleWindows.filter(r => r.status === 'PRESENT' || r.status === 'EXPLANATION_APPROVED' || r.status === 'PRESENT_APPROVED').length;
+  // Present windows: PRESENT or EXPLANATION_APPROVED / PRESENT_APPROVED / PRESENT_APPROVED_EXPLANATION
+  const presentWindows = eligibleWindows.filter(r =>
+    r.status === 'PRESENT' ||
+    r.status === 'EXPLANATION_APPROVED' ||
+    r.status === 'PRESENT_APPROVED' ||
+    r.status === 'PRESENT_APPROVED_EXPLANATION'
+  ).length;
 
   // Absent windows: ABSENT or EXPLANATION_REJECTED
   const absentWindows = eligibleWindows.filter(r => r.status === 'ABSENT' || r.status === 'EXPLANATION_REJECTED').length;
@@ -71,8 +76,12 @@ const computeStats = (records, rangeStart, rangeEnd, activeLeaves = []) => {
   // Pending explanation windows: PENDING_EXPLANATION / EXPLANATION_PENDING
   const pendingExplanationWindows = eligibleWindows.filter(r => r.status === 'PENDING_EXPLANATION' || r.status === 'EXPLANATION_PENDING').length;
 
-  // Approved explanation windows: EXPLANATION_APPROVED / PRESENT_APPROVED
-  const approvedExplanationWindows = eligibleWindows.filter(r => r.status === 'EXPLANATION_APPROVED' || r.status === 'PRESENT_APPROVED').length;
+  // Approved explanation windows: EXPLANATION_APPROVED / PRESENT_APPROVED / PRESENT_APPROVED_EXPLANATION
+  const approvedExplanationWindows = eligibleWindows.filter(r =>
+    r.status === 'EXPLANATION_APPROVED' ||
+    r.status === 'PRESENT_APPROVED' ||
+    r.status === 'PRESENT_APPROVED_EXPLANATION'
+  ).length;
 
   // Official leave days
   const leaveDays = new Set(
@@ -120,7 +129,12 @@ const getLast14DaysTrend = (records, activeLeaves = []) => {
     const label = d.toLocaleDateString('default', { month: 'short', day: 'numeric' });
     const isLeave = activeLeaves.some(l => l.status === 'ACTIVE' && l.startDate <= dateStr && l.endDate >= dateStr);
     const dayRecords = records.filter(r => r.date === dateStr);
-    const hasPresent = dayRecords.some(r => r.status === 'PRESENT' || r.status === 'EXPLANATION_APPROVED');
+    const hasPresent = dayRecords.some(r =>
+      r.status === 'PRESENT' ||
+      r.status === 'EXPLANATION_APPROVED' ||
+      r.status === 'PRESENT_APPROVED_EXPLANATION' ||
+      r.status === 'PRESENT_APPROVED'
+    );
     const hasAbsent = !isLeave && dayRecords.length > 0 && !hasPresent && !dayRecords.every(r => r.status === 'OFFICIAL_LEAVE');
     days.push({ dateStr, label, hasPresent, hasAbsent, isLeave, count: dayRecords.length });
   }
@@ -166,14 +180,21 @@ export const DoctorDashboard = () => {
 
   const fetchLeaves = useCallback(async () => {
     try {
-      const res = await axios.get('/api/leaves/my');
-      const active = (res.data.leaves || []).filter(l => l.status === 'ACTIVE');
+      const [leaveRes, appRes] = await Promise.all([
+        axios.get('/api/leaves/my'),
+        axios.get('/api/leaves/my-applications')
+      ]);
+      const active = (leaveRes.data?.leaves || []).filter(l => l.status === 'ACTIVE');
       const today = new Date().toISOString().split('T')[0];
+      const apps = appRes.data?.applications || [];
+      // Find latest rejected leave application if any
+      const rejectedApp = apps.find(a => a.status === 'REJECTED');
       if (isMounted.current)
         setLeaveInfo({
           currentLeave: active.find(l => l.startDate <= today && l.endDate >= today),
           upcomingLeave: active.find(l => l.startDate > today),
-          activeLeaves: active
+          activeLeaves: active,
+          rejectedLeave: rejectedApp || null
         });
     } catch { if (isMounted.current) setLeaveInfo(null); }
   }, []);
@@ -319,13 +340,13 @@ export const DoctorDashboard = () => {
           <button
             onClick={() => navigate('/doctor/mark')}
             className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg transition-all ${
-              leaveInfo?.currentLeave
+              (shiftData?.isOnLeave || leaveInfo?.currentLeave)
                 ? 'bg-blue-600/30 text-blue-300 border border-blue-500/30'
                 : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
             }`}
           >
             <Navigation className="w-3.5 h-3.5" />
-            {leaveInfo?.currentLeave ? '🌴 On Leave Today' : 'Mark Attendance'}
+            {(shiftData?.isOnLeave || leaveInfo?.currentLeave) ? '🌴 On Official Leave' : 'Mark Attendance'}
           </button>
           <button
             onClick={() => navigate('/doctor/history')}
@@ -351,8 +372,41 @@ export const DoctorDashboard = () => {
         </div>
       </div>
 
-      {/* ── Official Leave Notice (Requirement 3.2) ── */}
-      {leaveInfo && (leaveInfo.currentLeave || leaveInfo.upcomingLeave) && (
+      {/* ── Section 4: Rejected Leave Notification Banner ── */}
+      {leaveInfo?.rejectedLeave && (
+        <div className="bg-gradient-to-r from-rose-950/60 via-slate-900 to-slate-950 rounded-3xl p-6 border border-rose-500/40 shadow-2xl space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-rose-400 uppercase tracking-wider">
+            <AlertCircle className="w-4 h-4 text-rose-400" /> Leave Application Notice
+          </div>
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="px-3 py-1 text-xs font-extrabold bg-rose-600 text-white rounded-full">
+                Leave Application Rejected
+              </span>
+              <span className="text-xs text-slate-300 font-semibold">
+                Period: {leaveInfo.rejectedLeave.startDate === leaveInfo.rejectedLeave.endDate
+                  ? leaveInfo.rejectedLeave.startDate
+                  : `${leaveInfo.rejectedLeave.startDate} to ${leaveInfo.rejectedLeave.endDate}`} ({leaveInfo.rejectedLeave.leaveType})
+              </span>
+            </div>
+            <p className="text-sm font-semibold text-rose-200">
+              Your leave application has been rejected. Please follow your assigned duty schedule.
+            </p>
+            {leaveInfo.rejectedLeave.adminNote && (
+              <div className="p-3 rounded-xl bg-slate-900/80 border border-rose-500/30 text-xs text-rose-300">
+                <span className="text-[10px] text-rose-400 font-bold block uppercase mb-0.5">Admin Note:</span>
+                {leaveInfo.rejectedLeave.adminNote}
+              </div>
+            )}
+            <p className="text-[11px] text-slate-400">
+              Your attendance windows remain open according to your assigned duty schedule. Please complete attendance verification inside the geofence.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Official Leave Notice (Requirement 3.2 & Section 5.2) ── */}
+      {(shiftData?.isOnLeave || (leaveInfo && (leaveInfo.currentLeave || leaveInfo.upcomingLeave))) && (
         <div className="bg-gradient-to-r from-blue-900/50 via-indigo-900/40 to-slate-900 rounded-3xl p-6 border border-blue-500/30 shadow-2xl space-y-3">
           <div className="flex items-center gap-2 text-xs font-bold text-blue-300 uppercase tracking-wider">
             <Calendar className="w-4 h-4" /> Official Leave Status

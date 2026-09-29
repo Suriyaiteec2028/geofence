@@ -48,7 +48,14 @@ export const AttendanceHistory = () => {
   };
 
   // Status mapping & badges per Section 5.1 & 5.2
-  const renderStatusBadge = (status) => {
+  const renderStatusBadge = (status, explanation) => {
+    if (explanation?.status === 'PENDING' && status !== 'PRESENT_APPROVED_EXPLANATION') {
+      return (
+        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1 w-fit">
+          <AlertCircle className="w-3 h-3 text-amber-400" /> Absent — Explanation Pending
+        </span>
+      );
+    }
     switch (status) {
       case 'PRESENT':
         return (
@@ -58,6 +65,7 @@ export const AttendanceHistory = () => {
         );
       case 'EXPLANATION_APPROVED':
       case 'PRESENT_APPROVED':
+      case 'PRESENT_APPROVED_EXPLANATION':
         return (
           <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1 w-fit">
             <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Present — Approved Explanation
@@ -160,7 +168,7 @@ export const AttendanceHistory = () => {
       header: 'Status',
       key: 'status',
       sortable: true,
-      render: (row) => renderStatusBadge(row.status)
+      render: (row) => renderStatusBadge(row.status, row.explanation)
     },
     {
       header: 'Explanation',
@@ -235,7 +243,7 @@ export const AttendanceHistory = () => {
             <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2.5">
               <div className="flex justify-between items-center pb-2 border-b border-slate-800">
                 <span className="text-slate-400">Attendance Status:</span>
-                <div>{renderStatusBadge(selectedRecord.status)}</div>
+                <div>{renderStatusBadge(selectedRecord.status, selectedRecord.explanation)}</div>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Duty Date:</span>
