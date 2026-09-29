@@ -148,7 +148,7 @@ function checkAndSendHourlyReminders() {
         if (istNow > windowEndObj) {
           const existingAtt = memoryStore.attendances.find(a => 
             String(a.doctor) === String(doctor._id) && 
-            (a.date === todayStr || a.checkpointTime === win.windowStartFormatted) && 
+            a.date === todayStr && 
             (a.checkpointTime === win.windowStartFormatted || a.windowLabel === win.windowLabel)
           );
 
@@ -276,73 +276,87 @@ async function triggerImmediateReminderTest(doctorId = null) {
 function reconcileMissedAttendanceOnStartup() {
   try {
     const istNow = getISTDate();
-    const todayStr = getISTDateString(istNow);
     const intervalMins = memoryStore.settings?.checkpointIntervalMinutes || 60;
     const windowMins = memoryStore.settings?.windowDurationMinutes || 5;
 
     const doctors = (memoryStore.users || []).filter(u => u.role === 'DOCTOR' && u.status === 'ACTIVE');
     let reconciledCount = 0;
 
-    for (const doctor of doctors) {
-      const isOnLeave = (memoryStore.leaves || []).some(leave => 
-        String(leave.doctor) === String(doctor._id) && 
-        leave.status === 'ACTIVE' && 
-        leave.startDate <= todayStr && 
-        leave.endDate >= todayStr
-      );
-      if (isOnLeave) continue;
+    // Check past 3 days and today (e.g. today - 3, today - 2, today - 1, today)
+    for (let offset = 3; offset >= 0; offset--) {
+      const targetDate = new Date(istNow);
+      targetDate.setDate(istNow.getDate() - offset);
+      const targetDateStr = getISTDateString(targetDate);
 
-      const shiftState = evaluateCurrentShiftState(
-        doctor.shiftStart || '09:00',
-        doctor.shiftEnd || '17:00',
-        intervalMins,
-        windowMins,
-        istNow
-      );
-
-      for (const win of shiftState.windows) {
-        const windowEndObj = new Date(win.windowEndISO);
+      for (const doctor of doctors) {
         const docCreatedAt = doctor.createdAt ? new Date(doctor.createdAt) : null;
-        if (docCreatedAt && docCreatedAt > windowEndObj) continue;
+        const doctorActiveDateStr = docCreatedAt ? getISTDateString(docCreatedAt) : '2000-01-01';
 
-        if (istNow > windowEndObj) {
-          const existingAtt = (memoryStore.attendances || []).find(a => 
-            String(a.doctor) === String(doctor._id) && 
-            a.date === todayStr && 
-            (a.checkpointTime === win.windowStartFormatted || a.windowLabel === win.windowLabel)
-          );
+        // Never reconcile attendance before doctor account creation (Rule 4)
+        if (targetDateStr < doctorActiveDateStr) continue;
 
-          if (!existingAtt) {
-            const autoAbsent = {
-              _id: 'att_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-              doctor: doctor._id,
-              phc: doctor.assignedPHC,
-              date: todayStr,
-              checkpointTime: win.windowStartFormatted,
-              windowLabel: win.windowLabel,
-              markedAt: null,
-              status: 'ABSENT',
-              withinGeofence: false,
-              createdAt: new Date().toISOString()
-            };
-            memoryStore.attendances.push(autoAbsent);
-            reconciledCount++;
+        // Skip if doctor is on active official leave on target date (Rule 8)
+        const isOnLeave = (memoryStore.leaves || []).some(leave => 
+          String(leave.doctor) === String(doctor._id) && 
+          leave.status === 'ACTIVE' && 
+          leave.startDate <= targetDateStr && 
+          leave.endDate >= targetDateStr
+        );
+        if (isOnLeave) continue;
 
-            logAuditEvent({
-              userId: doctor._id,
-              userRole: 'DOCTOR',
-              userName: doctor.name,
-              action: 'ATTENDANCE_WINDOW_MISSED',
-              recordType: 'Attendance',
-              recordId: autoAbsent._id,
-              details: {
-                date: todayStr,
+        const shiftState = evaluateCurrentShiftState(
+          doctor.shiftStart || '09:00',
+          doctor.shiftEnd || '17:00',
+          intervalMins,
+          windowMins,
+          targetDate
+        );
+
+        for (const win of shiftState.windows) {
+          const windowEndObj = new Date(win.windowEndISO);
+          // Check middle-of-day onboarding rule: window ended before account was created
+          if (docCreatedAt && docCreatedAt > windowEndObj) continue;
+
+          // Only reconcile windows that have already closed
+          if (istNow > windowEndObj) {
+            const existingAtt = (memoryStore.attendances || []).find(a => 
+              String(a.doctor) === String(doctor._id) && 
+              a.date === targetDateStr && 
+              (a.checkpointTime === win.windowStartFormatted || a.windowLabel === win.windowLabel)
+            );
+
+            if (!existingAtt) {
+              const autoAbsent = {
+                _id: 'att_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+                doctor: doctor._id,
+                phc: doctor.assignedPHC,
+                date: targetDateStr,
                 checkpointTime: win.windowStartFormatted,
                 windowLabel: win.windowLabel,
+                markedAt: null,
                 status: 'ABSENT',
-                source: 'StartupReconciliation'
-              }
-            });
+                withinGeofence: false,
+                createdAt: new Date().toISOString()
+              };
+              memoryStore.attendances.push(autoAbsent);
+              reconciledCount++;
+
+              logAuditEvent({
+                userId: doctor._id,
+                userRole: 'DOCTOR',
+                userName: doctor.name,
+                action: 'ATTENDANCE_WINDOW_MISSED',
+                recordType: 'Attendance',
+                recordId: autoAbsent._id,
+                details: {
+                  date: targetDateStr,
+                  checkpointTime: win.windowStartFormatted,
+                  windowLabel: win.windowLabel,
+                  status: 'ABSENT',
+                  source: 'StartupReconciliation'
+                }
+              });
+            }
           }
         }
       }

@@ -9,7 +9,7 @@ exports.getAIAnalytics = (req, res) => {
     // AI Insight 1: Doctor compliance
     const doctorStats = doctors.map(d => {
       const docAtts = attendances.filter(a => String(a.doctor) === String(d._id));
-      const presentCount = docAtts.filter(a => a.status === 'PRESENT' || a.status === 'EXPLANATION_APPROVED').length;
+      const presentCount = docAtts.filter(a => a.status === 'PRESENT' || a.status === 'EXPLANATION_APPROVED' || a.status === 'PRESENT_APPROVED_EXPLANATION' || a.status === 'PRESENT_APPROVED').length;
       const rate = docAtts.length > 0 ? Math.round((presentCount / docAtts.length) * 100) : 0;
       return { id: d._id, name: d.name, specialization: d.specialization, rate, total: docAtts.length };
     });
@@ -19,13 +19,13 @@ exports.getAIAnalytics = (req, res) => {
     // AI Insight 2: PHC Compliance ranking
     const phcStats = phcs.map(p => {
       const pAtts = attendances.filter(a => String(a.phc) === String(p._id));
-      const pPresent = pAtts.filter(a => a.status === 'PRESENT' || a.status === 'EXPLANATION_APPROVED').length;
+      const pPresent = pAtts.filter(a => a.status === 'PRESENT' || a.status === 'EXPLANATION_APPROVED' || a.status === 'PRESENT_APPROVED_EXPLANATION' || a.status === 'PRESENT_APPROVED').length;
       const compliance = pAtts.length > 0 ? Math.round((pPresent / pAtts.length) * 100) : 0;
       return { id: p._id, name: p.name, district: p.district, compliance };
     });
 
     const totalRecords = attendances.length;
-    const presentCountTotal = attendances.filter(a => a.status === 'PRESENT' || a.status === 'EXPLANATION_APPROVED').length;
+    const presentCountTotal = attendances.filter(a => a.status === 'PRESENT' || a.status === 'EXPLANATION_APPROVED' || a.status === 'PRESENT_APPROVED_EXPLANATION' || a.status === 'PRESENT_APPROVED').length;
     const overallScore = totalRecords > 0 ? Math.round((presentCountTotal / totalRecords) * 100) : 100;
 
     const recommendations = [];

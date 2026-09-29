@@ -30,7 +30,7 @@ exports.getReportSummary = (req, res) => {
     const totalAdmins = users.filter(u => u.role === 'ADMIN').length;
     const totalDoctors = users.filter(u => u.role === 'DOCTOR').length;
 
-    const presentCount = attendances.filter(a => a.status === 'PRESENT' || a.status === 'EXPLANATION_APPROVED').length;
+    const presentCount = attendances.filter(a => a.status === 'PRESENT' || a.status === 'EXPLANATION_APPROVED' || a.status === 'PRESENT_APPROVED_EXPLANATION' || a.status === 'PRESENT_APPROVED').length;
     const absentCount = attendances.filter(a => a.status === 'ABSENT' || a.status === 'EXPLANATION_REJECTED').length;
     const pendingExplanations = explanations.filter(e => e.status === 'PENDING').length;
 
@@ -50,7 +50,7 @@ exports.getReportSummary = (req, res) => {
     const phcPerformance = phcs.map(p => {
       const pDocs = users.filter(u => u.role === 'DOCTOR' && String(u.assignedPHC) === String(p._id));
       const pAtts = attendances.filter(a => String(a.phc) === String(p._id));
-      const pPresent = pAtts.filter(a => a.status === 'PRESENT' || a.status === 'EXPLANATION_APPROVED').length;
+      const pPresent = pAtts.filter(a => a.status === 'PRESENT' || a.status === 'EXPLANATION_APPROVED' || a.status === 'PRESENT_APPROVED_EXPLANATION' || a.status === 'PRESENT_APPROVED').length;
       const rate = pAtts.length > 0 ? Math.round((pPresent / pAtts.length) * 100) : 100;
       return {
         id: p._id,
@@ -114,7 +114,7 @@ exports.exportAttendancePDF = (req, res) => {
     list.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
     const totalRecords = list.length;
-    const presentCount = list.filter(a => a.status === 'PRESENT' || a.status === 'EXPLANATION_APPROVED').length;
+    const presentCount = list.filter(a => a.status === 'PRESENT' || a.status === 'EXPLANATION_APPROVED' || a.status === 'PRESENT_APPROVED_EXPLANATION' || a.status === 'PRESENT_APPROVED').length;
     const rate = totalRecords > 0 ? Math.round((presentCount / totalRecords) * 100) : 100;
 
     const targetPhc = targetDoctor && targetDoctor.assignedPHC ? workspacePHCs.find(p => String(p._id) === String(targetDoctor.assignedPHC)) : (workspacePHCs[0] || null);
@@ -262,7 +262,7 @@ exports.exportAttendancePDF = (req, res) => {
         const dateStr = att.date || new Date().toISOString().split('T')[0];
         const windowStr = att.checkpointTime || 'Hourly Duty Window';
         const facilityStr = attPhc ? attPhc.name : 'Assigned PHC';
-        const isVerified = att.status === 'PRESENT' || att.status === 'EXPLANATION_APPROVED';
+        const isVerified = att.status === 'PRESENT' || att.status === 'EXPLANATION_APPROVED' || att.status === 'PRESENT_APPROVED_EXPLANATION' || att.status === 'PRESENT_APPROVED';
 
         doc.fillColor(COLORS.darkCharcoal).fontSize(8.5).font('Helvetica');
         doc.text(`${dateStr} | ${windowStr}`, cardX + 10, currentY);
@@ -278,8 +278,11 @@ exports.exportAttendancePDF = (req, res) => {
         if (att.status === 'PRESENT') {
           statusLabel = 'PRESENT';
           statusColor = COLORS.presentGreen;
-        } else if (att.status === 'EXPLANATION_APPROVED') {
+        } else if (att.status === 'EXPLANATION_APPROVED' || att.status === 'PRESENT_APPROVED_EXPLANATION' || att.status === 'PRESENT_APPROVED') {
           statusLabel = 'EXPLANATION APPR.';
+          statusColor = COLORS.presentGreen;
+        } else if (att.status === 'OFFICIAL_LEAVE') {
+          statusLabel = 'OFFICIAL LEAVE';
           statusColor = COLORS.presentGreen;
         } else if (att.status === 'PENDING_EXPLANATION') {
           statusLabel = 'PENDING REASON';

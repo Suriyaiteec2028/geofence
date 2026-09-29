@@ -84,6 +84,11 @@ function minutesTo24h(totalMinutes) {
  */
 function generateShiftWindows(shiftStart = '09:00', shiftEnd = '17:00', intervalMinutes = 60, windowDurationMinutes = 5, referenceDate = new Date()) {
   const istRef = getISTDate(referenceDate);
+  const dateStr = getISTDateString(istRef);
+  const [refY, refM, refD] = dateStr.split('-').map(Number);
+  // Base epoch in milliseconds for 00:00:00 IST of reference date (UTC = IST - 5:30)
+  const baseEpochMs = Date.UTC(refY, refM - 1, refD, 0, 0, 0, 0) - (5.5 * 3600000);
+
   const startMins = timeToMinutes(shiftStart);
   let endMins = timeToMinutes(shiftEnd);
 
@@ -106,12 +111,17 @@ function generateShiftWindows(shiftStart = '09:00', shiftEnd = '17:00', interval
     const endFormatted = minutesToFormattedTime(windowEndMins);
     const reminderFormatted = minutesToFormattedTime(reminderMins);
 
+    const windowStartEpochMs = baseEpochMs + windowStartMins * 60000;
+    const windowEndEpochMs = baseEpochMs + windowEndMins * 60000;
+
     windows.push({
       checkpointIndex: windows.length + 1,
       checkpointTime24: minutesTo24h(currentCheckpointMins),
       checkpointFormatted: startFormatted,
       windowStartMins,
       windowEndMins,
+      windowStartISO: new Date(windowStartEpochMs).toISOString(),
+      windowEndISO: new Date(windowEndEpochMs).toISOString(),
       reminderMins,
       reminderFormatted,
       windowStartFormatted: startFormatted,

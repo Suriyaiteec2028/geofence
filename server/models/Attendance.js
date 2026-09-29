@@ -9,7 +9,7 @@ const attendanceSchema = new mongoose.Schema({
   markedAt: { type: Date },
   status: { 
     type: String, 
-    enum: ['PRESENT', 'ABSENT', 'PENDING_EXPLANATION', 'EXPLANATION_APPROVED', 'EXPLANATION_REJECTED'], 
+    enum: ['PRESENT', 'ABSENT', 'PENDING_EXPLANATION', 'EXPLANATION_APPROVED', 'PRESENT_APPROVED_EXPLANATION', 'EXPLANATION_REJECTED', 'OFFICIAL_LEAVE'], 
     default: 'ABSENT' 
   },
   latitude: { type: Number },

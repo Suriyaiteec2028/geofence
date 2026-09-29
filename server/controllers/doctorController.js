@@ -407,7 +407,7 @@ exports.sendDoctorAttendanceReport = async (req, res) => {
 
     const docAtts = memoryStore.attendances.filter(a => String(a.doctor) === String(id));
     const totalCount = docAtts.length;
-    const presentCount = docAtts.filter(a => a.status === 'PRESENT' || a.status === 'EXPLANATION_APPROVED').length;
+    const presentCount = docAtts.filter(a => a.status === 'PRESENT' || a.status === 'EXPLANATION_APPROVED' || a.status === 'PRESENT_APPROVED_EXPLANATION' || a.status === 'PRESENT_APPROVED').length;
     const absentCount = docAtts.filter(a => a.status === 'ABSENT' || a.status === 'EXPLANATION_REJECTED').length;
     const complianceRate = totalCount > 0 ? `${Math.round((presentCount / totalCount) * 100)}%` : '100%';
 

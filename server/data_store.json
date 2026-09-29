@@ -514,9 +514,1059 @@
       "withinGeofence": true,
       "distanceMeters": 4.6,
       "createdAt": "2026-09-28T17:30:07.056Z"
+    },
+    {
+      "_id": "att_1790656727371_41li",
+      "doctor": "doc_1789983287304",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-26",
+      "checkpointTime": "03:15 PM",
+      "windowLabel": "03:15 PM – 03:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.371Z"
+    },
+    {
+      "_id": "att_1790656727373_6llg",
+      "doctor": "doc_1789983287304",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-26",
+      "checkpointTime": "04:15 PM",
+      "windowLabel": "04:15 PM – 04:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.373Z"
+    },
+    {
+      "_id": "att_1790656727375_rtae",
+      "doctor": "doc_1789983287304",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-26",
+      "checkpointTime": "05:15 PM",
+      "windowLabel": "05:15 PM – 05:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.375Z"
+    },
+    {
+      "_id": "att_1790656727376_zlps",
+      "doctor": "doc_1789983287304",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-26",
+      "checkpointTime": "06:15 PM",
+      "windowLabel": "06:15 PM – 06:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.376Z"
+    },
+    {
+      "_id": "att_1790656727378_lfsw",
+      "doctor": "doc_1789983287304",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-26",
+      "checkpointTime": "07:15 PM",
+      "windowLabel": "07:15 PM – 07:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.378Z"
+    },
+    {
+      "_id": "att_1790656727380_zn2a",
+      "doctor": "doc_1789983287304",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-26",
+      "checkpointTime": "08:15 PM",
+      "windowLabel": "08:15 PM – 08:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.380Z"
+    },
+    {
+      "_id": "att_1790656727382_vjpf",
+      "doctor": "doc_1789983287304",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-26",
+      "checkpointTime": "09:15 PM",
+      "windowLabel": "09:15 PM – 09:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.382Z"
+    },
+    {
+      "_id": "att_1790656727383_johd",
+      "doctor": "doc_1789983287304",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-26",
+      "checkpointTime": "10:15 PM",
+      "windowLabel": "10:15 PM – 10:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.383Z"
+    },
+    {
+      "_id": "att_1790656727384_2gkj",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-26",
+      "checkpointTime": "09:55 AM",
+      "windowLabel": "09:55 AM – 10:00 AM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.384Z"
+    },
+    {
+      "_id": "att_1790656727385_sv4s",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-26",
+      "checkpointTime": "10:55 AM",
+      "windowLabel": "10:55 AM – 11:00 AM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.385Z"
+    },
+    {
+      "_id": "att_1790656727386_7e1l",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-26",
+      "checkpointTime": "11:55 AM",
+      "windowLabel": "11:55 AM – 12:00 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.386Z"
+    },
+    {
+      "_id": "att_1790656727387_qtbg",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-26",
+      "checkpointTime": "12:55 PM",
+      "windowLabel": "12:55 PM – 01:00 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.387Z"
+    },
+    {
+      "_id": "att_1790656727388_b565",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-26",
+      "checkpointTime": "01:55 PM",
+      "windowLabel": "01:55 PM – 02:00 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.388Z"
+    },
+    {
+      "_id": "att_1790656727389_fnn0",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-26",
+      "checkpointTime": "02:55 PM",
+      "windowLabel": "02:55 PM – 03:00 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.389Z"
+    },
+    {
+      "_id": "att_1790656727389_peoi",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-26",
+      "checkpointTime": "03:55 PM",
+      "windowLabel": "03:55 PM – 04:00 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.389Z"
+    },
+    {
+      "_id": "att_1790656727390_i5bn",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-26",
+      "checkpointTime": "04:55 PM",
+      "windowLabel": "04:55 PM – 05:00 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.390Z"
+    },
+    {
+      "_id": "att_1790656727391_e4r3",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-26",
+      "checkpointTime": "05:55 PM",
+      "windowLabel": "05:55 PM – 06:00 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.391Z"
+    },
+    {
+      "_id": "att_1790656727392_i5xh",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-26",
+      "checkpointTime": "06:55 PM",
+      "windowLabel": "06:55 PM – 07:00 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.392Z"
+    },
+    {
+      "_id": "att_1790656727394_tjr8",
+      "doctor": "doc_1790137031683",
+      "phc": "phc_001",
+      "date": "2026-09-26",
+      "checkpointTime": "11:15 AM",
+      "windowLabel": "11:15 AM – 11:20 AM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.394Z"
+    },
+    {
+      "_id": "att_1790656727396_45ho",
+      "doctor": "doc_1790137031683",
+      "phc": "phc_001",
+      "date": "2026-09-26",
+      "checkpointTime": "12:15 PM",
+      "windowLabel": "12:15 PM – 12:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.396Z"
+    },
+    {
+      "_id": "att_1790656727398_hrfp",
+      "doctor": "doc_1790137031683",
+      "phc": "phc_001",
+      "date": "2026-09-26",
+      "checkpointTime": "01:15 PM",
+      "windowLabel": "01:15 PM – 01:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.398Z"
+    },
+    {
+      "_id": "att_1790656727399_3fkf",
+      "doctor": "doc_1790137031683",
+      "phc": "phc_001",
+      "date": "2026-09-26",
+      "checkpointTime": "02:15 PM",
+      "windowLabel": "02:15 PM – 02:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.399Z"
+    },
+    {
+      "_id": "att_1790656727400_pu30",
+      "doctor": "doc_1790137031683",
+      "phc": "phc_001",
+      "date": "2026-09-26",
+      "checkpointTime": "03:15 PM",
+      "windowLabel": "03:15 PM – 03:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.400Z"
+    },
+    {
+      "_id": "att_1790656727401_j2tz",
+      "doctor": "doc_1790137031683",
+      "phc": "phc_001",
+      "date": "2026-09-26",
+      "checkpointTime": "04:15 PM",
+      "windowLabel": "04:15 PM – 04:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.401Z"
+    },
+    {
+      "_id": "att_1790656727402_3lvi",
+      "doctor": "doc_demo_001",
+      "phc": "phc_001",
+      "date": "2026-09-27",
+      "checkpointTime": "10:00 PM",
+      "windowLabel": "10:00 PM – 10:05 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.402Z"
+    },
+    {
+      "_id": "att_1790656727403_noc5",
+      "doctor": "doc_demo_001",
+      "phc": "phc_001",
+      "date": "2026-09-27",
+      "checkpointTime": "11:00 PM",
+      "windowLabel": "11:00 PM – 11:05 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.403Z"
+    },
+    {
+      "_id": "att_1790656727405_ivi5",
+      "doctor": "doc_demo_001",
+      "phc": "phc_001",
+      "date": "2026-09-27",
+      "checkpointTime": "12:00 AM",
+      "windowLabel": "12:00 AM – 12:05 AM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.405Z"
+    },
+    {
+      "_id": "att_1790656727406_ulmo",
+      "doctor": "doc_demo_001",
+      "phc": "phc_001",
+      "date": "2026-09-27",
+      "checkpointTime": "01:00 AM",
+      "windowLabel": "01:00 AM – 01:05 AM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.406Z"
+    },
+    {
+      "_id": "att_1790656727407_8pgh",
+      "doctor": "doc_demo_001",
+      "phc": "phc_001",
+      "date": "2026-09-27",
+      "checkpointTime": "02:00 AM",
+      "windowLabel": "02:00 AM – 02:05 AM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.407Z"
+    },
+    {
+      "_id": "att_1790656727409_i83c",
+      "doctor": "doc_demo_001",
+      "phc": "phc_001",
+      "date": "2026-09-27",
+      "checkpointTime": "03:00 AM",
+      "windowLabel": "03:00 AM – 03:05 AM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.409Z"
+    },
+    {
+      "_id": "att_1790656727410_10ag",
+      "doctor": "doc_demo_001",
+      "phc": "phc_001",
+      "date": "2026-09-27",
+      "checkpointTime": "04:00 AM",
+      "windowLabel": "04:00 AM – 04:05 AM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.410Z"
+    },
+    {
+      "_id": "att_1790656727411_pk36",
+      "doctor": "doc_1789983287304",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-27",
+      "checkpointTime": "03:15 PM",
+      "windowLabel": "03:15 PM – 03:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.411Z"
+    },
+    {
+      "_id": "att_1790656727413_qcmr",
+      "doctor": "doc_1789983287304",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-27",
+      "checkpointTime": "04:15 PM",
+      "windowLabel": "04:15 PM – 04:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.413Z"
+    },
+    {
+      "_id": "att_1790656727414_hrnq",
+      "doctor": "doc_1789983287304",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-27",
+      "checkpointTime": "05:15 PM",
+      "windowLabel": "05:15 PM – 05:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.414Z"
+    },
+    {
+      "_id": "att_1790656727415_wyp4",
+      "doctor": "doc_1789983287304",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-27",
+      "checkpointTime": "06:15 PM",
+      "windowLabel": "06:15 PM – 06:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.415Z"
+    },
+    {
+      "_id": "att_1790656727417_vw9u",
+      "doctor": "doc_1789983287304",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-27",
+      "checkpointTime": "07:15 PM",
+      "windowLabel": "07:15 PM – 07:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.417Z"
+    },
+    {
+      "_id": "att_1790656727418_v9ln",
+      "doctor": "doc_1789983287304",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-27",
+      "checkpointTime": "08:15 PM",
+      "windowLabel": "08:15 PM – 08:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.418Z"
+    },
+    {
+      "_id": "att_1790656727419_bn5w",
+      "doctor": "doc_1789983287304",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-27",
+      "checkpointTime": "09:15 PM",
+      "windowLabel": "09:15 PM – 09:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.419Z"
+    },
+    {
+      "_id": "att_1790656727421_mgm3",
+      "doctor": "doc_1789983287304",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-27",
+      "checkpointTime": "10:15 PM",
+      "windowLabel": "10:15 PM – 10:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.421Z"
+    },
+    {
+      "_id": "att_1790656727422_rgu2",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-27",
+      "checkpointTime": "09:55 AM",
+      "windowLabel": "09:55 AM – 10:00 AM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.422Z"
+    },
+    {
+      "_id": "att_1790656727423_e4zh",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-27",
+      "checkpointTime": "10:55 AM",
+      "windowLabel": "10:55 AM – 11:00 AM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.423Z"
+    },
+    {
+      "_id": "att_1790656727425_uhzy",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-27",
+      "checkpointTime": "11:55 AM",
+      "windowLabel": "11:55 AM – 12:00 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.425Z"
+    },
+    {
+      "_id": "att_1790656727426_r2o4",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-27",
+      "checkpointTime": "12:55 PM",
+      "windowLabel": "12:55 PM – 01:00 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.426Z"
+    },
+    {
+      "_id": "att_1790656727428_l1z5",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-27",
+      "checkpointTime": "01:55 PM",
+      "windowLabel": "01:55 PM – 02:00 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.428Z"
+    },
+    {
+      "_id": "att_1790656727429_e89s",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-27",
+      "checkpointTime": "02:55 PM",
+      "windowLabel": "02:55 PM – 03:00 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.429Z"
+    },
+    {
+      "_id": "att_1790656727430_9xli",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-27",
+      "checkpointTime": "03:55 PM",
+      "windowLabel": "03:55 PM – 04:00 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.430Z"
+    },
+    {
+      "_id": "att_1790656727432_cjxh",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-27",
+      "checkpointTime": "04:55 PM",
+      "windowLabel": "04:55 PM – 05:00 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.432Z"
+    },
+    {
+      "_id": "att_1790656727433_f8s5",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-27",
+      "checkpointTime": "05:55 PM",
+      "windowLabel": "05:55 PM – 06:00 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.433Z"
+    },
+    {
+      "_id": "att_1790656727434_wi74",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-27",
+      "checkpointTime": "06:55 PM",
+      "windowLabel": "06:55 PM – 07:00 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.434Z"
+    },
+    {
+      "_id": "att_1790656727435_t6nv",
+      "doctor": "doc_1790137031683",
+      "phc": "phc_001",
+      "date": "2026-09-27",
+      "checkpointTime": "11:15 AM",
+      "windowLabel": "11:15 AM – 11:20 AM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.435Z"
+    },
+    {
+      "_id": "att_1790656727437_bzab",
+      "doctor": "doc_1790137031683",
+      "phc": "phc_001",
+      "date": "2026-09-27",
+      "checkpointTime": "12:15 PM",
+      "windowLabel": "12:15 PM – 12:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.437Z"
+    },
+    {
+      "_id": "att_1790656727438_f1fd",
+      "doctor": "doc_1790137031683",
+      "phc": "phc_001",
+      "date": "2026-09-27",
+      "checkpointTime": "01:15 PM",
+      "windowLabel": "01:15 PM – 01:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.438Z"
+    },
+    {
+      "_id": "att_1790656727439_vqso",
+      "doctor": "doc_1790137031683",
+      "phc": "phc_001",
+      "date": "2026-09-27",
+      "checkpointTime": "02:15 PM",
+      "windowLabel": "02:15 PM – 02:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.439Z"
+    },
+    {
+      "_id": "att_1790656727441_nukj",
+      "doctor": "doc_1790137031683",
+      "phc": "phc_001",
+      "date": "2026-09-27",
+      "checkpointTime": "03:15 PM",
+      "windowLabel": "03:15 PM – 03:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.441Z"
+    },
+    {
+      "_id": "att_1790656727442_kjtx",
+      "doctor": "doc_1790137031683",
+      "phc": "phc_001",
+      "date": "2026-09-27",
+      "checkpointTime": "04:15 PM",
+      "windowLabel": "04:15 PM – 04:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.442Z"
+    },
+    {
+      "_id": "att_1790656727444_27oh",
+      "doctor": "doc_demo_001",
+      "phc": "phc_001",
+      "date": "2026-09-28",
+      "checkpointTime": "10:00 PM",
+      "windowLabel": "10:00 PM – 10:05 PM",
+      "markedAt": null,
+      "status": "PRESENT_APPROVED_EXPLANATION",
+      "withinGeofence": true,
+      "createdAt": "2026-09-29T04:38:47.444Z",
+      "explanation": "exp_1790656785650_q98f"
+    },
+    {
+      "_id": "att_1790656727446_eizt",
+      "doctor": "doc_demo_001",
+      "phc": "phc_001",
+      "date": "2026-09-28",
+      "checkpointTime": "12:00 AM",
+      "windowLabel": "12:00 AM – 12:05 AM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.446Z"
+    },
+    {
+      "_id": "att_1790656727447_5p6b",
+      "doctor": "doc_demo_001",
+      "phc": "phc_001",
+      "date": "2026-09-28",
+      "checkpointTime": "01:00 AM",
+      "windowLabel": "01:00 AM – 01:05 AM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.447Z"
+    },
+    {
+      "_id": "att_1790656727449_ymfm",
+      "doctor": "doc_demo_001",
+      "phc": "phc_001",
+      "date": "2026-09-28",
+      "checkpointTime": "02:00 AM",
+      "windowLabel": "02:00 AM – 02:05 AM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.449Z"
+    },
+    {
+      "_id": "att_1790656727450_1sru",
+      "doctor": "doc_demo_001",
+      "phc": "phc_001",
+      "date": "2026-09-28",
+      "checkpointTime": "03:00 AM",
+      "windowLabel": "03:00 AM – 03:05 AM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.450Z"
+    },
+    {
+      "_id": "att_1790656727451_zsq5",
+      "doctor": "doc_demo_001",
+      "phc": "phc_001",
+      "date": "2026-09-28",
+      "checkpointTime": "04:00 AM",
+      "windowLabel": "04:00 AM – 04:05 AM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.451Z"
+    },
+    {
+      "_id": "att_1790656727453_9frt",
+      "doctor": "doc_1789983287304",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-28",
+      "checkpointTime": "03:15 PM",
+      "windowLabel": "03:15 PM – 03:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.453Z"
+    },
+    {
+      "_id": "att_1790656727454_w4vi",
+      "doctor": "doc_1789983287304",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-28",
+      "checkpointTime": "04:15 PM",
+      "windowLabel": "04:15 PM – 04:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.454Z"
+    },
+    {
+      "_id": "att_1790656727455_xnue",
+      "doctor": "doc_1789983287304",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-28",
+      "checkpointTime": "05:15 PM",
+      "windowLabel": "05:15 PM – 05:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.455Z"
+    },
+    {
+      "_id": "att_1790656727456_lc3f",
+      "doctor": "doc_1789983287304",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-28",
+      "checkpointTime": "06:15 PM",
+      "windowLabel": "06:15 PM – 06:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.456Z"
+    },
+    {
+      "_id": "att_1790656727458_4yob",
+      "doctor": "doc_1789983287304",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-28",
+      "checkpointTime": "07:15 PM",
+      "windowLabel": "07:15 PM – 07:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.458Z"
+    },
+    {
+      "_id": "att_1790656727460_fzp4",
+      "doctor": "doc_1789983287304",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-28",
+      "checkpointTime": "08:15 PM",
+      "windowLabel": "08:15 PM – 08:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.460Z"
+    },
+    {
+      "_id": "att_1790656727461_rhv4",
+      "doctor": "doc_1789983287304",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-28",
+      "checkpointTime": "09:15 PM",
+      "windowLabel": "09:15 PM – 09:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.461Z"
+    },
+    {
+      "_id": "att_1790656727463_svo5",
+      "doctor": "doc_1789983287304",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-28",
+      "checkpointTime": "10:15 PM",
+      "windowLabel": "10:15 PM – 10:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.463Z"
+    },
+    {
+      "_id": "att_1790656727465_kyi1",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-28",
+      "checkpointTime": "09:55 AM",
+      "windowLabel": "09:55 AM – 10:00 AM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.465Z"
+    },
+    {
+      "_id": "att_1790656727466_jw46",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-28",
+      "checkpointTime": "10:55 AM",
+      "windowLabel": "10:55 AM – 11:00 AM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.466Z"
+    },
+    {
+      "_id": "att_1790656727467_mxjd",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-28",
+      "checkpointTime": "11:55 AM",
+      "windowLabel": "11:55 AM – 12:00 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.467Z"
+    },
+    {
+      "_id": "att_1790656727469_ohc0",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-28",
+      "checkpointTime": "12:55 PM",
+      "windowLabel": "12:55 PM – 01:00 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.469Z"
+    },
+    {
+      "_id": "att_1790656727470_tz0k",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-28",
+      "checkpointTime": "01:55 PM",
+      "windowLabel": "01:55 PM – 02:00 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.470Z"
+    },
+    {
+      "_id": "att_1790656727472_mfvm",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-28",
+      "checkpointTime": "02:55 PM",
+      "windowLabel": "02:55 PM – 03:00 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.472Z"
+    },
+    {
+      "_id": "att_1790656727473_trfp",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-28",
+      "checkpointTime": "03:55 PM",
+      "windowLabel": "03:55 PM – 04:00 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.473Z"
+    },
+    {
+      "_id": "att_1790656727474_0m21",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-28",
+      "checkpointTime": "04:55 PM",
+      "windowLabel": "04:55 PM – 05:00 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.474Z"
+    },
+    {
+      "_id": "att_1790656727476_4000",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-28",
+      "checkpointTime": "05:55 PM",
+      "windowLabel": "05:55 PM – 06:00 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.476Z"
+    },
+    {
+      "_id": "att_1790656727479_c2lq",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-28",
+      "checkpointTime": "06:55 PM",
+      "windowLabel": "06:55 PM – 07:00 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.479Z"
+    },
+    {
+      "_id": "att_1790656727482_3uim",
+      "doctor": "doc_1790137031683",
+      "phc": "phc_001",
+      "date": "2026-09-28",
+      "checkpointTime": "11:15 AM",
+      "windowLabel": "11:15 AM – 11:20 AM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.482Z"
+    },
+    {
+      "_id": "att_1790656727484_ov03",
+      "doctor": "doc_1790137031683",
+      "phc": "phc_001",
+      "date": "2026-09-28",
+      "checkpointTime": "12:15 PM",
+      "windowLabel": "12:15 PM – 12:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.485Z"
+    },
+    {
+      "_id": "att_1790656727486_ngop",
+      "doctor": "doc_1790137031683",
+      "phc": "phc_001",
+      "date": "2026-09-28",
+      "checkpointTime": "01:15 PM",
+      "windowLabel": "01:15 PM – 01:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.486Z"
+    },
+    {
+      "_id": "att_1790656727488_lpzd",
+      "doctor": "doc_1790137031683",
+      "phc": "phc_001",
+      "date": "2026-09-28",
+      "checkpointTime": "02:15 PM",
+      "windowLabel": "02:15 PM – 02:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.488Z"
+    },
+    {
+      "_id": "att_1790656727490_3xjv",
+      "doctor": "doc_1790137031683",
+      "phc": "phc_001",
+      "date": "2026-09-28",
+      "checkpointTime": "03:15 PM",
+      "windowLabel": "03:15 PM – 03:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.490Z"
+    },
+    {
+      "_id": "att_1790656727491_wv5k",
+      "doctor": "doc_1790137031683",
+      "phc": "phc_001",
+      "date": "2026-09-28",
+      "checkpointTime": "04:15 PM",
+      "windowLabel": "04:15 PM – 04:20 PM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.491Z"
+    },
+    {
+      "_id": "att_1790656727493_acyx",
+      "doctor": "doc_1790099333198",
+      "phc": "phc_1789979815269",
+      "date": "2026-09-29",
+      "checkpointTime": "09:55 AM",
+      "windowLabel": "09:55 AM – 10:00 AM",
+      "markedAt": null,
+      "status": "ABSENT",
+      "withinGeofence": false,
+      "createdAt": "2026-09-29T04:38:47.493Z"
     }
   ],
-  "explanations": [],
+  "explanations": [
+    {
+      "_id": "exp_1790656785650_q98f",
+      "attendance": "att_1790656727444_27oh",
+      "doctor": "doc_demo_001",
+      "phc": "phc_001",
+      "date": "2026-09-28",
+      "windowLabel": "10:00 PM – 10:05 PM",
+      "reason": "Medical Emergency",
+      "remarks": "Attending trauma case",
+      "proofUrl": "",
+      "status": "APPROVED",
+      "reviewedBy": "admin_demo_001",
+      "adminRemarks": "Trauma duty verified by CMO",
+      "reviewedAt": "2026-09-29T04:40:43.971Z",
+      "createdAt": "2026-09-29T04:39:45.650Z"
+    }
+  ],
   "leaves": [
     {
       "_id": "leave_1790097353859",
@@ -558,6 +1608,1501 @@
   "leaveApplications": [],
   "auditLogs": [
     {
+      "_id": "audit_1790656843973_h5ujl",
+      "userId": "admin_demo_001",
+      "userRole": "ADMIN",
+      "userName": "Dr. Central PHC Administrator",
+      "action": "EXPLANATION_APPROVED",
+      "recordType": "Explanation",
+      "recordId": "exp_1790656785650_q98f",
+      "details": {
+        "attendanceId": "att_1790656727444_27oh",
+        "doctorId": "doc_demo_001",
+        "decision": "APPROVE",
+        "adminRemarks": "Trauma duty verified by CMO",
+        "updatedAttendanceStatus": "PRESENT_APPROVED_EXPLANATION"
+      },
+      "timestamp": "2026-09-29T04:40:43.973Z"
+    },
+    {
+      "_id": "audit_1790656785653_nr3sj",
+      "userId": "doc_demo_001",
+      "userRole": "DOCTOR",
+      "userName": "Dr. Ranjith K (Medical Officer)",
+      "action": "EXPLANATION_SUBMITTED",
+      "recordType": "Explanation",
+      "recordId": "exp_1790656785650_q98f",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointsCount": 1,
+        "reason": "Medical Emergency",
+        "status": "PENDING"
+      },
+      "timestamp": "2026-09-29T04:39:45.653Z"
+    },
+    {
+      "_id": "audit_1790656727493_2ndg7",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727493_acyx",
+      "details": {
+        "date": "2026-09-29",
+        "checkpointTime": "09:55 AM",
+        "windowLabel": "09:55 AM – 10:00 AM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.493Z"
+    },
+    {
+      "_id": "audit_1790656727491_nnylj",
+      "userId": "doc_1790137031683",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727491_wv5k",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "04:15 PM",
+        "windowLabel": "04:15 PM – 04:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.491Z"
+    },
+    {
+      "_id": "audit_1790656727490_a3yz6",
+      "userId": "doc_1790137031683",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727490_3xjv",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "03:15 PM",
+        "windowLabel": "03:15 PM – 03:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.490Z"
+    },
+    {
+      "_id": "audit_1790656727488_lezzj",
+      "userId": "doc_1790137031683",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727488_lpzd",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "02:15 PM",
+        "windowLabel": "02:15 PM – 02:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.488Z"
+    },
+    {
+      "_id": "audit_1790656727486_rxeoe",
+      "userId": "doc_1790137031683",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727486_ngop",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "01:15 PM",
+        "windowLabel": "01:15 PM – 01:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.486Z"
+    },
+    {
+      "_id": "audit_1790656727485_q3vnx",
+      "userId": "doc_1790137031683",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727484_ov03",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "12:15 PM",
+        "windowLabel": "12:15 PM – 12:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.485Z"
+    },
+    {
+      "_id": "audit_1790656727482_e0a5m",
+      "userId": "doc_1790137031683",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727482_3uim",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "11:15 AM",
+        "windowLabel": "11:15 AM – 11:20 AM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.482Z"
+    },
+    {
+      "_id": "audit_1790656727479_z4wn0",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727479_c2lq",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "06:55 PM",
+        "windowLabel": "06:55 PM – 07:00 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.479Z"
+    },
+    {
+      "_id": "audit_1790656727476_wfw3a",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727476_4000",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "05:55 PM",
+        "windowLabel": "05:55 PM – 06:00 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.476Z"
+    },
+    {
+      "_id": "audit_1790656727474_8utia",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727474_0m21",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "04:55 PM",
+        "windowLabel": "04:55 PM – 05:00 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.474Z"
+    },
+    {
+      "_id": "audit_1790656727473_fendd",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727473_trfp",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "03:55 PM",
+        "windowLabel": "03:55 PM – 04:00 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.473Z"
+    },
+    {
+      "_id": "audit_1790656727472_ksx0h",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727472_mfvm",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "02:55 PM",
+        "windowLabel": "02:55 PM – 03:00 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.472Z"
+    },
+    {
+      "_id": "audit_1790656727470_u39aj",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727470_tz0k",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "01:55 PM",
+        "windowLabel": "01:55 PM – 02:00 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.470Z"
+    },
+    {
+      "_id": "audit_1790656727469_m56mh",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727469_ohc0",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "12:55 PM",
+        "windowLabel": "12:55 PM – 01:00 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.469Z"
+    },
+    {
+      "_id": "audit_1790656727467_5039h",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727467_mxjd",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "11:55 AM",
+        "windowLabel": "11:55 AM – 12:00 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.467Z"
+    },
+    {
+      "_id": "audit_1790656727466_r7e92",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727466_jw46",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "10:55 AM",
+        "windowLabel": "10:55 AM – 11:00 AM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.466Z"
+    },
+    {
+      "_id": "audit_1790656727465_33ntr",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727465_kyi1",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "09:55 AM",
+        "windowLabel": "09:55 AM – 10:00 AM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.465Z"
+    },
+    {
+      "_id": "audit_1790656727463_9zxe6",
+      "userId": "doc_1789983287304",
+      "userRole": "DOCTOR",
+      "userName": "N Suriya",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727463_svo5",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "10:15 PM",
+        "windowLabel": "10:15 PM – 10:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.463Z"
+    },
+    {
+      "_id": "audit_1790656727461_utdmq",
+      "userId": "doc_1789983287304",
+      "userRole": "DOCTOR",
+      "userName": "N Suriya",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727461_rhv4",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "09:15 PM",
+        "windowLabel": "09:15 PM – 09:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.461Z"
+    },
+    {
+      "_id": "audit_1790656727460_l9eh6",
+      "userId": "doc_1789983287304",
+      "userRole": "DOCTOR",
+      "userName": "N Suriya",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727460_fzp4",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "08:15 PM",
+        "windowLabel": "08:15 PM – 08:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.460Z"
+    },
+    {
+      "_id": "audit_1790656727458_0dcjr",
+      "userId": "doc_1789983287304",
+      "userRole": "DOCTOR",
+      "userName": "N Suriya",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727458_4yob",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "07:15 PM",
+        "windowLabel": "07:15 PM – 07:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.458Z"
+    },
+    {
+      "_id": "audit_1790656727456_flqvw",
+      "userId": "doc_1789983287304",
+      "userRole": "DOCTOR",
+      "userName": "N Suriya",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727456_lc3f",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "06:15 PM",
+        "windowLabel": "06:15 PM – 06:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.456Z"
+    },
+    {
+      "_id": "audit_1790656727455_2j3go",
+      "userId": "doc_1789983287304",
+      "userRole": "DOCTOR",
+      "userName": "N Suriya",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727455_xnue",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "05:15 PM",
+        "windowLabel": "05:15 PM – 05:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.455Z"
+    },
+    {
+      "_id": "audit_1790656727454_6u9m9",
+      "userId": "doc_1789983287304",
+      "userRole": "DOCTOR",
+      "userName": "N Suriya",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727454_w4vi",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "04:15 PM",
+        "windowLabel": "04:15 PM – 04:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.454Z"
+    },
+    {
+      "_id": "audit_1790656727453_bygrq",
+      "userId": "doc_1789983287304",
+      "userRole": "DOCTOR",
+      "userName": "N Suriya",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727453_9frt",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "03:15 PM",
+        "windowLabel": "03:15 PM – 03:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.453Z"
+    },
+    {
+      "_id": "audit_1790656727451_j97nq",
+      "userId": "doc_demo_001",
+      "userRole": "DOCTOR",
+      "userName": "Dr. Ranjith K (Medical Officer)",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727451_zsq5",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "04:00 AM",
+        "windowLabel": "04:00 AM – 04:05 AM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.451Z"
+    },
+    {
+      "_id": "audit_1790656727450_7xczm",
+      "userId": "doc_demo_001",
+      "userRole": "DOCTOR",
+      "userName": "Dr. Ranjith K (Medical Officer)",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727450_1sru",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "03:00 AM",
+        "windowLabel": "03:00 AM – 03:05 AM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.450Z"
+    },
+    {
+      "_id": "audit_1790656727449_nf0fn",
+      "userId": "doc_demo_001",
+      "userRole": "DOCTOR",
+      "userName": "Dr. Ranjith K (Medical Officer)",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727449_ymfm",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "02:00 AM",
+        "windowLabel": "02:00 AM – 02:05 AM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.449Z"
+    },
+    {
+      "_id": "audit_1790656727447_d4v7p",
+      "userId": "doc_demo_001",
+      "userRole": "DOCTOR",
+      "userName": "Dr. Ranjith K (Medical Officer)",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727447_5p6b",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "01:00 AM",
+        "windowLabel": "01:00 AM – 01:05 AM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.447Z"
+    },
+    {
+      "_id": "audit_1790656727446_1ogfu",
+      "userId": "doc_demo_001",
+      "userRole": "DOCTOR",
+      "userName": "Dr. Ranjith K (Medical Officer)",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727446_eizt",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "12:00 AM",
+        "windowLabel": "12:00 AM – 12:05 AM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.446Z"
+    },
+    {
+      "_id": "audit_1790656727444_1v7ne",
+      "userId": "doc_demo_001",
+      "userRole": "DOCTOR",
+      "userName": "Dr. Ranjith K (Medical Officer)",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727444_27oh",
+      "details": {
+        "date": "2026-09-28",
+        "checkpointTime": "10:00 PM",
+        "windowLabel": "10:00 PM – 10:05 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.444Z"
+    },
+    {
+      "_id": "audit_1790656727442_qq8ud",
+      "userId": "doc_1790137031683",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727442_kjtx",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "04:15 PM",
+        "windowLabel": "04:15 PM – 04:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.442Z"
+    },
+    {
+      "_id": "audit_1790656727441_199i5",
+      "userId": "doc_1790137031683",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727441_nukj",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "03:15 PM",
+        "windowLabel": "03:15 PM – 03:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.441Z"
+    },
+    {
+      "_id": "audit_1790656727439_cjk70",
+      "userId": "doc_1790137031683",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727439_vqso",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "02:15 PM",
+        "windowLabel": "02:15 PM – 02:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.439Z"
+    },
+    {
+      "_id": "audit_1790656727438_0mldn",
+      "userId": "doc_1790137031683",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727438_f1fd",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "01:15 PM",
+        "windowLabel": "01:15 PM – 01:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.438Z"
+    },
+    {
+      "_id": "audit_1790656727437_a09w4",
+      "userId": "doc_1790137031683",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727437_bzab",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "12:15 PM",
+        "windowLabel": "12:15 PM – 12:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.437Z"
+    },
+    {
+      "_id": "audit_1790656727435_epy7f",
+      "userId": "doc_1790137031683",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727435_t6nv",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "11:15 AM",
+        "windowLabel": "11:15 AM – 11:20 AM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.435Z"
+    },
+    {
+      "_id": "audit_1790656727434_aifpy",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727434_wi74",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "06:55 PM",
+        "windowLabel": "06:55 PM – 07:00 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.434Z"
+    },
+    {
+      "_id": "audit_1790656727433_981zn",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727433_f8s5",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "05:55 PM",
+        "windowLabel": "05:55 PM – 06:00 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.433Z"
+    },
+    {
+      "_id": "audit_1790656727432_9c29l",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727432_cjxh",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "04:55 PM",
+        "windowLabel": "04:55 PM – 05:00 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.432Z"
+    },
+    {
+      "_id": "audit_1790656727430_u76vi",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727430_9xli",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "03:55 PM",
+        "windowLabel": "03:55 PM – 04:00 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.430Z"
+    },
+    {
+      "_id": "audit_1790656727429_50ev0",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727429_e89s",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "02:55 PM",
+        "windowLabel": "02:55 PM – 03:00 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.429Z"
+    },
+    {
+      "_id": "audit_1790656727428_sooe0",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727428_l1z5",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "01:55 PM",
+        "windowLabel": "01:55 PM – 02:00 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.428Z"
+    },
+    {
+      "_id": "audit_1790656727426_s8gkl",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727426_r2o4",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "12:55 PM",
+        "windowLabel": "12:55 PM – 01:00 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.426Z"
+    },
+    {
+      "_id": "audit_1790656727425_y1pxc",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727425_uhzy",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "11:55 AM",
+        "windowLabel": "11:55 AM – 12:00 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.425Z"
+    },
+    {
+      "_id": "audit_1790656727424_cl71b",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727423_e4zh",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "10:55 AM",
+        "windowLabel": "10:55 AM – 11:00 AM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.424Z"
+    },
+    {
+      "_id": "audit_1790656727422_djtss",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727422_rgu2",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "09:55 AM",
+        "windowLabel": "09:55 AM – 10:00 AM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.422Z"
+    },
+    {
+      "_id": "audit_1790656727421_0lzk4",
+      "userId": "doc_1789983287304",
+      "userRole": "DOCTOR",
+      "userName": "N Suriya",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727421_mgm3",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "10:15 PM",
+        "windowLabel": "10:15 PM – 10:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.421Z"
+    },
+    {
+      "_id": "audit_1790656727419_ecy44",
+      "userId": "doc_1789983287304",
+      "userRole": "DOCTOR",
+      "userName": "N Suriya",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727419_bn5w",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "09:15 PM",
+        "windowLabel": "09:15 PM – 09:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.419Z"
+    },
+    {
+      "_id": "audit_1790656727418_cpck2",
+      "userId": "doc_1789983287304",
+      "userRole": "DOCTOR",
+      "userName": "N Suriya",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727418_v9ln",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "08:15 PM",
+        "windowLabel": "08:15 PM – 08:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.418Z"
+    },
+    {
+      "_id": "audit_1790656727417_8jaan",
+      "userId": "doc_1789983287304",
+      "userRole": "DOCTOR",
+      "userName": "N Suriya",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727417_vw9u",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "07:15 PM",
+        "windowLabel": "07:15 PM – 07:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.417Z"
+    },
+    {
+      "_id": "audit_1790656727415_ont3z",
+      "userId": "doc_1789983287304",
+      "userRole": "DOCTOR",
+      "userName": "N Suriya",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727415_wyp4",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "06:15 PM",
+        "windowLabel": "06:15 PM – 06:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.415Z"
+    },
+    {
+      "_id": "audit_1790656727414_03wue",
+      "userId": "doc_1789983287304",
+      "userRole": "DOCTOR",
+      "userName": "N Suriya",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727414_hrnq",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "05:15 PM",
+        "windowLabel": "05:15 PM – 05:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.414Z"
+    },
+    {
+      "_id": "audit_1790656727413_1o8cb",
+      "userId": "doc_1789983287304",
+      "userRole": "DOCTOR",
+      "userName": "N Suriya",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727413_qcmr",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "04:15 PM",
+        "windowLabel": "04:15 PM – 04:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.413Z"
+    },
+    {
+      "_id": "audit_1790656727411_wagx4",
+      "userId": "doc_1789983287304",
+      "userRole": "DOCTOR",
+      "userName": "N Suriya",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727411_pk36",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "03:15 PM",
+        "windowLabel": "03:15 PM – 03:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.411Z"
+    },
+    {
+      "_id": "audit_1790656727410_7yv0x",
+      "userId": "doc_demo_001",
+      "userRole": "DOCTOR",
+      "userName": "Dr. Ranjith K (Medical Officer)",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727410_10ag",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "04:00 AM",
+        "windowLabel": "04:00 AM – 04:05 AM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.410Z"
+    },
+    {
+      "_id": "audit_1790656727409_8kjze",
+      "userId": "doc_demo_001",
+      "userRole": "DOCTOR",
+      "userName": "Dr. Ranjith K (Medical Officer)",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727409_i83c",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "03:00 AM",
+        "windowLabel": "03:00 AM – 03:05 AM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.409Z"
+    },
+    {
+      "_id": "audit_1790656727407_crr19",
+      "userId": "doc_demo_001",
+      "userRole": "DOCTOR",
+      "userName": "Dr. Ranjith K (Medical Officer)",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727407_8pgh",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "02:00 AM",
+        "windowLabel": "02:00 AM – 02:05 AM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.407Z"
+    },
+    {
+      "_id": "audit_1790656727406_9y1mp",
+      "userId": "doc_demo_001",
+      "userRole": "DOCTOR",
+      "userName": "Dr. Ranjith K (Medical Officer)",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727406_ulmo",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "01:00 AM",
+        "windowLabel": "01:00 AM – 01:05 AM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.406Z"
+    },
+    {
+      "_id": "audit_1790656727405_5zy4m",
+      "userId": "doc_demo_001",
+      "userRole": "DOCTOR",
+      "userName": "Dr. Ranjith K (Medical Officer)",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727405_ivi5",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "12:00 AM",
+        "windowLabel": "12:00 AM – 12:05 AM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.405Z"
+    },
+    {
+      "_id": "audit_1790656727403_dxogf",
+      "userId": "doc_demo_001",
+      "userRole": "DOCTOR",
+      "userName": "Dr. Ranjith K (Medical Officer)",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727403_noc5",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "11:00 PM",
+        "windowLabel": "11:00 PM – 11:05 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.403Z"
+    },
+    {
+      "_id": "audit_1790656727402_a7azg",
+      "userId": "doc_demo_001",
+      "userRole": "DOCTOR",
+      "userName": "Dr. Ranjith K (Medical Officer)",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727402_3lvi",
+      "details": {
+        "date": "2026-09-27",
+        "checkpointTime": "10:00 PM",
+        "windowLabel": "10:00 PM – 10:05 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.402Z"
+    },
+    {
+      "_id": "audit_1790656727401_lchd9",
+      "userId": "doc_1790137031683",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727401_j2tz",
+      "details": {
+        "date": "2026-09-26",
+        "checkpointTime": "04:15 PM",
+        "windowLabel": "04:15 PM – 04:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.401Z"
+    },
+    {
+      "_id": "audit_1790656727400_n01r1",
+      "userId": "doc_1790137031683",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727400_pu30",
+      "details": {
+        "date": "2026-09-26",
+        "checkpointTime": "03:15 PM",
+        "windowLabel": "03:15 PM – 03:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.400Z"
+    },
+    {
+      "_id": "audit_1790656727399_cgcle",
+      "userId": "doc_1790137031683",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727399_3fkf",
+      "details": {
+        "date": "2026-09-26",
+        "checkpointTime": "02:15 PM",
+        "windowLabel": "02:15 PM – 02:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.399Z"
+    },
+    {
+      "_id": "audit_1790656727398_g3gwm",
+      "userId": "doc_1790137031683",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727398_hrfp",
+      "details": {
+        "date": "2026-09-26",
+        "checkpointTime": "01:15 PM",
+        "windowLabel": "01:15 PM – 01:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.398Z"
+    },
+    {
+      "_id": "audit_1790656727396_24y57",
+      "userId": "doc_1790137031683",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727396_45ho",
+      "details": {
+        "date": "2026-09-26",
+        "checkpointTime": "12:15 PM",
+        "windowLabel": "12:15 PM – 12:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.396Z"
+    },
+    {
+      "_id": "audit_1790656727394_muuwl",
+      "userId": "doc_1790137031683",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727394_tjr8",
+      "details": {
+        "date": "2026-09-26",
+        "checkpointTime": "11:15 AM",
+        "windowLabel": "11:15 AM – 11:20 AM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.394Z"
+    },
+    {
+      "_id": "audit_1790656727392_jspuw",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727392_i5xh",
+      "details": {
+        "date": "2026-09-26",
+        "checkpointTime": "06:55 PM",
+        "windowLabel": "06:55 PM – 07:00 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.392Z"
+    },
+    {
+      "_id": "audit_1790656727391_m3ktd",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727391_e4r3",
+      "details": {
+        "date": "2026-09-26",
+        "checkpointTime": "05:55 PM",
+        "windowLabel": "05:55 PM – 06:00 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.391Z"
+    },
+    {
+      "_id": "audit_1790656727390_p9imf",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727390_i5bn",
+      "details": {
+        "date": "2026-09-26",
+        "checkpointTime": "04:55 PM",
+        "windowLabel": "04:55 PM – 05:00 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.390Z"
+    },
+    {
+      "_id": "audit_1790656727389_ysj6t",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727389_peoi",
+      "details": {
+        "date": "2026-09-26",
+        "checkpointTime": "03:55 PM",
+        "windowLabel": "03:55 PM – 04:00 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.389Z"
+    },
+    {
+      "_id": "audit_1790656727389_iy2ry",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727389_fnn0",
+      "details": {
+        "date": "2026-09-26",
+        "checkpointTime": "02:55 PM",
+        "windowLabel": "02:55 PM – 03:00 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.389Z"
+    },
+    {
+      "_id": "audit_1790656727388_6iy6b",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727388_b565",
+      "details": {
+        "date": "2026-09-26",
+        "checkpointTime": "01:55 PM",
+        "windowLabel": "01:55 PM – 02:00 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.388Z"
+    },
+    {
+      "_id": "audit_1790656727387_0icyy",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727387_qtbg",
+      "details": {
+        "date": "2026-09-26",
+        "checkpointTime": "12:55 PM",
+        "windowLabel": "12:55 PM – 01:00 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.387Z"
+    },
+    {
+      "_id": "audit_1790656727386_6hioe",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727386_7e1l",
+      "details": {
+        "date": "2026-09-26",
+        "checkpointTime": "11:55 AM",
+        "windowLabel": "11:55 AM – 12:00 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.386Z"
+    },
+    {
+      "_id": "audit_1790656727385_bhzuj",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727385_sv4s",
+      "details": {
+        "date": "2026-09-26",
+        "checkpointTime": "10:55 AM",
+        "windowLabel": "10:55 AM – 11:00 AM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.385Z"
+    },
+    {
+      "_id": "audit_1790656727384_ly876",
+      "userId": "doc_1790099333198",
+      "userRole": "DOCTOR",
+      "userName": "Suriya N",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727384_2gkj",
+      "details": {
+        "date": "2026-09-26",
+        "checkpointTime": "09:55 AM",
+        "windowLabel": "09:55 AM – 10:00 AM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.384Z"
+    },
+    {
+      "_id": "audit_1790656727383_uqy8i",
+      "userId": "doc_1789983287304",
+      "userRole": "DOCTOR",
+      "userName": "N Suriya",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727383_johd",
+      "details": {
+        "date": "2026-09-26",
+        "checkpointTime": "10:15 PM",
+        "windowLabel": "10:15 PM – 10:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.383Z"
+    },
+    {
+      "_id": "audit_1790656727382_dlso2",
+      "userId": "doc_1789983287304",
+      "userRole": "DOCTOR",
+      "userName": "N Suriya",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727382_vjpf",
+      "details": {
+        "date": "2026-09-26",
+        "checkpointTime": "09:15 PM",
+        "windowLabel": "09:15 PM – 09:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.382Z"
+    },
+    {
+      "_id": "audit_1790656727380_595x8",
+      "userId": "doc_1789983287304",
+      "userRole": "DOCTOR",
+      "userName": "N Suriya",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727380_zn2a",
+      "details": {
+        "date": "2026-09-26",
+        "checkpointTime": "08:15 PM",
+        "windowLabel": "08:15 PM – 08:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.380Z"
+    },
+    {
+      "_id": "audit_1790656727379_asiry",
+      "userId": "doc_1789983287304",
+      "userRole": "DOCTOR",
+      "userName": "N Suriya",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727378_lfsw",
+      "details": {
+        "date": "2026-09-26",
+        "checkpointTime": "07:15 PM",
+        "windowLabel": "07:15 PM – 07:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.379Z"
+    },
+    {
+      "_id": "audit_1790656727376_zyl5h",
+      "userId": "doc_1789983287304",
+      "userRole": "DOCTOR",
+      "userName": "N Suriya",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727376_zlps",
+      "details": {
+        "date": "2026-09-26",
+        "checkpointTime": "06:15 PM",
+        "windowLabel": "06:15 PM – 06:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.376Z"
+    },
+    {
+      "_id": "audit_1790656727375_rrusi",
+      "userId": "doc_1789983287304",
+      "userRole": "DOCTOR",
+      "userName": "N Suriya",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727375_rtae",
+      "details": {
+        "date": "2026-09-26",
+        "checkpointTime": "05:15 PM",
+        "windowLabel": "05:15 PM – 05:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.375Z"
+    },
+    {
+      "_id": "audit_1790656727373_0hive",
+      "userId": "doc_1789983287304",
+      "userRole": "DOCTOR",
+      "userName": "N Suriya",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727373_6llg",
+      "details": {
+        "date": "2026-09-26",
+        "checkpointTime": "04:15 PM",
+        "windowLabel": "04:15 PM – 04:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.373Z"
+    },
+    {
+      "_id": "audit_1790656727371_y7h7w",
+      "userId": "doc_1789983287304",
+      "userRole": "DOCTOR",
+      "userName": "N Suriya",
+      "action": "ATTENDANCE_WINDOW_MISSED",
+      "recordType": "Attendance",
+      "recordId": "att_1790656727371_41li",
+      "details": {
+        "date": "2026-09-26",
+        "checkpointTime": "03:15 PM",
+        "windowLabel": "03:15 PM – 03:20 PM",
+        "status": "ABSENT",
+        "source": "StartupReconciliation"
+      },
+      "timestamp": "2026-09-29T04:38:47.371Z"
+    },
+    {
       "_id": "audit_1790616607058_56xpi",
       "userId": "doc_demo_001",
       "userRole": "DOCTOR",
@@ -585,6 +3130,44 @@
     "globalBiometricRequired": true
   },
   "notifications": [
+    {
+      "_id": "notif_1790656785651",
+      "user": null,
+      "targetRole": "ADMIN",
+      "title": "New Absence Explanation Submitted",
+      "message": "Dr. Dr. Ranjith K (Medical Officer) submitted 1 absence explanation(s) for 2026-09-28 (Reason: Medical Emergency).",
+      "type": "WARNING",
+      "read": false,
+      "isRead": false,
+      "createdAt": "2026-09-29T04:39:45.651Z"
+    },
+    {
+      "_id": "notif_1790655642234_50vvk",
+      "recipientEmail": "suriyan182006@gmail.com",
+      "title": "Duty Checkpoint Reminder: 09:55 AM",
+      "message": "Dr. Suriya N, your hourly duty checkpoint at 09:55 AM opens in 5 minutes (Reminder sent at 09:50 AM).",
+      "type": "EMAIL",
+      "read": false,
+      "isRead": false,
+      "createdAt": "2026-09-29T04:20:42.234Z"
+    },
+    {
+      "_id": "notif_rem_1790655636728_7419f",
+      "user": "doc_1790099333198",
+      "recipientEmail": "suriyan182006@gmail.com",
+      "targetRole": "DOCTOR",
+      "title": "Duty Checkpoint Reminder: 09:55 AM ⏰",
+      "message": "Your duty checkpoint opens in 5 minutes at 09:55 AM. Please complete biometric face scan & geofence verification at primary phc.",
+      "type": "DUTY_REMINDER",
+      "checkpointTime": "09:55 AM",
+      "reminderTime": "09:50 AM",
+      "dutyDate": "2026-09-29",
+      "status": "SENT",
+      "sentAt": "2026-09-29T04:20:36.728Z",
+      "read": false,
+      "isRead": false,
+      "createdAt": "2026-09-29T04:20:36.728Z"
+    },
     {
       "_id": "notif_1790616310466_qtfbp",
       "recipientEmail": "doctor@hospital.gov.in",

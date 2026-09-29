@@ -3,17 +3,34 @@ const { calculateHaversineDistance } = require('../utils/haversine');
 const { evaluateCurrentShiftState } = require('../utils/shiftEngine');
 const { logAuditEvent } = require('../utils/auditLogger');
 
-// Calculates deadline as the start of the third calendar day after the missed attendance date (12:00 AM)
+// Calculates deadline as 12:00 AM at the beginning of the third calendar day after the missed attendance date in IST (+05:30)
 function getExplanationDeadline(missedDateStr) {
   const [y, m, d] = missedDateStr.split('-').map(Number);
-  return new Date(y, m - 1, d + 3, 0, 0, 0, 0);
+  const temp = new Date(Date.UTC(y, m - 1, d + 3, 0, 0, 0, 0));
+  const deadlineYear = temp.getUTCFullYear();
+  const deadlineMonth = String(temp.getUTCMonth() + 1).padStart(2, '0');
+  const deadlineDay = String(temp.getUTCDate()).padStart(2, '0');
+  const deadlineISO = `${deadlineYear}-${deadlineMonth}-${deadlineDay}T00:00:00+05:30`;
+  const deadlineObj = new Date(deadlineISO);
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const formattedText = `${temp.getUTCDate()} ${monthNames[temp.getUTCMonth()]} ${deadlineYear}, 12:00 AM`;
+
+  return {
+    deadlineObj,
+    deadlineISO,
+    deadlineFormatted: formattedText
+  };
 }
 
-function formatDeadlineString(dateObj) {
-  const day = String(dateObj.getDate()).padStart(2, '0');
-  const month = dateObj.toLocaleString('en-IN', { month: 'short' });
-  const year = dateObj.getFullYear();
-  return `${day} ${month} ${year}, 12:00 AM (Midnight)`;
+function formatDeadlineString(deadline) {
+  if (deadline && deadline.deadlineFormatted) return deadline.deadlineFormatted;
+  if (deadline instanceof Date) {
+    const day = String(deadline.getDate()).padStart(2, '0');
+    const month = deadline.toLocaleString('en-IN', { month: 'short' });
+    const year = deadline.getFullYear();
+    return `${day} ${month} ${year}, 12:00 AM`;
+  }
+  return '';
 }
 
 exports.getDoctorShiftStatus = (req, res) => {
@@ -97,6 +114,16 @@ exports.getDoctorDateWindows = (req, res) => {
       return res.status(404).json({ success: false, message: 'Doctor account not found' });
     }
 
+    // Leave coverage check
+    const activeLeave = (memoryStore.leaves || []).find(l =>
+      String(l.doctor) === String(doctorId) &&
+      l.status === 'ACTIVE' &&
+      l.startDate <= targetDate &&
+      l.endDate >= targetDate
+    );
+    const isOnLeave = !!activeLeave;
+    const leaveNote = activeLeave?.leaveNote || '';
+
     const intervalMins = memoryStore.settings.checkpointIntervalMinutes || 60;
     const windowMins = memoryStore.settings.windowDurationMinutes || 5;
 
@@ -112,7 +139,7 @@ exports.getDoctorDateWindows = (req, res) => {
       String(a.doctor) === String(doctorId) && a.date === targetDate
     );
 
-    const deadlineObj = getExplanationDeadline(targetDate);
+    const { deadlineObj, deadlineISO, deadlineFormatted } = getExplanationDeadline(targetDate);
     const isDeadlinePassed = nowObj.getTime() >= deadlineObj.getTime();
     const docCreatedObj = new Date(doctor.createdAt);
     const doctorActiveDateStr = docCreatedObj.toISOString().split('T')[0];
@@ -133,8 +160,8 @@ exports.getDoctorDateWindows = (req, res) => {
         minAllowedDate: minAllowedDateStr,
         maxAllowedDate: todayStr,
         doctorActiveDate: doctorActiveDateStr,
-        explanationDeadlineISO: deadlineObj.toISOString(),
-        explanationDeadlineFormatted: formatDeadlineString(deadlineObj),
+        explanationDeadlineISO: deadlineISO,
+        explanationDeadlineFormatted: deadlineFormatted,
         isOnLeave,
         leaveNote,
         isExpired: true,
@@ -299,7 +326,7 @@ exports.markAttendance = (req, res) => {
       (a.checkpointTime === activeWin.windowStartFormatted || a.windowLabel === activeWin.windowLabel)
     );
 
-    if (attRecord && (attRecord.status === 'PRESENT' || attRecord.status === 'EXPLANATION_APPROVED')) {
+    if (attRecord && (attRecord.status === 'PRESENT' || attRecord.status === 'EXPLANATION_APPROVED' || attRecord.status === 'PRESENT_APPROVED_EXPLANATION')) {
       return res.status(400).json({
         success: false,
         message: `Attendance already marked as PRESENT for window (${activeWin.windowLabel}).`

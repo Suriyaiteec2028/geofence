@@ -3,14 +3,31 @@ const { logAuditEvent } = require('../utils/auditLogger');
 
 function getExplanationDeadline(missedDateStr) {
   const [y, m, d] = missedDateStr.split('-').map(Number);
-  return new Date(y, m - 1, d + 3, 0, 0, 0, 0);
+  const temp = new Date(Date.UTC(y, m - 1, d + 3, 0, 0, 0, 0));
+  const deadlineYear = temp.getUTCFullYear();
+  const deadlineMonth = String(temp.getUTCMonth() + 1).padStart(2, '0');
+  const deadlineDay = String(temp.getUTCDate()).padStart(2, '0');
+  const deadlineISO = `${deadlineYear}-${deadlineMonth}-${deadlineDay}T00:00:00+05:30`;
+  const deadlineObj = new Date(deadlineISO);
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const formattedText = `${temp.getUTCDate()} ${monthNames[temp.getUTCMonth()]} ${deadlineYear}, 12:00 AM`;
+
+  return {
+    deadlineObj,
+    deadlineISO,
+    deadlineFormatted: formattedText
+  };
 }
 
-function formatDeadlineString(dateObj) {
-  const day = String(dateObj.getDate()).padStart(2, '0');
-  const month = dateObj.toLocaleString('en-IN', { month: 'short' });
-  const year = dateObj.getFullYear();
-  return `${day} ${month} ${year}, 12:00 AM (Midnight)`;
+function formatDeadlineString(deadline) {
+  if (deadline && deadline.deadlineFormatted) return deadline.deadlineFormatted;
+  if (deadline instanceof Date) {
+    const day = String(deadline.getDate()).padStart(2, '0');
+    const month = deadline.toLocaleString('en-IN', { month: 'short' });
+    const year = deadline.getFullYear();
+    return `${day} ${month} ${year}, 12:00 AM`;
+  }
+  return '';
 }
 
 exports.submitExplanation = (req, res) => {
@@ -41,11 +58,11 @@ exports.submitExplanation = (req, res) => {
 
       // Backend 3-day rule validation: must be before 12:00 AM on the 3rd calendar day after missed date
       const now = new Date();
-      const deadline = getExplanationDeadline(date);
-      if (now.getTime() >= deadline.getTime()) {
+      const { deadlineObj } = getExplanationDeadline(date);
+      if (now.getTime() >= deadlineObj.getTime()) {
         return res.status(400).json({
           success: false,
-          message: `Explanation deadline expired! Explanations for ${date} had to be submitted before ${formatDeadlineString(deadline)}.`
+          message: 'Your explanation submission deadline has expired. Explanations for this attendance date can no longer be submitted.'
         });
       }
       if (date > now.toISOString().split('T')[0]) {
@@ -79,8 +96,8 @@ exports.submitExplanation = (req, res) => {
           (a.windowLabel === windowLabel || a.checkpointTime === windowLabel)
         );
 
-        // Skip if already PRESENT or EXPLANATION_APPROVED
-        if (attendance && (attendance.status === 'PRESENT' || attendance.status === 'EXPLANATION_APPROVED')) {
+        // Skip if already PRESENT or approved explanation
+        if (attendance && (attendance.status === 'PRESENT' || attendance.status === 'EXPLANATION_APPROVED' || attendance.status === 'PRESENT_APPROVED_EXPLANATION')) {
           skipped.push(windowLabel + ' (already present)');
           continue;
         }
@@ -289,6 +306,10 @@ exports.reviewExplanation = (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid action. Must be APPROVE or REJECT.' });
     }
 
+    if (action === 'REJECT' && (!adminRemarks || !adminRemarks.trim())) {
+      return res.status(400).json({ success: false, message: 'Rejection reason is mandatory when rejecting an explanation.' });
+    }
+
     const expIndex = memoryStore.explanations.findIndex(e => String(e._id) === String(id));
     if (expIndex === -1) {
       return res.status(404).json({ success: false, message: 'Explanation request not found' });
@@ -300,32 +321,32 @@ exports.reviewExplanation = (req, res) => {
 
     explanation.status = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
     explanation.reviewedBy = req.user.id;
-    explanation.adminRemarks = adminRemarks || '';
+    explanation.adminRemarks = adminRemarks ? adminRemarks.trim() : '';
     explanation.reviewedAt = new Date().toISOString();
 
-    // Immediately update attendance status to EXPLANATION_APPROVED (Counted as Present)
+    const targetStatus = action === 'APPROVE' ? 'PRESENT_APPROVED_EXPLANATION' : 'EXPLANATION_REJECTED';
+
+    // Immediately update attendance status to PRESENT_APPROVED_EXPLANATION (Counted as Present) or EXPLANATION_REJECTED (Absent)
     if (!attendance) {
-      const dateStr = explanation.createdAt ? explanation.createdAt.split('T')[0] : new Date().toISOString().split('T')[0];
+      const dateStr = explanation.date || (explanation.createdAt ? explanation.createdAt.split('T')[0] : new Date().toISOString().split('T')[0]);
       attendance = {
         _id: 'att_' + Date.now(),
         doctor: explanation.doctor,
         phc: explanation.phc,
         date: dateStr,
-        checkpointTime: 'Approved Exemption',
-        windowLabel: 'Exemption Window',
+        checkpointTime: explanation.checkpointTime || 'Approved Exemption',
+        windowLabel: explanation.windowLabel || 'Exemption Window',
         markedAt: new Date().toISOString(),
-        status: action === 'APPROVE' ? 'EXPLANATION_APPROVED' : 'EXPLANATION_REJECTED',
-        withinGeofence: true,
+        status: targetStatus,
+        withinGeofence: action === 'APPROVE',
         createdAt: new Date().toISOString()
       };
       memoryStore.attendances.push(attendance);
       explanation.attendance = attendance._id;
     } else {
+      attendance.status = targetStatus;
       if (action === 'APPROVE') {
-        attendance.status = 'EXPLANATION_APPROVED'; // IMMEDIATELY CHANGED TO PRESENT
         attendance.withinGeofence = true;
-      } else {
-        attendance.status = 'EXPLANATION_REJECTED'; // ABSENT
       }
     }
 
